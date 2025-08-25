@@ -4,16 +4,25 @@ import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 type PostLikeData = {
-  engagement_id: string | null;
-  profile_url: string | null;
-  company_name: string | null;
+  like_id: string | null;
+  reaction_type: string | null;
+  like_timestamp: string | null;
   post_url: string | null;
-  liked_at: string | null;
-  created_at: string | null;
-  full_name: string | null;
-  occupation: string | null;
   post_content: string | null;
-  post_date: string | null;
+  post_type: string | null;
+  post_author: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  liker_name: string | null;
+  liker_headline: string | null;
+  liker_location: string | null;
+  current_job_title: string | null;
+  linkedin_profile_url: string | null;
+  liker_company_name: string | null;
+  liker_company_industry: string | null;
+  liker_company_size: string | null;
+  liker_company_location: string | null;
+  liker_company_employees: number | null;
 };
 
 const PostLikesTable = ({ data, isLoading, error }: { data: PostLikeData[]; isLoading: boolean; error: string | null }) => {
@@ -30,11 +39,11 @@ const PostLikesTable = ({ data, isLoading, error }: { data: PostLikeData[]; isLo
       <table className="min-w-full divide-y divide-gray-200">
         <thead className="bg-gray-50">
           <tr>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liker Name</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liker Company</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liker Profile</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post Content</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post Date</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post URL</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profile URL</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liked At</th>
           </tr>
         </thead>
@@ -46,11 +55,21 @@ const PostLikesTable = ({ data, isLoading, error }: { data: PostLikeData[]; isLo
           ) : (
             data.map((row, index) => (
               <tr key={index} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-normal text-sm text-gray-900 max-w-xs">
-                  {row.post_content || 'No content available'}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {row.liker_name || 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {row.post_date ? new Date(row.post_date).toLocaleDateString() : 'N/A'}
+                  {row.liker_company_name || 'N/A'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  {row.linkedin_profile_url ? (
+                    <a href={row.linkedin_profile_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">View Profile</a>
+                  ) : (
+                    'N/A'
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-normal text-sm text-gray-900 max-w-xs">
+                  {row.post_content || 'No content available'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   {row.post_url ? (
@@ -59,18 +78,8 @@ const PostLikesTable = ({ data, isLoading, error }: { data: PostLikeData[]; isLo
                     'N/A'
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  {row.profile_url ? (
-                    <a href={row.profile_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">View Profile</a>
-                  ) : (
-                    'No Profile'
-                  )}
-                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {row.company_name !== null ? row.company_name : 'No Company'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {row.liked_at ? new Date(row.liked_at).toLocaleDateString() : 'N/A'}
+                  {row.like_timestamp ? new Date(row.like_timestamp).toLocaleDateString() : 'N/A'}
                 </td>
               </tr>
             ))
@@ -104,16 +113,16 @@ export default function ReportClient() {
 
       try {
         const { data, error } = await supabase
-          .from('v_post_likes')
+          .from('v_likes_detailed')
           .select('*')
-          .order('liked_at', { ascending: false })
+          .order('like_timestamp', { ascending: false })
           .range(0, 99);
 
         if (error) {
-          console.error('Error fetching v_post_likes:', error);
+          console.error('Error fetching data from Supabase:', error);
           setError(error.message);
         } else {
-          console.log('Raw data from Supabase:', data);
+          console.log('Raw data from Supabase (v_likes_detailed):', data);
           setPostLikesData((data as PostLikeData[]) || []);
         }
       } catch (err) {
