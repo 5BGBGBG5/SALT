@@ -113,6 +113,7 @@ export default function ReportClient() {
           console.error('Error fetching v_post_likes:', error);
           setError(error.message);
         } else {
+          console.log('Raw data from Supabase:', data);
           setPostLikesData((data as PostLikeData[]) || []);
         }
       } catch (err) {
