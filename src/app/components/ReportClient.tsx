@@ -67,7 +67,7 @@ const PostLikesTable = ({ data, isLoading, error }: { data: PostLikeData[]; isLo
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {row.company_name || 'No Company'}
+                  {row.company_name !== null ? row.company_name : 'No Company'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {row.liked_at ? new Date(row.liked_at).toLocaleDateString() : 'N/A'}
