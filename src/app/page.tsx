@@ -1,16 +1,11 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
-// FIX: Changed the import to use a direct CDN URL to resolve the dependency issue.
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8/+esm';
+import { createClient } from '@supabase/supabase-js';
 import { BarChart, FileText, Settings, ChevronDown, Search } from 'lucide-react';
 
 // --- SUPABASE SETUP ---
-// IMPORTANT: Replace with your actual Supabase URL and Anon Key
-// It's best practice to store these in environment variables (.env.local)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'YOUR_SUPABASE_URL';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'YOUR_SUPABASE_ANON_KEY';
-
-// Initialize the Supabase client
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Supabase client is created at runtime to avoid build-time URL errors.
 
 // --- DATA TYPES ---
 // Define a type for our report data for type safety
@@ -150,6 +145,17 @@ export default function App() {
     const fetchPostLikes = async () => {
       setIsLoading(true);
       setError(null);
+
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseAnonKey) {
+        setError('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+        setIsLoading(false);
+        return;
+      }
+
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
       // Query the 'all_post_likes' view from Supabase
       const { data, error } = await supabase
