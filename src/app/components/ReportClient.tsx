@@ -4,23 +4,17 @@ import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 type JoinedData = {
-  post_url: string | null;
-  post_content: string | null;
-  post_date: string | null;
+  profile_id: string | null;
   profile_url: string | null;
   full_name: string | null;
   company_name: string | null;
-};
-
-type SupabaseResponse = {
+  occupation: string | null;
+  post_id: string | null;
   post_url: string | null;
+  author_name: string | null;
   post_content: string | null;
-  post_date: string | null;
-  profiles: {
-    profile_url: string | null;
-    full_name: string | null;
-    company_name: string | null;
-  }[];
+  post_timestamp: string | null;
+  liked_at: string | null;
 };
 
 const JoinedTable = ({ data, isLoading, error }: { data: JoinedData[]; isLoading: boolean; error: string | null }) => {
@@ -62,7 +56,7 @@ const JoinedTable = ({ data, isLoading, error }: { data: JoinedData[]; isLoading
                 </td>
                 <td className="px-6 py-4 whitespace-normal text-sm text-gray-500 max-w-xs truncate">{row.post_content || 'N/A'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {row.post_date ? new Date(row.post_date).toLocaleDateString() : 'N/A'}
+                  {row.post_timestamp ? new Date(row.post_timestamp).toLocaleDateString() : 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   {row.profile_url ? (
@@ -104,37 +98,17 @@ export default function ReportClient() {
       const supabase = createClient(supabaseUrl, supabaseKey);
 
       try {
-        // Fetch posts and profiles with a join on ID
         const { data, error } = await supabase
-          .from('posts')
-          .select(`
-            post_url,
-            post_content,
-            post_date,
-            profiles!inner(
-              profile_url,
-              full_name,
-              company_name
-            )
-          `)
-          .order('post_date', { ascending: false })
-          .limit(100);
+          .from('v_post_likes')
+          .select('*')
+          .order('liked_at', { ascending: false })
+          .range(0, 99);
 
         if (error) {
-          console.error('Error fetching joined data:', error);
+          console.error('Error fetching v_post_likes:', error);
           setError(error.message);
         } else {
-          // Transform the nested data structure
-          const transformedData = (data as SupabaseResponse[])?.map(item => ({
-            post_url: item.post_url,
-            post_content: item.post_content,
-            post_date: item.post_date,
-            profile_url: item.profiles[0]?.profile_url || null,
-            full_name: item.profiles[0]?.full_name || null,
-            company_name: item.profiles[0]?.company_name || null,
-          })) || [];
-          
-          setJoinedData(transformedData);
+          setJoinedData((data as JoinedData[]) || []);
         }
       } catch (err) {
         console.error('Error:', err);
