@@ -3,21 +3,16 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-type JoinedData = {
-  profile_id: string | null;
+type PostLikeData = {
+  engagement_id: string | null;
   profile_url: string | null;
-  full_name: string | null;
   company_name: string | null;
-  occupation: string | null;
-  post_id: string | null;
   post_url: string | null;
-  author_name: string | null;
-  post_content: string | null;
-  post_timestamp: string | null;
   liked_at: string | null;
+  created_at: string | null;
 };
 
-const JoinedTable = ({ data, isLoading, error }: { data: JoinedData[]; isLoading: boolean; error: string | null }) => {
+const PostLikesTable = ({ data, isLoading, error }: { data: PostLikeData[]; isLoading: boolean; error: string | null }) => {
   if (isLoading) {
     return <div className="text-center p-8">Loading data...</div>;
   }
@@ -32,17 +27,16 @@ const JoinedTable = ({ data, isLoading, error }: { data: JoinedData[]; isLoading
         <thead className="bg-gray-50">
           <tr>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post URL</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post Content</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post Date</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profile URL</th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liked At</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {data.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No data found</td>
+              <td colSpan={5} className="px-6 py-8 text-center text-gray-500">No data found</td>
             </tr>
           ) : (
             data.map((row, index) => (
@@ -54,10 +48,6 @@ const JoinedTable = ({ data, isLoading, error }: { data: JoinedData[]; isLoading
                     'N/A'
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-normal text-sm text-gray-500 max-w-xs truncate">{row.post_content || 'N/A'}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {row.post_timestamp ? new Date(row.post_timestamp).toLocaleDateString() : 'N/A'}
-                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   {row.profile_url ? (
                     <a href={row.profile_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">View Profile</a>
@@ -65,8 +55,13 @@ const JoinedTable = ({ data, isLoading, error }: { data: JoinedData[]; isLoading
                     'N/A'
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{row.full_name || 'N/A'}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{row.company_name || 'N/A'}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {row.liked_at ? new Date(row.liked_at).toLocaleDateString() : 'N/A'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {row.created_at ? new Date(row.created_at).toLocaleDateString() : 'N/A'}
+                </td>
               </tr>
             ))
           )}
@@ -77,12 +72,12 @@ const JoinedTable = ({ data, isLoading, error }: { data: JoinedData[]; isLoading
 };
 
 export default function ReportClient() {
-  const [joinedData, setJoinedData] = useState<JoinedData[]>([]);
+  const [postLikesData, setPostLikesData] = useState<PostLikeData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchJoinedData = async () => {
+    const fetchPostLikesData = async () => {
       setIsLoading(true);
       setError(null);
 
@@ -108,7 +103,7 @@ export default function ReportClient() {
           console.error('Error fetching v_post_likes:', error);
           setError(error.message);
         } else {
-          setJoinedData((data as JoinedData[]) || []);
+          setPostLikesData((data as PostLikeData[]) || []);
         }
       } catch (err) {
         console.error('Error:', err);
@@ -118,16 +113,16 @@ export default function ReportClient() {
       setIsLoading(false);
     };
 
-    fetchJoinedData();
+    fetchPostLikesData();
   }, []);
 
   return (
     <>
-      <h2 className="text-2xl font-semibold text-gray-900">Posts & Profiles Report</h2>
-      <p className="mt-1 text-sm text-gray-600">View posts and their associated profile information.</p>
+      <h2 className="text-2xl font-semibold text-gray-900">Post Likes Report</h2>
+      <p className="mt-1 text-sm text-gray-600">View all post likes with profile and company information.</p>
       
       <div className="mt-6">
-        <JoinedTable data={joinedData} isLoading={isLoading} error={error} />
+        <PostLikesTable data={postLikesData} isLoading={isLoading} error={error} />
       </div>
     </>
   );
