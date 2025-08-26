@@ -23,6 +23,8 @@ type PostLikeData = {
   liker_company_size: string | null;
   liker_company_location: string | null;
   liker_company_employees: number | null;
+  liker_company_url: string | null;
+  liker_job_title: string | null;
 };
 
 const PostLikesTable = ({ data, isLoading, error }: { data: PostLikeData[]; isLoading: boolean; error: string | null }) => {
@@ -41,6 +43,7 @@ const PostLikesTable = ({ data, isLoading, error }: { data: PostLikeData[]; isLo
           <tr>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liker Name</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liker Company</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liker Job Title</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Liker Profile</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post Content</th>
             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post URL</th>
@@ -50,7 +53,7 @@ const PostLikesTable = ({ data, isLoading, error }: { data: PostLikeData[]; isLo
         <tbody className="bg-white divide-y divide-gray-200">
           {data.length === 0 ? (
             <tr>
-              <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No data found</td>
+              <td colSpan={7} className="px-6 py-8 text-center text-gray-500">No data found</td>
             </tr>
           ) : (
             data.map((row, index) => (
@@ -59,7 +62,20 @@ const PostLikesTable = ({ data, isLoading, error }: { data: PostLikeData[]; isLo
                   {row.liker_name || 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {row.liker_company_name || 'N/A'}
+                  {row.liker_company_name ? (
+                    row.liker_company_url ? (
+                      <a href={row.liker_company_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
+                        {row.liker_company_name}
+                      </a>
+                    ) : (
+                      row.liker_company_name
+                    )
+                  ) : (
+                    'N/A'
+                  )}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {row.liker_job_title || 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   {row.linkedin_profile_url ? (
@@ -90,7 +106,7 @@ const PostLikesTable = ({ data, isLoading, error }: { data: PostLikeData[]; isLo
   );
 };
 
-export default function ReportClient() {
+export default function PostLikesReportPage() {
   const [postLikesData, setPostLikesData] = useState<PostLikeData[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);

@@ -261,6 +261,10 @@ liker_occupation VARCHAR(500),
 liker_degree VARCHAR(50),
 
 created_at TIMESTAMPTZ DEFAULT NOW(),
+liker_company_name TEXT NULL,
+liker_company_url TEXT NULL,
+liker_job_title TEXT NULL,
+company_source TEXT NULL,
 
 -- Ensure one reaction per person per post
 UNIQUE(post_id, profile_id)
@@ -350,8 +354,10 @@ prof.current_job_title,
 prof.linkedin_profile_url,
 
 
--- Liker company details
-c.company_name as liker_company_name,
+-- Liker company details (now primarily from post_likes, with fallback/additional from companies)
+COALESCE(pl.liker_company_name, c.company_name) as liker_company_name,
+pl.liker_company_url,
+pl.liker_job_title,
 c.company_industry as liker_company_industry,
 c.company_size as liker_company_size,
 c.headquarter as liker_company_location,
