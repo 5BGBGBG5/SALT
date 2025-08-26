@@ -197,13 +197,6 @@ export default function AieoReportPage() {
 
         const realMetrics: DashboardMetric[] = [
           {
-            label: "AI Model Efficiency",
-            value: `${aiModelEfficiency.toFixed(1)}%`,
-            change: "+2.3%",
-            changeType: "positive" as const,
-            tooltip: "AI model's accuracy and efficiency in analyzing content performance. Higher percentages indicate more reliable AI predictions and faster processing."
-          },
-          {
             label: "Engagement Optimization Score",
             value: `${optimizationScore.toFixed(1)}/10`,
             change: optimizationScore > 8 ? "+0.5" : "+0.2",
@@ -216,13 +209,6 @@ export default function AieoReportPage() {
             change: "+3",
             changeType: "positive" as const,
             tooltip: "Number of AI-powered optimization recommendations generated for your content strategy. These suggestions help improve engagement rates and content performance."
-          },
-          {
-            label: "Processing Speed",
-            value: `${processingSpeed.toFixed(0)}%`,
-            change: "Stable",
-            changeType: "neutral" as const,
-            tooltip: "AI processing speed and responsiveness. Higher percentages indicate faster analysis and real-time optimization capabilities."
           }
         ];
 
@@ -274,7 +260,7 @@ export default function AieoReportPage() {
       <p className="text-lg text-gray-600 mb-8">AI-powered insights for optimizing content engagement and performance</p>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {metrics.map((metric, index) => (
           <div
             key={index}
