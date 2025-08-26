@@ -1,5 +1,5 @@
 import React from 'react';
-import './BestRanking.css'; // We'll create this CSS file next
+import '../BestRanking.css'; // Fixed path to go up one level
 
 const BestRanking = ({ ranking }: { ranking: number | null }) => {
   // Function to determine the color-coded CSS class
@@ -19,7 +19,7 @@ const BestRanking = ({ ranking }: { ranking: number | null }) => {
       <h3>Best Ranking This Week</h3>
       <p className={`rank-value ${rankingClass}`}>{displayText}</p>
       <p className="kpi-description">
-        Highest position in a "Top 10" list from any AI model.
+        Highest position in a &ldquo;Top 10&rdquo; list from any AI model.
       </p>
     </div>
   );
