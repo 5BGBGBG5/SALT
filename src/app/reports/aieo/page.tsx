@@ -2,8 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { Card, Title, LineChart } from "@tremor/react";
 import BestRanking from "./components/BestRanking";
 import './BestRanking.css';
+import PromptAccordion from "./components/PromptAccordion";
+import './PromptAccordion.css';
 
 type DashboardMetric = {
   label: string;
@@ -21,6 +24,12 @@ type SentimentData = {
 type RankingData = {
   ranking_value: number | null;
   report_week: string;
+};
+
+type PromptData = {
+  id: string;
+  prompt_text: string;
+  model_responses: { [key: string]: string };
 };
 
 type SentimentRawData = {
@@ -45,6 +54,7 @@ export default function AieoReportPage() {
   const [metrics, setMetrics] = useState<DashboardMetric[]>([]);
   const [bestRanking, setBestRanking] = useState<number | null>(null);
   const [sentimentData, setSentimentData] = useState<SentimentData[]>([]);
+  const [prompts, setPrompts] = useState<PromptData[]>([]);
 
   useEffect(() => {
     const fetchReportData = async () => {
@@ -69,11 +79,10 @@ export default function AieoReportPage() {
       try {
         console.log('Starting Supabase queries...');
 
-        // Try to fetch from AiEO tables first, then fallback to existing data
+        // Fetch Sentiment Data
         console.log('Fetching sentiment data...');
         let sentimentData: SentimentData[] = [];
 
-        // First try the AiEO sentiment table
         const { data: sentiment, error: sentimentError } = await supabase
           .from('aieo_sentiment_metrics')
           .select('execution_date, aggregate_metrics')
@@ -84,47 +93,8 @@ export default function AieoReportPage() {
 
         if (sentimentError) {
           console.error('Error fetching AIEO sentiment data:', sentimentError);
-
-          // If AIEO table doesn't exist, try fallback to existing data
-          if (sentimentError.message.includes("Could not find the table")) {
-            console.log('AIEO sentiment table does not exist, trying fallback...');
-
-            // Try to get data from existing tables as fallback
-            console.log('Attempting fallback to engagements table...');
-            const { data: fallbackData, error: fallbackError } = await supabase
-              .from('engagements')
-              .select('engaged_at, company_name')
-              .not('company_name', 'is', null)
-              .order('engaged_at', { ascending: true })
-              .range(0, 49);
-
-            console.log('Fallback query result:', { data: fallbackData, error: fallbackError });
-
-            if (!fallbackError && fallbackData && fallbackData.length > 0) {
-              // Transform fallback data into sentiment-like format
-              sentimentData = fallbackData.map((item, index) => ({
-                execution_date: item.engaged_at ? new Date(item.engaged_at).toISOString().split('T')[0] : `2025-08-${String(index + 1).padStart(2, '0')}`,
-                average_sentiment: 6 + (Math.random() * 4) // Random sentiment 6-10 for positive bias
-              }));
-              console.log('Successfully created fallback sentiment data:', sentimentData);
-            } else {
-              console.log('No engagements data available, creating synthetic data...');
-              // Create synthetic data if no fallback data is available
-              const syntheticData = [];
-              for (let i = 0; i < 7; i++) {
-                syntheticData.push({
-                  execution_date: `2025-08-${String(i + 20).padStart(2, '0')}`,
-                  average_sentiment: 7 + Math.random() * 2 // Random 7-9
-                });
-              }
-              sentimentData = syntheticData;
-              console.log('Created synthetic sentiment data:', sentimentData);
-            }
-          } else {
-            setError(`Sentiment data error: ${sentimentError.message}`);
-          }
+          setError(`Sentiment data error: ${sentimentError.message}`);
         } else {
-          // Transform the data to extract average_sentiment from JSONB
           const transformedSentiment = (sentiment as SentimentRawData[] || []).map(item => ({
             execution_date: item.execution_date,
             average_sentiment: item.aggregate_metrics?.average_sentiment || 0
@@ -137,9 +107,8 @@ export default function AieoReportPage() {
 
         // Fetch Best Ranking Data
         console.log('Fetching ranking data...');
-        let rankingData = null;
+        let rankingData: number | null = null;
 
-        // First try the AiEO ranking table
         const { data: ranking, error: rankingError } = await supabase
           .from('aieo_weekly_rankings')
           .select('ranking_value, report_week')
@@ -150,56 +119,35 @@ export default function AieoReportPage() {
 
         if (rankingError) {
           console.error('Error fetching AIEO ranking data:', rankingError);
-
-          // If AIEO table doesn't exist, create a fallback ranking
-          if (rankingError.message.includes("Could not find the table")) {
-            console.log('AIEO ranking table does not exist, using fallback ranking');
-            rankingData = 5; // Default fallback ranking
-          } else {
-            setError(`Ranking data error: ${rankingError.message}`);
-          }
+          setError(`Ranking data error: ${rankingError.message}`);
         } else if (ranking && ranking.length > 0) {
           rankingData = (ranking[0] as RankingRawData).ranking_value;
           console.log('Using AIEO ranking data:', rankingData);
         } else {
-          console.log('No AIEO ranking data found, using fallback');
-          rankingData = 7; // Fallback ranking if table exists but is empty
+          console.log('No AIEO ranking data found, setting to null.');
+          rankingData = null;
         }
 
         setBestRanking(rankingData);
 
-                // Calculate metrics from real data
-        const totalPosts = sentimentData.length || 7; // Minimum 7 to show meaningful data
-        const avgSentiment = sentimentData.length > 0
-          ? parseFloat((sentimentData.reduce((sum, item) => sum + (item.average_sentiment || 0), 0) / sentimentData.length).toFixed(1))
-          : 7.5; // Default sentiment if no data
-
-        const latestRanking = rankingData || 5; // Default ranking if none available
-        const previousRanking = 6; // Default previous ranking for comparison
-
-        const rankingChange = latestRanking < previousRanking ? `+${previousRanking - latestRanking}` : `-${latestRanking - previousRanking}`;
-
-        console.log('Calculated metrics:', {
-          totalPosts,
-          avgSentiment,
-          latestRanking,
-          previousRanking,
-          rankingChange,
-          sentimentDataLength: sentimentData.length,
-          rankingData
-        });
-
-        // AiEO-specific metrics (AI-powered Engagement Optimization)
-        const aiModelEfficiency = Math.max(85, 90 + Math.random() * 10); // AI model efficiency 85-100%
-        const optimizationScore = Math.max(7.2, 6.5 + Math.random() * 3); // Content optimization score 6.5-9.5
-        const recommendationsCount = Math.floor(12 + Math.random() * 8); // 12-20 optimization recommendations
-        const processingSpeed = Math.max(95, 90 + Math.random() * 10); // Processing speed 90-100%
-
-        const realMetrics: DashboardMetric[] = [];
-
-        console.log('Setting metrics:', realMetrics);
-        setMetrics(realMetrics);
+        // Fetch Prompts with Responses Data
+        console.log('Fetching prompts data...');
+        const { data: promptsData, error: promptsError } = await supabase
+          .from('aieo_prompts_with_responses') // Assuming a table/view for prompts
+          .select('id, prompt_text, model_responses')
+          .order('created_at', { ascending: false })
+          .limit(10);
         
+        console.log('AIEO Prompts query result:', { data: promptsData, error: promptsError });
+
+        if (promptsError) {
+          console.error('Error fetching AIEO prompts data:', promptsError);
+          setError(`Prompts data error: ${promptsError.message}`);
+        } else {
+          setPrompts((promptsData as PromptData[]) || []);
+          console.log('Using AIEO prompts data:', promptsData);
+        }
+
       } catch (err) {
         console.error('Error:', err);
         setError('Failed to fetch report data');
@@ -210,6 +158,14 @@ export default function AieoReportPage() {
 
     fetchReportData();
   }, []);
+
+  // Prepare the data for the chart
+  const sentimentChartData = sentimentData
+    .map(record => ({
+      date: new Date(record.execution_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      'Average Sentiment': record.average_sentiment,
+    }))
+    .reverse(); // Reverse to show time from left to right
 
   if (isLoading) {
     return (
@@ -244,13 +200,30 @@ export default function AieoReportPage() {
       <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Engagement Optimization</h1>
       <p className="text-lg text-gray-600 mb-8">AI-powered insights for optimizing content engagement and performance</p>
 
-      {/* Best Ranking Performance - Full Width */}
-      <div
-        className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help mb-8"
-        title="Shows your current best ranking position in AI-powered performance metrics. Lower numbers indicate better performance. Rankings are color-coded: green for top performers, yellow for good performers, and red for areas needing improvement."
-      >
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Best Ranking Performance</h3>
+      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <BestRanking ranking={bestRanking} />
+        <Card>
+          <Title>Sentiment Over Time</Title>
+          <LineChart
+            className="mt-6"
+            data={sentimentChartData}
+            index="date"
+            categories={['Average Sentiment']}
+            colors={['blue']}
+            yAxisWidth={40}
+          />
+        </Card>
+      </div>
+
+      <div className="mt-8">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">Prompt Analysis & Responses</h3>
+        {prompts.length > 0 ? (
+          prompts.map(prompt => (
+            <PromptAccordion key={prompt.id} prompt={prompt} />
+          ))
+        ) : (
+          <p className="text-gray-600">No AI prompt analysis data available.</p>
+        )}
       </div>
     </div>
   );
