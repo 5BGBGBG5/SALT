@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Card, Title, LineChart } from "@tremor/react";
+// Removed @tremor/react import - package was removed due to React 19 compatibility issues
 import BestRanking from "./components/BestRanking";
 import './BestRanking.css';
 import PromptAccordion from "./components/PromptAccordion";
@@ -200,19 +200,30 @@ export default function AieoReportPage() {
       <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Engagement Optimization</h1>
       <p className="text-lg text-gray-600 mb-8">AI-powered insights for optimizing content engagement and performance</p>
 
-      <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Best Ranking Performance - Full Width */}
+      <div
+        className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help mb-8"
+        title="Shows your current best ranking position in AI-powered performance metrics. Lower numbers indicate better performance. Rankings are color-coded: green for top performers, yellow for good performers, and red for areas needing improvement."
+      >
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Best Ranking Performance</h3>
         <BestRanking ranking={bestRanking} />
-        <Card>
-          <Title>Sentiment Over Time</Title>
-          <LineChart
-            className="mt-6"
-            data={sentimentChartData}
-            index="date"
-            categories={['Average Sentiment']}
-            colors={['blue']}
-            yAxisWidth={40}
-          />
-        </Card>
+      </div>
+
+      {/* Sentiment Chart - Simple Implementation */}
+      <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Over Time</h3>
+        {sentimentChartData.length > 0 ? (
+          <div className="space-y-2">
+            {sentimentChartData.slice(-5).map((item, index) => (
+              <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                <span className="text-sm text-gray-600">{item.date}</span>
+                <span className="text-sm font-medium text-blue-600">{item['Average Sentiment'].toFixed(1)}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-600">No sentiment data available</p>
+        )}
       </div>
 
       <div className="mt-8">

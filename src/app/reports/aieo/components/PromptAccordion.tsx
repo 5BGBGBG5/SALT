@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './PromptAccordion.css'; // We'll create the styles next
+import '../PromptAccordion.css'; // Import from parent directory
 
 type Prompt = {
   prompt_text: string;
