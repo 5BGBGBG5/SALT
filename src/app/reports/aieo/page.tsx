@@ -19,7 +19,23 @@ type SentimentData = {
 
 type RankingData = {
   ranking_value: number | null;
-  created_at: string;
+  report_week: string;
+};
+
+type SentimentRawData = {
+  execution_date: string;
+  aggregate_metrics: {
+    average_sentiment: number;
+    total_posts?: number;
+    positive_posts?: number;
+    negative_posts?: number;
+    neutral_posts?: number;
+  } | null;
+};
+
+type RankingRawData = {
+  ranking_value: number;
+  report_week: string;
 };
 
 export default function AieoReportPage() {
@@ -49,33 +65,38 @@ export default function AieoReportPage() {
         // Fetch Sentiment Data
         const { data: sentiment, error: sentimentError } = await supabase
           .from('aieo_sentiment_metrics')
-          .select('execution_date, average_sentiment')
+          .select('execution_date, aggregate_metrics')
           .order('execution_date', { ascending: true })
           .range(0, 99);
 
         if (sentimentError) {
           console.error('Error fetching sentiment data:', sentimentError);
         } else {
-          setSentimentData((sentiment as SentimentData[]) || []);
+          // Transform the data to extract average_sentiment from JSONB
+          const transformedSentiment = (sentiment as SentimentRawData[] || []).map(item => ({
+            execution_date: item.execution_date,
+            average_sentiment: item.aggregate_metrics?.average_sentiment || 0
+          }));
+          setSentimentData(transformedSentiment);
         }
 
         // Fetch Best Ranking Data
         const { data: ranking, error: rankingError } = await supabase
           .from('aieo_weekly_rankings')
-          .select('ranking_value, created_at')
-          .order('created_at', { ascending: false })
+          .select('ranking_value, report_week')
+          .order('report_week', { ascending: false })
           .limit(1);
 
         if (rankingError) {
           console.error('Error fetching ranking data:', rankingError);
         } else if (ranking && ranking.length > 0) {
-          setBestRanking((ranking[0] as RankingData).ranking_value);
+          setBestRanking((ranking[0] as RankingRawData).ranking_value);
         }
 
         // Calculate metrics from real data
-        const totalPosts = sentiment?.length || 0;
-        const avgSentiment = sentiment && sentiment.length > 0 
-          ? parseFloat((sentiment.reduce((sum, item) => sum + (item.average_sentiment || 0), 0) / sentiment.length).toFixed(1))
+        const totalPosts = sentimentData.length || 0;
+        const avgSentiment = sentimentData.length > 0 
+          ? parseFloat((sentimentData.reduce((sum, item) => sum + (item.average_sentiment || 0), 0) / sentimentData.length).toFixed(1))
           : 0;
         
         const latestRanking = ranking && ranking.length > 0 ? ranking[0].ranking_value : null;
@@ -106,7 +127,7 @@ export default function AieoReportPage() {
           },
           {
             label: "Data Points",
-            value: sentiment?.length || 0,
+            value: sentimentData.length || 0,
             change: "Live",
             changeType: "neutral"
           }
