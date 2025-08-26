@@ -80,7 +80,13 @@ export default function AieoReportPage() {
 
         if (sentimentError) {
           console.error('Error fetching sentiment data:', sentimentError);
-          setError(`Sentiment data error: ${sentimentError.message}`);
+          // Don't set error for missing table, just log it
+          if (sentimentError.message.includes("Could not find the table")) {
+            console.log('Sentiment table does not exist yet - this is expected if not set up');
+            setSentimentData([]);
+          } else {
+            setError(`Sentiment data error: ${sentimentError.message}`);
+          }
         } else {
           // Transform the data to extract average_sentiment from JSONB
           const transformedSentiment = (sentiment as SentimentRawData[] || []).map(item => ({
@@ -103,12 +109,19 @@ export default function AieoReportPage() {
 
         if (rankingError) {
           console.error('Error fetching ranking data:', rankingError);
-          setError(`Ranking data error: ${rankingError.message}`);
+          // Don't set error for missing table, just log it
+          if (rankingError.message.includes("Could not find the table")) {
+            console.log('Ranking table does not exist yet - this is expected if not set up');
+            setBestRanking(null);
+          } else {
+            setError(`Ranking data error: ${rankingError.message}`);
+          }
         } else if (ranking && ranking.length > 0) {
           setBestRanking((ranking[0] as RankingRawData).ranking_value);
           console.log('Set best ranking:', (ranking[0] as RankingRawData).ranking_value);
         } else {
           console.log('No ranking data found');
+          setBestRanking(null);
         }
 
         // Calculate metrics from real data
