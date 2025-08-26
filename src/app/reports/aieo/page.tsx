@@ -53,8 +53,12 @@ export default function AieoReportPage() {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
+      console.log('Environment Variables Check:');
+      console.log('SUPABASE_URL:', supabaseUrl ? 'SET' : 'NOT SET');
+      console.log('SUPABASE_KEY:', supabaseKey ? 'SET (length: ' + supabaseKey.length + ')' : 'NOT SET');
+
       if (!supabaseUrl || !supabaseKey) {
-        setError('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+        setError(`Supabase is not configured. Missing: ${!supabaseUrl ? 'NEXT_PUBLIC_SUPABASE_URL ' : ''}${!supabaseKey ? 'NEXT_PUBLIC_SUPABASE_ANON_KEY' : ''}`);
         setIsLoading(false);
         return;
       }
@@ -62,49 +66,72 @@ export default function AieoReportPage() {
       const supabase = createClient(supabaseUrl, supabaseKey);
 
       try {
+        console.log('Starting Supabase queries...');
+
         // Fetch Sentiment Data
+        console.log('Fetching sentiment data...');
         const { data: sentiment, error: sentimentError } = await supabase
           .from('aieo_sentiment_metrics')
           .select('execution_date, aggregate_metrics')
           .order('execution_date', { ascending: true })
           .range(0, 99);
 
+        console.log('Sentiment query result:', { data: sentiment, error: sentimentError });
+
         if (sentimentError) {
           console.error('Error fetching sentiment data:', sentimentError);
+          setError(`Sentiment data error: ${sentimentError.message}`);
         } else {
           // Transform the data to extract average_sentiment from JSONB
           const transformedSentiment = (sentiment as SentimentRawData[] || []).map(item => ({
             execution_date: item.execution_date,
             average_sentiment: item.aggregate_metrics?.average_sentiment || 0
           }));
+          console.log('Transformed sentiment data:', transformedSentiment);
           setSentimentData(transformedSentiment);
         }
 
         // Fetch Best Ranking Data
+        console.log('Fetching ranking data...');
         const { data: ranking, error: rankingError } = await supabase
           .from('aieo_weekly_rankings')
           .select('ranking_value, report_week')
           .order('report_week', { ascending: false })
           .limit(1);
 
+        console.log('Ranking query result:', { data: ranking, error: rankingError });
+
         if (rankingError) {
           console.error('Error fetching ranking data:', rankingError);
+          setError(`Ranking data error: ${rankingError.message}`);
         } else if (ranking && ranking.length > 0) {
           setBestRanking((ranking[0] as RankingRawData).ranking_value);
+          console.log('Set best ranking:', (ranking[0] as RankingRawData).ranking_value);
+        } else {
+          console.log('No ranking data found');
         }
 
         // Calculate metrics from real data
         const totalPosts = sentimentData.length || 0;
-        const avgSentiment = sentimentData.length > 0 
+        const avgSentiment = sentimentData.length > 0
           ? parseFloat((sentimentData.reduce((sum, item) => sum + (item.average_sentiment || 0), 0) / sentimentData.length).toFixed(1))
           : 0;
-        
+
         const latestRanking = ranking && ranking.length > 0 ? ranking[0].ranking_value : null;
         const previousRanking = ranking && ranking.length > 1 ? ranking[1].ranking_value : null;
-        
-        const rankingChange = latestRanking && previousRanking 
+
+        const rankingChange = latestRanking && previousRanking
           ? latestRanking < previousRanking ? `+${previousRanking - latestRanking}` : `-${latestRanking - previousRanking}`
           : null;
+
+        console.log('Calculated metrics:', {
+          totalPosts,
+          avgSentiment,
+          latestRanking,
+          previousRanking,
+          rankingChange,
+          sentimentDataLength: sentimentData.length
+        });
 
         const realMetrics: DashboardMetric[] = [
           {
@@ -133,6 +160,7 @@ export default function AieoReportPage() {
           }
         ];
 
+        console.log('Setting metrics:', realMetrics);
         setMetrics(realMetrics);
         
       } catch (err) {
