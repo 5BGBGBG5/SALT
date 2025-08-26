@@ -10,6 +10,7 @@ type DashboardMetric = {
   value: string | number;
   change?: string;
   changeType?: 'positive' | 'negative' | 'neutral';
+  tooltip?: string;
 };
 
 type SentimentData = {
@@ -193,25 +194,29 @@ export default function AieoReportPage() {
             label: "Total Posts Analyzed",
             value: totalPosts.toLocaleString(),
             change: totalPosts > 0 ? "+" + Math.floor(totalPosts * 0.1) : undefined,
-            changeType: "positive"
+            changeType: "positive" as const,
+            tooltip: "Total number of LinkedIn posts analyzed for engagement and sentiment data. This represents the coverage of your content analysis."
           },
           {
             label: "Average Sentiment Score",
             value: `${avgSentiment}/10`,
             change: avgSentiment > 7 ? "+0.3" : avgSentiment < 5 ? "-0.2" : undefined,
-            changeType: avgSentiment > 7 ? "positive" : avgSentiment < 5 ? "negative" : "neutral"
+            changeType: avgSentiment > 7 ? "positive" : avgSentiment < 5 ? "negative" : "neutral" as const,
+            tooltip: "Average sentiment score from 1-10 based on AI analysis of post engagement and comments. Higher scores indicate more positive reception."
           },
           {
             label: "Current Ranking",
             value: latestRanking ? `#${latestRanking}` : "N/A",
             change: rankingChange || undefined,
-            changeType: rankingChange && rankingChange.startsWith('+') ? "positive" : "negative"
+            changeType: rankingChange && rankingChange.startsWith('+') ? "positive" : "negative" as const,
+            tooltip: "Current ranking position in AI-powered performance metrics. Lower numbers indicate better performance relative to competitors."
           },
           {
             label: "Data Points",
             value: sentimentData.length || 0,
             change: "Live",
-            changeType: "neutral"
+            changeType: "neutral" as const,
+            tooltip: "Number of individual sentiment analysis data points collected. Each data point represents a unique engagement or interaction analyzed."
           }
         ];
 
@@ -265,7 +270,11 @@ export default function AieoReportPage() {
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {metrics.map((metric, index) => (
-          <div key={index} className="bg-white rounded-lg shadow p-6 border border-gray-200">
+          <div
+            key={index}
+            className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help"
+            title={metric.tooltip}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">{metric.label}</p>
@@ -281,6 +290,11 @@ export default function AieoReportPage() {
                 </span>
               )}
             </div>
+            {metric.tooltip && (
+              <div className="mt-2 text-xs text-gray-500 opacity-75">
+                💡 Hover for details
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -288,13 +302,19 @@ export default function AieoReportPage() {
       {/* Content Sections */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Best Ranking Card */}
-        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <div
+          className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help"
+          title="Shows your current best ranking position in AI-powered performance metrics. Lower numbers indicate better performance. Rankings are color-coded: green for top performers, yellow for good performers, and red for areas needing improvement."
+        >
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Best Ranking Performance</h3>
           <BestRanking ranking={bestRanking} />
         </div>
 
         {/* Sentiment Chart */}
-        <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+        <div
+          className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help"
+          title="Displays the latest sentiment score from your analyzed content. Sentiment scores range from 1-10, with higher scores indicating more positive audience reception. This represents the most recent AI analysis of your content performance."
+        >
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Trend</h3>
           {sentimentData.length > 0 ? (
             <div className="space-y-3">
@@ -316,7 +336,10 @@ export default function AieoReportPage() {
 
       {/* Data Summary */}
       {sentimentData.length > 0 && (
-        <div className="mt-8 bg-white rounded-lg shadow p-6 border border-gray-200">
+        <div
+          className="mt-8 bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help"
+          title="Summary of your sentiment analysis data including date range, total records, and latest analysis date. This helps you understand the scope and recency of your AI-powered content analysis."
+        >
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Summary</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div>
