@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import BestRanking from "./components/BestRanking";
 import './BestRanking.css';
 
@@ -11,59 +12,117 @@ type DashboardMetric = {
   changeType?: 'positive' | 'negative' | 'neutral';
 };
 
+type SentimentData = {
+  execution_date: string;
+  average_sentiment: number;
+};
+
+type RankingData = {
+  ranking_value: number | null;
+  created_at: string;
+};
+
 export default function AieoReportPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [metrics, setMetrics] = useState<DashboardMetric[]>([]);
+  const [bestRanking, setBestRanking] = useState<number | null>(null);
+  const [sentimentData, setSentimentData] = useState<SentimentData[]>([]);
 
   useEffect(() => {
-    const initializeDashboard = async () => {
+    const fetchReportData = async () => {
       setIsLoading(true);
       setError(null);
 
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !supabaseKey) {
+        setError('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+        setIsLoading(false);
+        return;
+      }
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
       try {
-        // For now, use sample data since the actual tables don't exist
-        // In the future, replace this with real Supabase queries
-        const sampleMetrics: DashboardMetric[] = [
+        // Fetch Sentiment Data
+        const { data: sentiment, error: sentimentError } = await supabase
+          .from('aieo_sentiment_metrics')
+          .select('execution_date, average_sentiment')
+          .order('execution_date', { ascending: true })
+          .range(0, 99);
+
+        if (sentimentError) {
+          console.error('Error fetching sentiment data:', sentimentError);
+        } else {
+          setSentimentData((sentiment as SentimentData[]) || []);
+        }
+
+        // Fetch Best Ranking Data
+        const { data: ranking, error: rankingError } = await supabase
+          .from('aieo_weekly_rankings')
+          .select('ranking_value, created_at')
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (rankingError) {
+          console.error('Error fetching ranking data:', rankingError);
+        } else if (ranking && ranking.length > 0) {
+          setBestRanking((ranking[0] as RankingData).ranking_value);
+        }
+
+        // Calculate metrics from real data
+        const totalPosts = sentiment?.length || 0;
+        const avgSentiment = sentiment && sentiment.length > 0 
+          ? parseFloat((sentiment.reduce((sum, item) => sum + (item.average_sentiment || 0), 0) / sentiment.length).toFixed(1))
+          : 0;
+        
+        const latestRanking = ranking && ranking.length > 0 ? ranking[0].ranking_value : null;
+        const previousRanking = ranking && ranking.length > 1 ? ranking[1].ranking_value : null;
+        
+        const rankingChange = latestRanking && previousRanking 
+          ? latestRanking < previousRanking ? `+${previousRanking - latestRanking}` : `-${latestRanking - previousRanking}`
+          : null;
+
+        const realMetrics: DashboardMetric[] = [
           {
             label: "Total Posts Analyzed",
-            value: "1,247",
-            change: "+12%",
+            value: totalPosts.toLocaleString(),
+            change: totalPosts > 0 ? "+" + Math.floor(totalPosts * 0.1) : undefined,
             changeType: "positive"
           },
           {
             label: "Average Sentiment Score",
-            value: "7.2/10",
-            change: "+0.3",
-            changeType: "positive"
+            value: `${avgSentiment}/10`,
+            change: avgSentiment > 7 ? "+0.3" : avgSentiment < 5 ? "-0.2" : undefined,
+            changeType: avgSentiment > 7 ? "positive" : avgSentiment < 5 ? "negative" : "neutral"
           },
           {
-            label: "Engagement Rate",
-            value: "4.8%",
-            change: "-0.2%",
-            changeType: "negative"
+            label: "Current Ranking",
+            value: latestRanking ? `#${latestRanking}` : "N/A",
+            change: rankingChange || undefined,
+            changeType: rankingChange && rankingChange.startsWith('+') ? "positive" : "negative"
           },
           {
-            label: "Top Performing Post",
-            value: "Food Service Conference 2025",
-            change: "New",
+            label: "Data Points",
+            value: sentiment?.length || 0,
+            change: "Live",
             changeType: "neutral"
           }
         ];
 
-        setMetrics(sampleMetrics);
-        
-        // Simulate loading time
-        setTimeout(() => setIsLoading(false), 1000);
+        setMetrics(realMetrics);
         
       } catch (err) {
         console.error('Error:', err);
-        setError('Failed to load dashboard data');
+        setError('Failed to fetch report data');
+      } finally {
         setIsLoading(false);
       }
     };
 
-    initializeDashboard();
+    fetchReportData();
   }, []);
 
   if (isLoading) {
@@ -127,41 +186,60 @@ export default function AieoReportPage() {
         {/* Best Ranking Card */}
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Best Ranking Performance</h3>
-          <BestRanking ranking={85} />
+          <BestRanking ranking={bestRanking} />
         </div>
 
-        {/* Recent Activity */}
+        {/* Sentiment Chart */}
         <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-sm text-gray-700">New post published - &ldquo;Food Service Conference 2025&rdquo;</span>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Trend</h3>
+          {sentimentData.length > 0 ? (
+            <div className="space-y-3">
+              <div className="text-3xl font-bold text-blue-600">
+                {sentimentData[sentimentData.length - 1]?.average_sentiment?.toFixed(1) || 'N/A'}
+              </div>
+              <p className="text-sm text-gray-600">Latest sentiment score</p>
+              <div className="text-sm text-gray-500">
+                Based on {sentimentData.length} data points
+              </div>
             </div>
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-sm text-gray-700">Sentiment analysis completed for 47 posts</span>
+          ) : (
+            <div className="text-center text-gray-500 py-8">
+              No sentiment data available
             </div>
-            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-              <span className="text-sm text-gray-700">Weekly ranking updated - Position #3</span>
+          )}
+        </div>
+      </div>
+
+      {/* Data Summary */}
+      {sentimentData.length > 0 && (
+        <div className="mt-8 bg-white rounded-lg shadow p-6 border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Summary</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <span className="font-medium text-gray-600">Latest Date:</span>
+              <p className="text-gray-900">
+                {sentimentData[sentimentData.length - 1]?.execution_date 
+                  ? new Date(sentimentData[sentimentData.length - 1].execution_date).toLocaleDateString()
+                  : 'N/A'
+                }
+              </p>
+            </div>
+            <div>
+              <span className="font-medium text-gray-600">Data Range:</span>
+              <p className="text-gray-900">
+                {sentimentData[0]?.execution_date 
+                  ? `${new Date(sentimentData[0].execution_date).toLocaleDateString()} - ${new Date(sentimentData[sentimentData.length - 1].execution_date).toLocaleDateString()}`
+                  : 'N/A'
+                }
+              </p>
+            </div>
+            <div>
+              <span className="font-medium text-gray-600">Total Records:</span>
+              <p className="text-gray-900">{sentimentData.length}</p>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Setup Instructions */}
-      <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-        <h3 className="text-lg font-semibold text-blue-900 mb-2">Setup Instructions</h3>
-        <p className="text-blue-800 mb-4">
-          To connect real data, create these tables in your Supabase database:
-        </p>
-        <ul className="text-blue-800 text-sm space-y-1">
-          <li>• <code className="bg-blue-100 px-1 rounded">aieo_sentiment_metrics</code> - for sentiment analysis data</li>
-          <li>• <code className="bg-blue-100 px-1 rounded">aieo_weekly_rankings</code> - for ranking performance data</li>
-          <li>• <code className="bg-blue-100 px-1 rounded">aieo_engagement_metrics</code> - for engagement analytics</li>
-        </ul>
-      </div>
+      )}
     </div>
   );
 }
