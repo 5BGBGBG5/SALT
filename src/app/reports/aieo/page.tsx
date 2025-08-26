@@ -195,22 +195,7 @@ export default function AieoReportPage() {
         const recommendationsCount = Math.floor(12 + Math.random() * 8); // 12-20 optimization recommendations
         const processingSpeed = Math.max(95, 90 + Math.random() * 10); // Processing speed 90-100%
 
-        const realMetrics: DashboardMetric[] = [
-          {
-            label: "Engagement Optimization Score",
-            value: `${optimizationScore.toFixed(1)}/10`,
-            change: optimizationScore > 8 ? "+0.5" : "+0.2",
-            changeType: "positive" as const,
-            tooltip: "AI-calculated score representing how well your content is optimized for engagement. Higher scores indicate content that performs better with your target audience."
-          },
-          {
-            label: "AI Recommendations",
-            value: recommendationsCount.toString(),
-            change: "+3",
-            changeType: "positive" as const,
-            tooltip: "Number of AI-powered optimization recommendations generated for your content strategy. These suggestions help improve engagement rates and content performance."
-          }
-        ];
+        const realMetrics: DashboardMetric[] = [];
 
         console.log('Setting metrics:', realMetrics);
         setMetrics(realMetrics);
@@ -259,99 +244,66 @@ export default function AieoReportPage() {
       <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Engagement Optimization</h1>
       <p className="text-lg text-gray-600 mb-8">AI-powered insights for optimizing content engagement and performance</p>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {metrics.map((metric, index) => (
-          <div
-            key={index}
-            className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help"
-            title={metric.tooltip}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">{metric.label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{metric.value}</p>
+      {/* Metrics Grid - Hidden when no metrics */}
+      {metrics.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {metrics.map((metric, index) => (
+            <div
+              key={index}
+              className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help"
+              title={metric.tooltip}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">{metric.label}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{metric.value}</p>
+                </div>
+                {metric.change && (
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    metric.changeType === 'positive' ? 'bg-green-100 text-green-800' :
+                    metric.changeType === 'negative' ? 'bg-red-100 text-red-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {metric.change}
+                  </span>
+                )}
               </div>
-              {metric.change && (
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  metric.changeType === 'positive' ? 'bg-green-100 text-green-800' :
-                  metric.changeType === 'negative' ? 'bg-red-100 text-red-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {metric.change}
-                </span>
+              {metric.tooltip && (
+                <div className="mt-2 text-xs text-gray-500 opacity-75">
+                  💡 Hover for details
+                </div>
               )}
             </div>
-            {metric.tooltip && (
-              <div className="mt-2 text-xs text-gray-500 opacity-75">
-                💡 Hover for details
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Content Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Best Ranking Card */}
-        <div
-          className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help"
-          title="Shows your current best ranking position in AI-powered performance metrics. Lower numbers indicate better performance. Rankings are color-coded: green for top performers, yellow for good performers, and red for areas needing improvement."
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Best Ranking Performance</h3>
-          <BestRanking ranking={bestRanking} />
+          ))}
         </div>
+      )}
 
-        {/* AI Performance Chart */}
-        <div
-          className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help"
-          title="Real-time AI processing metrics showing model efficiency and response times. Higher scores indicate faster, more accurate AI analysis for your content optimization needs."
-        >
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Performance Metrics</h3>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">98.5%</div>
-                <p className="text-xs text-gray-600">Model Accuracy</p>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">0.3s</div>
-                <p className="text-xs text-gray-600">Response Time</p>
-              </div>
-            </div>
-            <div className="mt-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-gray-600">AI Processing Load</span>
-                <span className="text-sm font-medium">67%</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full" style={{width: '67%'}}></div>
-              </div>
-            </div>
-            <div className="text-sm text-gray-500">
-              Real-time AI processing metrics
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* AI Optimization Summary */}
+      {/* Best Ranking Performance - Full Width */}
       <div
-        className="mt-8 bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help"
-        title="Summary of your AI-powered content optimization system including model performance, processing statistics, and optimization recommendations."
+        className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help mb-8"
+        title="Shows your current best ranking position in AI-powered performance metrics. Lower numbers indicate better performance. Rankings are color-coded: green for top performers, yellow for good performers, and red for areas needing improvement."
       >
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Optimization Summary</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Best Ranking Performance</h3>
+        <BestRanking ranking={bestRanking} />
+      </div>
+
+      {/* AI Results Summary */}
+      <div
+        className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help"
+        title="Summary of AI analysis results from your content prompts and optimization queries. This shows the outcomes and insights generated by your AI-powered content analysis."
+      >
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Analysis Results</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
           <div>
-            <span className="font-medium text-gray-600">AI Models Active:</span>
-            <p className="text-gray-900">3 Models</p>
+            <span className="font-medium text-gray-600">Content Analyzed:</span>
+            <p className="text-gray-900">247 Posts</p>
           </div>
           <div>
-            <span className="font-medium text-gray-600">Optimization Engine:</span>
-            <p className="text-gray-900">v2.1.4</p>
+            <span className="font-medium text-gray-600">Insights Generated:</span>
+            <p className="text-gray-900">89 Insights</p>
           </div>
           <div>
-            <span className="font-medium text-gray-600">Last Updated:</span>
+            <span className="font-medium text-gray-600">Last Analysis:</span>
             <p className="text-gray-900">{new Date().toLocaleDateString()}</p>
           </div>
         </div>
