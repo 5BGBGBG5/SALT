@@ -1,6 +1,13 @@
 -- Create missing tables for AiEO dashboard
 -- Run this in your Supabase SQL editor
 
+-- Check if tables already exist
+SELECT
+    table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+AND table_name IN ('aieo_weekly_rankings', 'aieo_sentiment_metrics');
+
 -- Create aieo_weekly_rankings table if it doesn't exist
 CREATE TABLE IF NOT EXISTS public.aieo_weekly_rankings (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -44,9 +51,11 @@ ON CONFLICT DO NOTHING;
 
 -- Verify tables exist and have data
 SELECT
-    schemaname,
-    tablename,
-    n_tup_ins as inserts,
-    n_live_tup as live_rows
-FROM pg_stat_user_tables
-WHERE tablename IN ('aieo_sentiment_metrics', 'aieo_weekly_rankings');
+    'aieo_sentiment_metrics' as table_name,
+    COUNT(*) as record_count
+FROM public.aieo_sentiment_metrics
+UNION ALL
+SELECT
+    'aieo_weekly_rankings' as table_name,
+    COUNT(*) as record_count
+FROM public.aieo_weekly_rankings;
