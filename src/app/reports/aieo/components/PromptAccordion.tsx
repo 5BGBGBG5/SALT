@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import '../PromptAccordion.css'; // Import from parent directory
 
 type Prompt = {
+  id: string | number;
   prompt_text: string;
   model_responses: { [key: string]: string };
 };

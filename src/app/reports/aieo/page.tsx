@@ -92,7 +92,9 @@ export default function AieoReportPage() {
 
         if (sentimentError) {
           console.error('Error fetching AIEO sentiment data:', sentimentError);
-          setError(`Sentiment data error: ${sentimentError.message}`);
+          // Don't set error, just use empty data and continue
+          console.log('Using empty sentiment data due to error');
+          sentimentData = [];
         } else {
           const transformedSentiment = (sentiment as SentimentRawData[] || []).map(item => ({
             execution_date: item.execution_date,
@@ -118,7 +120,9 @@ export default function AieoReportPage() {
 
         if (rankingError) {
           console.error('Error fetching AIEO ranking data:', rankingError);
-          setError(`Ranking data error: ${rankingError.message}`);
+          // Don't set error, just use null and continue
+          console.log('Using null ranking data due to error');
+          rankingData = null;
         } else if (ranking && ranking.length > 0) {
           rankingData = (ranking[0] as RankingRawData).ranking_value;
           console.log('Using AIEO ranking data:', rankingData);
