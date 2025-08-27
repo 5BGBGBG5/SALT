@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './PromptAccordion.css'; // Corrected: Import from the same directory
+import '../PromptAccordion.css'; // Import from parent directory
 
 type Prompt = {
   id: string | number;
