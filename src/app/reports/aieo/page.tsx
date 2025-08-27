@@ -7,22 +7,9 @@ import BestRanking from "./components/BestRanking";
 import './BestRanking.css';
 import PromptAccordion from "./components/PromptAccordion";
 
-type DashboardMetric = {
-  label: string;
-  value: string | number;
-  change?: string;
-  changeType?: 'positive' | 'negative' | 'neutral';
-  tooltip?: string;
-};
-
 type SentimentData = {
   execution_date: string;
   average_sentiment: number;
-};
-
-type RankingData = {
-  ranking_value: number | null;
-  report_week: string;
 };
 
 type PromptData = {
@@ -51,7 +38,6 @@ type RankingRawData = {
 export default function AieoReportPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [metrics, setMetrics] = useState<DashboardMetric[]>([]);
   const [bestRanking, setBestRanking] = useState<number | null>(null);
   const [sentimentData, setSentimentData] = useState<SentimentData[]>([]);
   const [prompts, setPrompts] = useState<PromptData[]>([]);

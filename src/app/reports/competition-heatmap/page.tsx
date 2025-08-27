@@ -20,6 +20,12 @@ type PMRow = {
   inecta_mentioned: boolean;
 };
 
+type PromptGroup = {
+  category: string;
+  text: string;
+  models: Record<string, PMRow>;
+};
+
 const MODELS: PMRow['model'][] = ['openai','gemini','claude','grok'];
 const HI_CATS = ['generic','vertical','feature','head_to_head','comparison','variant'];
 
@@ -59,28 +65,34 @@ export default function CompetitionHeatMapPage() {
 
   const grouped = useMemo(() => {
     // Group by prompt_id
-    const map = new Map<string, {category:string;text:string;models:Record<string,PMRow>}>();
+    const map = new Map<string, PromptGroup>();
     for (const r of rows) {
-      if (!map.has(r.prompt_id)) map.set(r.prompt_id, {category:r.prompt_category, text:r.prompt_text, models:{} as any});
+      if (!map.has(r.prompt_id)) {
+        map.set(r.prompt_id, {
+          category: r.prompt_category, 
+          text: r.prompt_text, 
+          models: {} as Record<string, PMRow>
+        });
+      }
       map.get(r.prompt_id)!.models[r.model] = r;
     }
     // Filter logic
     let entries = [...map.entries()];
     if (catFilter.length) {
-      entries = entries.filter(([_,v]) => catFilter.includes(v.category));
+      entries = entries.filter(([, v]) => catFilter.includes(v.category));
     }
     if (q.trim()) {
       const needle = q.toLowerCase();
-      entries = entries.filter(([_,v]) => v.text.toLowerCase().includes(needle) || v.category.toLowerCase().includes(needle));
+      entries = entries.filter(([, v]) => v.text.toLowerCase().includes(needle) || v.category.toLowerCase().includes(needle));
     }
     if (onlyMisses) {
-      entries = entries.filter(([_,v]) => MODELS.some(m => {
+      entries = entries.filter(([, v]) => MODELS.some(m => {
         const cell = v.models[m];
         return cell?.responded && !cell?.inecta_mentioned;
       }));
     }
     // Sort: most misses first
-    entries.sort((a,b) => {
+    entries.sort((a, b) => {
       const missA = MODELS.filter(m => a[1].models[m]?.responded && !a[1].models[m]?.inecta_mentioned).length;
       const missB = MODELS.filter(m => b[1].models[m]?.responded && !b[1].models[m]?.inecta_mentioned).length;
       return missB - missA;
@@ -168,7 +180,7 @@ export default function CompetitionHeatMapPage() {
         </div>
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="text-2xl font-bold text-green-600">
-            {grouped.filter(([_,v]) => 
+            {grouped.filter(([, v]) => 
               MODELS.some(m => v.models[m]?.responded && v.models[m]?.inecta_mentioned)
             ).length}
           </div>
@@ -176,7 +188,7 @@ export default function CompetitionHeatMapPage() {
         </div>
         <div className="bg-white p-4 rounded-lg border border-gray-200">
           <div className="text-2xl font-bold text-red-600">
-            {grouped.filter(([_,v]) => 
+            {grouped.filter(([, v]) => 
               MODELS.some(m => v.models[m]?.responded && !v.models[m]?.inecta_mentioned)
             ).length}
           </div>
@@ -258,7 +270,7 @@ export default function CompetitionHeatMapPage() {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-red-100 border border-red-200 rounded"></div>
-            <span className="text-gray-700">Red = Model answered but didn't mention Inecta</span>
+            <span className="text-gray-700">Red = Model answered but didn&apos;t mention Inecta</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-gray-100 border border-gray-200 rounded"></div>
@@ -266,7 +278,7 @@ export default function CompetitionHeatMapPage() {
           </div>
         </div>
         <p className="text-xs text-gray-500 mt-3">
-          Filter by categories or search prompts to focus on specific areas. Use "Show only misses" to identify opportunities where AI models responded but didn't mention Inecta.
+          Filter by categories or search prompts to focus on specific areas. Use &quot;Show only misses&quot; to identify opportunities where AI models responded but didn&apos;t mention Inecta.
         </p>
       </div>
     </div>
