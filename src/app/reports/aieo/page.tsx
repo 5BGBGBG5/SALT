@@ -76,14 +76,22 @@ export default function AieoReportPage() {
 
       const supabase = createClient(supabaseUrl, supabaseKey);
       
-      // Debug: Test basic connection
+      // Debug: Test basic connection and verify database
       console.log('Testing Supabase connection...');
+      console.log('Connection URL:', supabaseUrl);
+      console.log('Connection Key length:', supabaseKey ? supabaseKey.length : 'NOT SET');
+      
       try {
         const { data: testData, error: testError } = await supabase
           .from('companies')
           .select('id')
           .limit(1);
         console.log('Connection test result:', { data: testData, error: testError });
+        
+        // Also test if we can see the companies table structure
+        if (testData && testData.length > 0) {
+          console.log('Successfully connected to database, companies table has data');
+        }
       } catch (err) {
         console.error('Connection test failed:', err);
       }
@@ -151,16 +159,30 @@ export default function AieoReportPage() {
         
         // First, let's test if we can see the table at all
         console.log('Testing table access...');
+        
+        // Try different approaches to access the table
+        console.log('Attempt 1: Direct table access');
         const { data: tableTest, error: tableTestError } = await supabase
           .from('ai_responses')
           .select('id')
           .limit(1);
         
-        console.log('Table access test result:', { data: tableTest, error: tableTestError });
+        console.log('Direct table access result:', { data: tableTest, error: tableTestError });
         
         if (tableTestError) {
-          console.error('Table access test failed:', tableTestError);
+          console.error('Direct table access failed:', tableTestError);
+          
+          // Try with quotes around table name
+          console.log('Attempt 2: Quoted table name');
+          const { data: quotedTest, error: quotedError } = await supabase
+            .from('"ai_responses"')
+            .select('id')
+            .limit(1);
+          
+          console.log('Quoted table name result:', { data: quotedTest, error: quotedError });
+          
           // Try to get more info about what tables are available
+          console.log('Attempt 3: Check available tables');
           const { data: tables, error: tablesError } = await supabase
             .from('information_schema.tables')
             .select('table_name')
@@ -168,6 +190,16 @@ export default function AieoReportPage() {
             .like('table_name', '%ai%');
           
           console.log('Available AI tables:', { data: tables, error: tablesError });
+          
+          // Try to list all tables in public schema
+          console.log('Attempt 4: List all public tables');
+          const { data: allTables, error: allTablesError } = await supabase
+            .from('information_schema.tables')
+            .select('table_name')
+            .eq('table_schema', 'public')
+            .order('table_name');
+          
+          console.log('All public tables:', { data: allTables, error: allTablesError });
         }
         
         const { data: promptsData, error: promptsError } = await supabase
