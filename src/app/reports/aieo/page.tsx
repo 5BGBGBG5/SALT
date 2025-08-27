@@ -202,6 +202,10 @@ export default function AieoReportPage() {
           console.log('All public tables:', { data: allTables, error: allTablesError });
         }
         
+        // Try to bypass schema cache by using a different approach
+        console.log('Attempt 5: Try with explicit schema and different column selection');
+        
+        // First try with just the basic columns that we know exist
         const { data: promptsData, error: promptsError } = await supabase
           .from('ai_responses')
           .select('id, prompt_text, model_responses, execution_date')
@@ -212,7 +216,22 @@ export default function AieoReportPage() {
 
         if (promptsError) {
           console.error('Error fetching AI responses data:', promptsError);
-          setError(`AI responses data error: ${promptsError.message}`);
+          
+          // Try one more time with minimal columns
+          console.log('Attempt 6: Try with minimal columns');
+          const { data: minimalData, error: minimalError } = await supabase
+            .from('ai_responses')
+            .select('id')
+            .limit(1);
+          
+          console.log('Minimal query result:', { data: minimalData, error: minimalError });
+          
+          if (minimalError) {
+            setError(`AI responses data error: ${promptsError.message}`);
+          } else {
+            // If minimal query works, the table exists but there's a column issue
+            setError(`Table exists but column access failed: ${promptsError.message}`);
+          }
         } else {
           setPrompts((promptsData as PromptData[]) || []);
           console.log('Using AI responses data:', promptsData);
