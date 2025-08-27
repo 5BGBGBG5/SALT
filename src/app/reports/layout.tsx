@@ -18,6 +18,11 @@ export default function ReportsLayout({ children }: { children: React.ReactNode 
                 AiEO Report
               </Link>
             </li>
+            <li>
+              <Link href="/reports/competition-heatmap" className="text-lg font-medium text-gray-700 hover:text-indigo-600">
+                Competition Heat Map
+              </Link>
+            </li>
           </ul>
         </nav>
       </aside>
