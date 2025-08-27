@@ -132,19 +132,19 @@ export default function AieoReportPage() {
         // Fetch Prompts with Responses Data
         console.log('Fetching prompts data...');
         const { data: promptsData, error: promptsError } = await supabase
-          .from('aieo_prompts_with_responses') // Assuming a table/view for prompts
+          .from('ai_responses')
           .select('id, prompt_text, model_responses')
-          .order('created_at', { ascending: false })
+          .order('timestamp', { ascending: false })
           .limit(10);
         
-        console.log('AIEO Prompts query result:', { data: promptsData, error: promptsError });
+        console.log('AI Responses query result:', { data: promptsData, error: promptsError });
 
         if (promptsError) {
-          console.error('Error fetching AIEO prompts data:', promptsError);
-          setError(`Prompts data error: ${promptsError.message}`);
+          console.error('Error fetching AI responses data:', promptsError);
+          setError(`AI responses data error: ${promptsError.message}`);
         } else {
           setPrompts((promptsData as PromptData[]) || []);
-          console.log('Using AIEO prompts data:', promptsData);
+          console.log('Using AI responses data:', promptsData);
         }
 
       } catch (err) {
