@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
+// Use AiEO project credentials for this report since v_high_intent_prompt_mentions exists there
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_AIEO_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY!
 );
 
 type PMRow = {
