@@ -1,0 +1,16 @@
+# Copy this content to your .env.local file
+
+# Inecta LinkedIn Data Project (for Post Likes Report)
+NEXT_PUBLIC_SUPABASE_URL=https://ratjciwgkqncadcpjjcw.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_existing_inecta_key_here
+
+# AiEO Project (for AiEO Report)
+NEXT_PUBLIC_AIEO_SUPABASE_URL=https://zqvyaxexfbgyvebfnudz.supabase.co
+NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpxdnlheGV4ZmJneXZlYmZudWR6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5MTAyMjIsImV4cCI6MjA3MTQ4NjIyMn0.zpbylqqHT6EF67uEoqvuw7MNAAyBZtSo1mbJ_oEP9yg
+
+# Instructions:
+# 1. Copy the content above (excluding the # comments)
+# 2. Create a file called .env.local in your project root
+# 3. Paste the content into .env.local
+# 4. Replace "your_existing_inecta_key_here" with your actual Inecta project key
+# 5. Save the file
