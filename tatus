@@ -1,0 +1,5 @@
+[33m80d83c3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m fix build errors: correct CSS import path and remove tremor/react dependency
+[33mffbadc6[m feat: Add PromptAccordion component to AiEO report page
+[33m06b5285[m feat: Remove AI Analysis Results section from AiEO report
+[33m642415b[m remove all KPI cells and AI performance metrics, focus dashboard on AI analysis results from prompts
+[33m4fa9566[m remove AI model efficiency and processing speed KPI cells from AiEO dashboard
