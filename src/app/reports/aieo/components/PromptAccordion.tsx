@@ -20,6 +20,22 @@ const PromptAccordion = ({ prompt }: { prompt: Prompt }) => {
       !response.toLowerCase().includes('could not be found')
   );
 
+  // Function to format the response text for better readability
+  const formatResponse = (text: string) => {
+    // Split by common delimiters and format
+    const formattedText = text
+      .split(/(?<=\.)\s+(?=[A-Z])|(?<=\n)\s*|\s+(?=\n)/) // Split on sentence boundaries and newlines
+      .filter(line => line.trim().length > 0) // Remove empty lines
+      .map((line, index) => (
+        <React.Fragment key={index}>
+          {line.trim()}
+          {index < text.split(/(?<=\.)\s+(?=[A-Z])|(?<=\n)\s*|\s+(?=\n)/).filter(line => line.trim().length > 0).length - 1 && <br />}
+        </React.Fragment>
+      ));
+    
+    return formattedText;
+  };
+
   return (
     <div className="accordion-item">
       <button className="accordion-header" onClick={() => setIsOpen(!isOpen)}>
@@ -34,7 +50,9 @@ const PromptAccordion = ({ prompt }: { prompt: Prompt }) => {
               <div key={model} className="response-block">
                 {/* Corrected: Used &apos; for the apostrophe */}
                 <h4>{model.charAt(0).toUpperCase() + model.slice(1)}&apos;s Response:</h4>
-                <p>{response}</p>
+                <div className="response-text">
+                  {formatResponse(response)}
+                </div>
               </div>
             ))
           ) : (
