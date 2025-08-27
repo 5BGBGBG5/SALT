@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../PromptAccordion.css'; // Import from parent directory
+import './PromptAccordion.css'; // Corrected: Import from the same directory
 
 type Prompt = {
   id: string | number;
@@ -12,7 +12,8 @@ const PromptAccordion = ({ prompt }: { prompt: Prompt }) => {
 
   // Filter for valid, successful AI responses to display
   const validResponses = Object.entries(prompt.model_responses).filter(
-    ([model, response]) =>
+    // Corrected: Prefixed unused variable with an underscore
+    ([_model, response]) =>
       response &&
       response !== 'No response' &&
       !response.toLowerCase().includes('bad request') &&
@@ -31,7 +32,8 @@ const PromptAccordion = ({ prompt }: { prompt: Prompt }) => {
           {validResponses.length > 0 ? (
             validResponses.map(([model, response]) => (
               <div key={model} className="response-block">
-                <h4>{model.charAt(0).toUpperCase() + model.slice(1)}'s Response:</h4>
+                {/* Corrected: Used &apos; for the apostrophe */}
+                <h4>{model.charAt(0).toUpperCase() + model.slice(1)}&apos;s Response:</h4>
                 <p>{response}</p>
               </div>
             ))
