@@ -75,6 +75,18 @@ export default function AieoReportPage() {
       }
 
       const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      // Debug: Test basic connection
+      console.log('Testing Supabase connection...');
+      try {
+        const { data: testData, error: testError } = await supabase
+          .from('companies')
+          .select('id')
+          .limit(1);
+        console.log('Connection test result:', { data: testData, error: testError });
+      } catch (err) {
+        console.error('Connection test failed:', err);
+      }
 
       try {
         console.log('Starting Supabase queries...');
@@ -136,6 +148,28 @@ export default function AieoReportPage() {
 
         // Fetch Prompts with Responses Data
         console.log('Fetching prompts data...');
+        
+        // First, let's test if we can see the table at all
+        console.log('Testing table access...');
+        const { data: tableTest, error: tableTestError } = await supabase
+          .from('ai_responses')
+          .select('id')
+          .limit(1);
+        
+        console.log('Table access test result:', { data: tableTest, error: tableTestError });
+        
+        if (tableTestError) {
+          console.error('Table access test failed:', tableTestError);
+          // Try to get more info about what tables are available
+          const { data: tables, error: tablesError } = await supabase
+            .from('information_schema.tables')
+            .select('table_name')
+            .eq('table_schema', 'public')
+            .like('table_name', '%ai%');
+          
+          console.log('Available AI tables:', { data: tables, error: tablesError });
+        }
+        
         const { data: promptsData, error: promptsError } = await supabase
           .from('ai_responses')
           .select('id, prompt_text, model_responses, execution_date')
