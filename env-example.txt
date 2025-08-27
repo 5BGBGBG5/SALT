@@ -1,0 +1,7 @@
+# Inecta LinkedIn Data Project (for Post Likes Report)
+NEXT_PUBLIC_SUPABASE_URL=https://ratjciwgkqncadcpjjcw.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_inecta_project_anon_key_here
+
+# AiEO Project (for AiEO Report)
+NEXT_PUBLIC_AIEO_SUPABASE_URL=https://your_aieo_project_id.supabase.co
+NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY=your_aieo_project_anon_key_here

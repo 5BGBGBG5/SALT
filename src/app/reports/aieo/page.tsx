@@ -61,36 +61,39 @@ export default function AieoReportPage() {
       setIsLoading(true);
       setError(null);
 
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      // Use AiEO project credentials for this report
+      const aieoSupabaseUrl = process.env.NEXT_PUBLIC_AIEO_SUPABASE_URL;
+      const aieoSupabaseKey = process.env.NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY;
 
       console.log('Environment Variables Check:');
-      console.log('SUPABASE_URL:', supabaseUrl ? 'SET' : 'NOT SET');
-      console.log('SUPABASE_KEY:', supabaseKey ? 'SET (length: ' + supabaseKey.length + ')' : 'NOT SET');
+      console.log('AIEO_SUPABASE_URL:', aieoSupabaseUrl ? 'SET' : 'NOT SET');
+      console.log('AIEO_SUPABASE_KEY:', aieoSupabaseKey ? 'SET (length: ' + aieoSupabaseKey.length + ')' : 'NOT SET');
 
-      if (!supabaseUrl || !supabaseKey) {
-        setError(`Supabase is not configured. Missing: ${!supabaseUrl ? 'NEXT_PUBLIC_SUPABASE_URL ' : ''}${!supabaseKey ? 'NEXT_PUBLIC_SUPABASE_ANON_KEY' : ''}`);
+      if (!aieoSupabaseUrl || !aieoSupabaseKey) {
+        setError(`AiEO Supabase is not configured. Missing: ${!aieoSupabaseUrl ? 'NEXT_PUBLIC_AIEO_SUPABASE_URL ' : ''}${!aieoSupabaseKey ? 'NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY' : ''}`);
         setIsLoading(false);
         return;
       }
 
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      const supabase = createClient(aieoSupabaseUrl, aieoSupabaseKey);
       
       // Debug: Test basic connection and verify database
-      console.log('Testing Supabase connection...');
-      console.log('Connection URL:', supabaseUrl);
-      console.log('Connection Key length:', supabaseKey ? supabaseKey.length : 'NOT SET');
+      console.log('Testing AiEO Supabase connection...');
+      console.log('Connection URL:', aieoSupabaseUrl);
+      console.log('Connection Key length:', aieoSupabaseKey ? aieoSupabaseKey.length : 'NOT SET');
       
       try {
+        // Test connection with a table that should exist in the AiEO project
         const { data: testData, error: testError } = await supabase
-          .from('companies')
+          .from('ai_responses')
           .select('id')
           .limit(1);
         console.log('Connection test result:', { data: testData, error: testError });
         
-        // Also test if we can see the companies table structure
         if (testData && testData.length > 0) {
-          console.log('Successfully connected to database, companies table has data');
+          console.log('Successfully connected to AiEO database, ai_responses table has data');
+        } else if (testError) {
+          console.log('Connection works but table access issue:', testError.message);
         }
       } catch (err) {
         console.error('Connection test failed:', err);
