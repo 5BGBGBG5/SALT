@@ -6,7 +6,6 @@ import { createClient } from '@supabase/supabase-js';
 import BestRanking from "./components/BestRanking";
 import './BestRanking.css';
 import PromptAccordion from "./components/PromptAccordion";
-import './PromptAccordion.css';
 
 type DashboardMetric = {
   label: string;
