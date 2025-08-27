@@ -26,9 +26,10 @@ type RankingData = {
 };
 
 type PromptData = {
-  id: string;
+  id: string | number;
   prompt_text: string;
   model_responses: { [key: string]: string };
+  execution_date?: string;
 };
 
 type SentimentRawData = {
@@ -137,8 +138,8 @@ export default function AieoReportPage() {
         console.log('Fetching prompts data...');
         const { data: promptsData, error: promptsError } = await supabase
           .from('ai_responses')
-          .select('id, prompt_text, model_responses')
-          .order('timestamp', { ascending: false })
+          .select('id, prompt_text, model_responses, execution_date')
+          .order('execution_date', { ascending: false })
           .limit(10);
         
         console.log('AI Responses query result:', { data: promptsData, error: promptsError });
