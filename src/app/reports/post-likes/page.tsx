@@ -62,6 +62,7 @@ const PostLikesTable = ({
   const [showFilters, setShowFilters] = useState(false);
 
   const filteredAndSortedData = useMemo(() => {
+    // Filter the data based on current filter settings
     const filtered = data.filter(row => {
       // Global search across all fields
       if (filters.global_search) {
