@@ -369,7 +369,11 @@ const PostEngagementTable = ({
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-normal text-sm text-gray-500 max-w-xs">
-                  {row.engagement_type === 'comment' ? row.reaction_type : row.reaction_type}
+                  {row.engagement_type === 'comment'
+                    ? `Comment: "${row.reaction_type}"`
+                    : row.engagement_type === 'like'
+                    ? `Reaction: ${row.reaction_type}`
+                    : `Shared`}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {row.post_url ? (
