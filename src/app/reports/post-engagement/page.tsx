@@ -204,7 +204,7 @@ const PostEngagementTable = ({
             placeholder="Search across all fields..."
             value={filters.global_search}
             onChange={(e) => onFilterChange('global_search', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
           />
         </div>
         <button
@@ -224,7 +224,7 @@ const PostEngagementTable = ({
               <select
                 value={filters.engagement_type}
                 onChange={(e) => onFilterChange('engagement_type', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
               >
                 <option value="all">All Types</option>
                 <option value="like">Likes</option>
@@ -239,7 +239,7 @@ const PostEngagementTable = ({
                 placeholder="Filter by name..."
                 value={filters.engager_name}
                 onChange={(e) => onFilterChange('engager_name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
               />
             </div>
             <div>
@@ -249,7 +249,7 @@ const PostEngagementTable = ({
                 placeholder="Filter by company..."
                 value={filters.engager_company_name}
                 onChange={(e) => onFilterChange('engager_company_name', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
               />
             </div>
             <div>
@@ -259,7 +259,7 @@ const PostEngagementTable = ({
                 placeholder="Filter by job title..."
                 value={filters.engager_job_title}
                 onChange={(e) => onFilterChange('engager_job_title', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
               />
             </div>
             <div>
@@ -269,7 +269,7 @@ const PostEngagementTable = ({
                 placeholder="Filter by post content..."
                 value={filters.post_content}
                 onChange={(e) => onFilterChange('post_content', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
               />
             </div>
             <div>
@@ -279,7 +279,7 @@ const PostEngagementTable = ({
                 placeholder="Filter by industry..."
                 value={filters.engager_company_industry}
                 onChange={(e) => onFilterChange('engager_company_industry', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
               />
             </div>
             <div>
@@ -289,7 +289,7 @@ const PostEngagementTable = ({
                 placeholder="Filter by location..."
                 value={filters.engager_company_location}
                 onChange={(e) => onFilterChange('engager_company_location', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
               />
             </div>
           </div>
@@ -302,7 +302,7 @@ const PostEngagementTable = ({
       </div>
 
       {/* Data Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
+      <div className="bg-white shadow overflow-x-auto sm:rounded-md">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -320,7 +320,7 @@ const PostEngagementTable = ({
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredAndSortedData.map((row, index) => (
               <tr key={index} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-normal min-w-[100px]">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                     row.engagement_type === 'like' ? 'bg-green-100 text-green-800' :
                     row.engagement_type === 'comment' ? 'bg-blue-100 text-blue-800' :
@@ -487,73 +487,75 @@ export default function PostEngagementReportPage() {
   }, [currentPage, itemsPerPage]); // Add currentPage and itemsPerPage to dependencies
 
   return (
-    <>
-      <h2 className="text-2xl font-semibold text-gray-900">Post Engagement Report</h2>
-      <p className="mt-1 text-sm text-gray-600">View all post engagements (likes, comments, shares) with post content, profile information, and company details.</p>
-      
-      <div className="mt-6">
-        <PostEngagementTable 
-          data={postEngagementData} 
-          isLoading={isLoading} 
-          error={error}
-          sortConfig={sortConfig}
-          onSort={handleSort}
-          filters={filters}
-          onFilterChange={handleFilterChange}
-        />
-      </div>
-
-      {/* Pagination Controls */}
-      <div className="flex items-center justify-between mt-4">
-        <div className="flex items-center space-x-2">
-          <label htmlFor="items-per-page" className="text-sm font-medium text-gray-700">Show</label>
-          <select
-            id="items-per-page"
-            value={itemsPerPage}
-            onChange={(e) => handleItemsPerPageChange(e.target.value)}
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
-          >
-            <option value="10">10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
-          <span className="text-sm font-medium text-gray-700">entries</span>
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
+        <h2 className="text-2xl font-semibold text-gray-900">Post Engagement Report</h2>
+        <p className="mt-1 text-sm text-gray-600">View all post engagements (likes, comments, shares) with post content, profile information, and company details.</p>
+        
+        <div className="mt-6">
+          <PostEngagementTable 
+            data={postEngagementData} 
+            isLoading={isLoading} 
+            error={error}
+            sortConfig={sortConfig}
+            onSort={handleSort}
+            filters={filters}
+            onFilterChange={handleFilterChange}
+          />
         </div>
 
-        <nav
-          className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-          aria-label="Pagination"
-        >
-          <button
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-            disabled={currentPage === 1}
-            className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Previous
-          </button>
-          <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-            Page {currentPage} of {Math.ceil(totalCount / itemsPerPage) || 1}
-          </span>
-          <button
-            onClick={() => setCurrentPage(prev => prev + 1)}
-            disabled={currentPage * itemsPerPage >= totalCount}
-            className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Next
-          </button>
-        </nav>
-      </div>
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center space-x-2">
+            <label htmlFor="items-per-page" className="text-sm font-medium text-gray-700">Show</label>
+            <select
+              id="items-per-page"
+              value={itemsPerPage}
+              onChange={(e) => handleItemsPerPageChange(e.target.value)}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+            >
+              <option value="10">10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span className="text-sm font-medium text-gray-700">entries</span>
+          </div>
 
-      {/* Clear Filters Button */}
-      <div className="mt-4">
-        <button
-          onClick={clearAllFilters}
-          className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
-        >
-          Clear All Filters
-        </button>
+          <nav
+            className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+            aria-label="Pagination"
+          >
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+              Page {currentPage} of {Math.ceil(totalCount / itemsPerPage) || 1}
+            </span>
+            <button
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              disabled={currentPage * itemsPerPage >= totalCount}
+              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </nav>
+        </div>
+
+        {/* Clear Filters Button */}
+        <div className="mt-4">
+          <button
+            onClick={clearAllFilters}
+            className="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+          >
+            Clear All Filters
+          </button>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
