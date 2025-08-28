@@ -302,93 +302,95 @@ const PostEngagementTable = ({
       </div>
 
       {/* Data Table */}
-      <div className="bg-white shadow overflow-x-auto sm:rounded-md">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50 sticky top-0 z-10">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-              <SortableHeader columnKey="engager_name">Engager Name</SortableHeader>
-              <SortableHeader columnKey="engager_company_name">Company</SortableHeader>
-              <SortableHeader columnKey="engager_job_title">Job Title</SortableHeader>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profile</th>
-              <SortableHeader columnKey="post_content">Post Content</SortableHeader>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post URL</th>
-              <SortableHeader columnKey="engagement_timestamp">Engaged At</SortableHeader>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredAndSortedData.map((row, index) => (
-              <tr key={index} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-normal min-w-[100px]">
-                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                    row.engagement_type === 'like' ? 'bg-green-100 text-green-800' :
-                    row.engagement_type === 'comment' ? 'bg-blue-100 text-blue-800' :
-                    'bg-purple-100 text-purple-800'
-                  }`}>
-                    {row.engagement_type.charAt(0).toUpperCase() + row.engagement_type.slice(1)}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {row.engager_name || 'N/A'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {row.engager_company_name ? (
-                    row.engager_company_url ? (
-                      <a href={row.engager_company_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
-                        {row.engager_company_name}
+      <div className="bg-white shadow sm:rounded-md">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50 sticky top-0 z-10">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                <SortableHeader columnKey="engager_name">Engager Name</SortableHeader>
+                <SortableHeader columnKey="engager_company_name">Company</SortableHeader>
+                <SortableHeader columnKey="engager_job_title">Job Title</SortableHeader>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profile</th>
+                <SortableHeader columnKey="post_content">Post Content</SortableHeader>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post URL</th>
+                <SortableHeader columnKey="engagement_timestamp">Engaged At</SortableHeader>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filteredAndSortedData.map((row, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-normal min-w-[100px]">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      row.engagement_type === 'like' ? 'bg-green-100 text-green-800' :
+                      row.engagement_type === 'comment' ? 'bg-blue-100 text-blue-800' :
+                      'bg-purple-100 text-purple-800'
+                    }`}>
+                      {row.engagement_type.charAt(0).toUpperCase() + row.engagement_type.slice(1)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {row.engager_name || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {row.engager_company_name ? (
+                      row.engager_company_url ? (
+                        <a href={row.engager_company_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
+                          {row.engager_company_name}
+                        </a>
+                      ) : (
+                        row.engager_company_name
+                      )
+                    ) : (
+                      'N/A'
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {row.engager_job_title || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    {row.linkedin_profile_url ? (
+                      <a href={row.linkedin_profile_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
+                        View Profile
                       </a>
                     ) : (
-                      row.engager_company_name
-                    )
-                  ) : (
-                    'N/A'
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {row.engager_job_title || 'N/A'}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  {row.linkedin_profile_url ? (
-                    <a href={row.linkedin_profile_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
-                      View Profile
-                    </a>
-                  ) : (
-                    'N/A'
-                  )}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900 max-w-xs whitespace-normal">
-                  {row.post_content ? (
-                    <div className="max-w-xs">
-                      {row.post_content}
-                    </div>
-                  ) : (
-                    'N/A'
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-normal text-sm text-gray-500 max-w-xs">
-                  {row.engagement_type === 'comment'
-                    ? `Comment: "${row.reaction_type}"`
-                    : row.engagement_type === 'like'
-                    ? `Reaction: ${row.reaction_type}`
-                    : `Shared`}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {row.post_url ? (
-                    <a href={row.post_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
-                      View Post
-                    </a>
-                  ) : (
-                    'N/A'
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {row.engagement_timestamp ? new Date(row.engagement_timestamp).toLocaleDateString() : 'N/A'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                      'N/A'
+                    )}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-900 max-w-xs whitespace-normal">
+                    {row.post_content ? (
+                      <div className="max-w-xs">
+                        {row.post_content}
+                      </div>
+                    ) : (
+                      'N/A'
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-normal text-sm text-gray-500 max-w-xs">
+                    {row.engagement_type === 'comment'
+                      ? `Comment: "${row.reaction_type}"`
+                      : row.engagement_type === 'like'
+                      ? `Reaction: ${row.reaction_type}`
+                      : `Shared`}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {row.post_url ? (
+                      <a href={row.post_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
+                        View Post
+                      </a>
+                    ) : (
+                      'N/A'
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {row.engagement_timestamp ? new Date(row.engagement_timestamp).toLocaleDateString() : 'N/A'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
