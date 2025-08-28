@@ -315,20 +315,64 @@ CREATE INDEX idx_company_metrics_date ON company_metrics(metric_date DESC);
 -- View: Post engagement with company details
 CREATE OR REPLACE VIEW v_post_engagement AS
 SELECT
-p.id as post_id,
-p.post_url,
-p.post_content,
-p.post_type,
-p.like_count,
-p.comment_count,
-p.repost_count,
-p.post_timestamp,
-p.author_name,
-c.company_name as author_company_name,
-c.company_industry as author_company_industry,
-c.company_size as author_company_size
-FROM posts p
-LEFT JOIN companies c ON p.author_company_id = c.id;
+  pl.post_id,
+  pl.id as engagement_id,
+  'like' as engagement_type,
+  pl.reaction_type,
+  pl.like_timestamp as engagement_timestamp,
+  COALESCE(pl.liker_name, prof.full_name) as engager_name,
+  prof.headline as engager_headline,
+  prof.location as engager_location,
+  COALESCE(pl.liker_job_title, prof.current_job_title) as engager_job_title,
+  COALESCE(pl.liker_company_name, c.company_name) as engager_company_name,
+  c.company_industry as engager_company_industry,
+  c.company_size as engager_company_size,
+  c.headquarter as engager_company_location,
+  c.total_employee_count as engager_company_employees,
+  COALESCE(pl.liker_company_url, c.linkedin_company_url) as engager_company_url,
+  prof.linkedin_profile_url,
+  p.post_url,
+  p.post_content,
+  p.post_type,
+  p.author_name as post_author,
+  p.like_count,
+  p.comment_count,
+  p.repost_count
+FROM post_likes pl
+JOIN posts p ON pl.post_id = p.id
+JOIN profiles prof ON pl.profile_id = prof.id
+LEFT JOIN companies c ON prof.current_company_id = c.id
+
+UNION ALL
+
+SELECT
+  pc.post_id,
+  pc.id as engagement_id,
+  'comment' as engagement_type,
+  pc.comment_text as reaction_type, -- Use comment_text for reaction_type for comments
+  pc.comment_timestamp as engagement_timestamp,
+  COALESCE(pc.commenter_name, prof.full_name) as engager_name,
+  prof.headline as engager_headline,
+  prof.location as engager_location,
+  COALESCE(pc.commenter_job_title, prof.current_job_title) as engager_job_title,
+  COALESCE(pc.commenter_company_name, c.company_name) as engager_company_name,
+  c.company_industry as engager_company_industry,
+  c.company_size as engager_company_size,
+  c.headquarter as engager_company_location,
+  c.total_employee_count as engager_company_employees,
+  COALESCE(pc.commenter_company_url, c.linkedin_company_url) as engager_company_url,
+  prof.linkedin_profile_url,
+  p.post_url,
+  p.post_content,
+  p.post_type,
+  p.author_name as post_author,
+  p.like_count,
+  p.comment_count,
+  p.repost_count
+FROM post_comments pc
+JOIN posts p ON pc.post_id = p.id
+JOIN profiles prof ON pc.profile_id = prof.id
+LEFT JOIN companies c ON prof.current_company_id = c.id;
 
 -- View: Likes with full person and company details
 CREATE OR REPLACE VIEW v_likes_detailed AS

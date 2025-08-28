@@ -312,6 +312,7 @@ const PostEngagementTable = ({
               <SortableHeader columnKey="engager_job_title">Job Title</SortableHeader>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profile</th>
               <SortableHeader columnKey="post_content">Post Content</SortableHeader>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post URL</th>
               <SortableHeader columnKey="engagement_timestamp">Engaged At</SortableHeader>
             </tr>
@@ -366,6 +367,9 @@ const PostEngagementTable = ({
                   ) : (
                     'N/A'
                   )}
+                </td>
+                <td className="px-6 py-4 whitespace-normal text-sm text-gray-500 max-w-xs">
+                  {row.engagement_type === 'comment' ? row.reaction_type : row.reaction_type}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {row.post_url ? (
