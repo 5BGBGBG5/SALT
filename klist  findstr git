@@ -1,0 +1,5 @@
+[33m247e5f6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Force new deployment with ESLint fixes
+[33m25442bb[m Fix ESLint errors: unused variable and prefer-const issues
+[33m9bd90c3[m Add comprehensive filtering and sorting capabilities to Post Likes report
+[33m81a7313[m Fix Competition Heat Map to use AiEO project credentials for v_high_intent_prompt_mentions view
+[33m0baca3e[m Add SQL view for Competition Heat Map report to resolve missing table error

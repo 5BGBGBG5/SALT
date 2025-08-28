@@ -120,8 +120,10 @@ const PostLikesTable = ({
         comparison = aValue.localeCompare(bValue);
       } else if (typeof aValue === 'number' && typeof bValue === 'number') {
         comparison = aValue - bValue;
-      } else if (aValue instanceof Date && bValue instanceof Date) {
-        comparison = aValue.getTime() - bValue.getTime();
+      } else if (typeof aValue === 'string' && typeof bValue === 'string' && 
+                 !isNaN(Date.parse(aValue)) && !isNaN(Date.parse(bValue))) {
+        // Handle date strings by converting to Date objects
+        comparison = new Date(aValue).getTime() - new Date(bValue).getTime();
       } else {
         comparison = String(aValue).localeCompare(String(bValue));
       }
