@@ -62,7 +62,7 @@ const PostLikesTable = ({
   const [showFilters, setShowFilters] = useState(false);
 
   const filteredAndSortedData = useMemo(() => {
-    let filtered = data.filter(row => {
+    const filtered = data.filter(row => {
       // Global search across all fields
       if (filters.global_search) {
         const searchTerm = filters.global_search.toLowerCase();
@@ -105,8 +105,8 @@ const PostLikesTable = ({
       return true;
     });
 
-    // Sorting
-    filtered.sort((a, b) => {
+    // Sorting - create a copy to avoid mutating the original filtered array
+    const sorted = [...filtered].sort((a, b) => {
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
 
@@ -128,7 +128,7 @@ const PostLikesTable = ({
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
 
-    return filtered;
+    return sorted;
   }, [data, filters, sortConfig]);
 
   const SortableHeader = ({ 

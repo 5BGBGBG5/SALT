@@ -12,7 +12,7 @@ const PromptAccordion = ({ prompt }: { prompt: Prompt }) => {
 
   // Filter for valid, successful AI responses to display
   const validResponses = Object.entries(prompt.model_responses).filter(
-    ([model, response]) =>
+    ([_model, response]) =>
       response &&
       response !== 'No response' &&
       !response.toLowerCase().includes('bad request') &&
