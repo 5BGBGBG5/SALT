@@ -14,6 +14,11 @@ export default function ReportsLayout({ children }: { children: React.ReactNode 
               </Link>
             </li>
             <li>
+              <Link href="/reports/post-engagement" className="text-lg font-medium text-indigo-600 hover:text-indigo-700">
+                Post Engagement Report
+              </Link>
+            </li>
+            <li>
               <Link href="/reports/aieo" className="text-lg font-medium text-gray-700 hover:text-indigo-600">
                 AiEO Report
               </Link>

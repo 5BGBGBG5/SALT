@@ -119,7 +119,7 @@ SELECT
 FROM posts p
 JOIN post_likes pl ON p.id = pl.post_id
 LEFT JOIN profiles prof ON pl.profile_id = prof.id
-LEFT JOIN companies c ON prof.company_id = c.id
+LEFT JOIN companies c ON prof.current_company_id = c.id
 
 UNION ALL
 
@@ -166,7 +166,7 @@ SELECT
 FROM posts p
 JOIN post_comments pc ON p.id = pc.post_id
 LEFT JOIN profiles prof ON pc.profile_id = prof.id
-LEFT JOIN companies c ON prof.company_id = c.id
+LEFT JOIN companies c ON prof.current_company_id = c.id
 
 UNION ALL
 
@@ -213,13 +213,10 @@ SELECT
 FROM posts p
 JOIN post_shares ps ON p.id = ps.post_id
 LEFT JOIN profiles prof ON ps.profile_id = prof.id
-LEFT JOIN companies c ON prof.company_id = c.id;
+LEFT JOIN companies c ON prof.current_company_id = c.id;
 
--- Create indexes for the view
-CREATE INDEX idx_v_post_engagement_post_id ON v_post_engagement(post_id);
-CREATE INDEX idx_v_post_engagement_type ON v_post_engagement(engagement_type);
-CREATE INDEX idx_v_post_engagement_timestamp ON v_post_engagement(engagement_timestamp);
-CREATE INDEX idx_v_post_engagement_company ON v_post_engagement(engager_company_name);
+-- Note: Indexes cannot be created on views in PostgreSQL
+-- The underlying tables (post_likes, post_comments, post_shares) already have appropriate indexes
 
 -- =====================================================
 -- 4. SAMPLE DATA INSERTION (for testing)
