@@ -304,7 +304,7 @@ const PostEngagementTable = ({
       {/* Data Table */}
       <div className="bg-white shadow overflow-x-auto sm:rounded-md">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
               <SortableHeader columnKey="engager_name">Engager Name</SortableHeader>
@@ -357,12 +357,10 @@ const PostEngagementTable = ({
                     'N/A'
                   )}
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-900 max-w-xs truncate">
+                <td className="px-6 py-4 text-sm text-gray-900 max-w-xs whitespace-normal">
                   {row.post_content ? (
                     <div className="max-w-xs">
-                      <div className="truncate" title={row.post_content}>
-                        {row.post_content.length > 100 ? `${row.post_content.substring(0, 100)}...` : row.post_content}
-                      </div>
+                      {row.post_content}
                     </div>
                   ) : (
                     'N/A'
