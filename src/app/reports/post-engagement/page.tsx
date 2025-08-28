@@ -414,6 +414,14 @@ export default function PostEngagementReportPage() {
     engagement_type: 'all',
     global_search: ''
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(100); // Default to 100 entries per page
+  const [totalCount, setTotalCount] = useState(0); // Total number of entries without pagination
+
+  const handleItemsPerPageChange = (value: string) => {
+    setItemsPerPage(Number(value));
+    setCurrentPage(1); // Reset to first page when items per page changes
+  };
 
   const handleSort = (key: keyof PostEngagementData) => {
     setSortConfig(prev => ({
@@ -449,12 +457,15 @@ export default function PostEngagementReportPage() {
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
 
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage - 1;
+
       try {
-        const { data, error } = await supabase
+        const { data, error, count } = await supabase
           .from('v_post_engagement')
-          .select('*')
+          .select('*', { count: 'exact' })
           .order('engagement_timestamp', { ascending: false })
-          .range(0, 99);
+          .range(startIndex, endIndex);
 
         if (error) {
           console.error('Supabase error:', error);
@@ -462,6 +473,7 @@ export default function PostEngagementReportPage() {
         } else {
           console.log('Raw data from Supabase (v_post_engagement):', data);
           setPostEngagementData((data as PostEngagementData[]) || []);
+          setTotalCount(count || 0);
         }
       } catch (err) {
         console.error('Fetch error:', err);
@@ -472,7 +484,7 @@ export default function PostEngagementReportPage() {
     };
 
     fetchPostEngagementData();
-  }, []);
+  }, [currentPage, itemsPerPage]); // Add currentPage and itemsPerPage to dependencies
 
   return (
     <>
@@ -489,6 +501,48 @@ export default function PostEngagementReportPage() {
           filters={filters}
           onFilterChange={handleFilterChange}
         />
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="flex items-center justify-between mt-4">
+        <div className="flex items-center space-x-2">
+          <label htmlFor="items-per-page" className="text-sm font-medium text-gray-700">Show</label>
+          <select
+            id="items-per-page"
+            value={itemsPerPage}
+            onChange={(e) => handleItemsPerPageChange(e.target.value)}
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+          >
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+          <span className="text-sm font-medium text-gray-700">entries</span>
+        </div>
+
+        <nav
+          className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+          aria-label="Pagination"
+        >
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+            Page {currentPage} of {Math.ceil(totalCount / itemsPerPage) || 1}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => prev + 1)}
+            disabled={currentPage * itemsPerPage >= totalCount}
+            className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </nav>
       </div>
 
       {/* Clear Filters Button */}
