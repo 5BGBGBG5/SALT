@@ -1,11 +1,20 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+
+interface TableResult {
+  data: any[] | null;
+  error: { message: string } | null;
+}
+
+interface TestResults {
+  [key: string]: TableResult;
+}
 
 export default function SimpleTestPage() {
   const [status, setStatus] = useState<string>('Testing...');
-  const [results, setResults] = useState<any>({});
+  const [results, setResults] = useState<TestResults>({});
 
   useEffect(() => {
     const testBasicAccess = async () => {
@@ -22,7 +31,7 @@ export default function SimpleTestPage() {
         setStatus('Testing basic table access...');
 
         // Test each table individually
-        const tests = {
+        const tests: TestResults = {
           companies: await supabase.from('companies').select('*').limit(1),
           profiles: await supabase.from('profiles').select('*').limit(1),
           posts: await supabase.from('posts').select('*').limit(1),
@@ -56,7 +65,7 @@ export default function SimpleTestPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Table Access Results</h2>
             <div className="space-y-4">
-              {Object.entries(results).map(([tableName, result]: [string, any]) => (
+              {Object.entries(results).map(([tableName, result]: [string, TableResult]) => (
                 <div key={tableName} className="border rounded p-4">
                   <h3 className="font-semibold text-lg">{tableName}</h3>
                   <div className="text-sm">

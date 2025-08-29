@@ -3,10 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
+interface TableInfo {
+  table_name: string;
+}
+
 export default function TestConnectionPage() {
   const [connectionStatus, setConnectionStatus] = useState<string>('Testing...');
   const [errorDetails, setErrorDetails] = useState<string>('');
-  const [tableInfo, setTableInfo] = useState<any>(null);
+  const [tableInfo, setTableInfo] = useState<TableInfo[] | null>(null);
 
   useEffect(() => {
     const testConnection = async () => {
@@ -91,7 +95,7 @@ export default function TestConnectionPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Available Tables</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {tableInfo.map((table: any, index: number) => (
+              {tableInfo.map((table: TableInfo, index: number) => (
                 <div key={index} className="p-3 bg-gray-50 rounded border">
                   <span className="font-mono text-sm">{table.table_name}</span>
                 </div>
@@ -104,7 +108,7 @@ export default function TestConnectionPage() {
           <h2 className="text-xl font-semibold text-blue-800 mb-4">Troubleshooting Steps</h2>
           <ol className="list-decimal list-inside space-y-2 text-blue-700">
             <li>Check that your <code className="bg-blue-100 px-1 rounded">.env.local</code> file has the correct AiEO credentials</li>
-            <li>Verify that you've run the database setup script in your AiEO Supabase project</li>
+            <li>Verify that you&apos;ve run the database setup script in your AiEO Supabase project</li>
             <li>Check that the <code className="bg-blue-100 px-1 rounded">v_post_engagement</code> view exists</li>
             <li>Ensure your AiEO project has the correct RLS policies</li>
             <li>Check the Supabase dashboard for any service issues</li>
