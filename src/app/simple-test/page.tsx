@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 interface TableResult {
-  data: any[] | null;
+  data: Record<string, unknown>[] | null;
   error: { message: string } | null;
 }
 
@@ -65,7 +65,7 @@ export default function SimpleTestPage() {
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Table Access Results</h2>
             <div className="space-y-4">
-              {Object.entries(results).map(([tableName, result]: [string, TableResult]) => (
+              {Object.entries(results).map(([tableName, result]) => (
                 <div key={tableName} className="border rounded p-4">
                   <h3 className="font-semibold text-lg">{tableName}</h3>
                   <div className="text-sm">

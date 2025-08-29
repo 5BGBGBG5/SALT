@@ -7,6 +7,10 @@ interface TableInfo {
   table_name: string;
 }
 
+interface EngagementData {
+  [key: string]: unknown;
+}
+
 export default function TestConnectionPage() {
   const [connectionStatus, setConnectionStatus] = useState<string>('Testing...');
   const [errorDetails, setErrorDetails] = useState<string>('');
@@ -55,7 +59,7 @@ export default function TestConnectionPage() {
         const { data: engagementData, error: engagementError } = await supabase
           .from('v_post_engagement')
           .select('*')
-          .limit(1);
+          .limit(1) as { data: Record<string, unknown>[] | null; error: { message: string } | null };
 
         if (engagementError) {
           setConnectionStatus('⚠️ Connection works but view access failed');
@@ -91,7 +95,7 @@ export default function TestConnectionPage() {
           )}
         </div>
 
-        {tableInfo && (
+        {tableInfo && tableInfo.length > 0 && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-xl font-semibold mb-4">Available Tables</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,0 +1,5 @@
+[33mb0fa2ce[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix TypeScript and ESLint errors for Vercel build
+[33mc97e4f7[m Migrate reports to AiEO Supabase project and add debugging tools
+[33m91a6567[m fix: sticky header not working
+[33m8127c85[m feat: implement table text wrapping and sticky header
+[33m13c4bad[m feat: implement UI improvements for post engagement report
