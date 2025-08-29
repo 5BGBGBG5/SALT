@@ -278,7 +278,75 @@ CREATE INDEX idx_post_likes_timestamp ON post_likes(like_timestamp);
 CREATE INDEX idx_post_likes_member_id ON post_likes(member_id);
 
 -- =====================================================
--- 5. COMPANY_METRICS TABLE (Time-series data)
+-- 5. POST_COMMENTS TABLE
+-- =====================================================
+DROP TABLE IF EXISTS post_comments CASCADE;
+
+CREATE TABLE post_comments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+    profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    member_id BIGINT, -- LinkedIn member ID
+    comment_text TEXT,
+    comment_timestamp TIMESTAMPTZ,
+    
+    -- Denormalized fields for performance
+    commenter_name VARCHAR(500),
+    commenter_occupation VARCHAR(500),
+    commenter_degree VARCHAR(50),
+    commenter_company_name TEXT NULL,
+    commenter_company_url TEXT NULL,
+    commenter_job_title TEXT NULL,
+    company_source TEXT NULL,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    -- Ensure one comment per person per post (optional constraint)
+    UNIQUE(post_id, profile_id)
+);
+
+-- Create indexes for post_comments
+CREATE INDEX idx_post_comments_post ON post_comments(post_id);
+CREATE INDEX idx_post_comments_profile ON post_comments(profile_id);
+CREATE INDEX idx_post_comments_timestamp ON post_comments(comment_timestamp);
+CREATE INDEX idx_post_comments_member_id ON post_comments(member_id);
+
+-- =====================================================
+-- 6. POST_SHARES TABLE
+-- =====================================================
+DROP TABLE IF EXISTS post_shares CASCADE;
+
+CREATE TABLE post_shares (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+    profile_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+    member_id BIGINT, -- LinkedIn member ID
+    share_timestamp TIMESTAMPTZ,
+    share_text TEXT NULL, -- Optional text added when sharing
+    
+    -- Denormalized fields for performance
+    sharer_name VARCHAR(500),
+    sharer_occupation VARCHAR(500),
+    sharer_degree VARCHAR(50),
+    sharer_company_name TEXT NULL,
+    sharer_company_url TEXT NULL,
+    sharer_job_title TEXT NULL,
+    company_source TEXT NULL,
+    
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    
+    -- Ensure one share per person per post (optional constraint)
+    UNIQUE(post_id, profile_id)
+);
+
+-- Create indexes for post_shares
+CREATE INDEX idx_post_shares_post ON post_shares(post_id);
+CREATE INDEX idx_post_shares_profile ON post_shares(profile_id);
+CREATE INDEX idx_post_shares_timestamp ON post_shares(share_timestamp);
+CREATE INDEX idx_post_shares_member_id ON post_shares(member_id);
+
+-- =====================================================
+-- 7. COMPANY_METRICS TABLE (Time-series data)
 -- =====================================================
 DROP TABLE IF EXISTS company_metrics CASCADE;
 
@@ -309,7 +377,7 @@ CREATE INDEX idx_company_metrics_company ON company_metrics(company_id);
 CREATE INDEX idx_company_metrics_date ON company_metrics(metric_date DESC);
 
 -- =====================================================
--- 6. HELPER VIEWS
+-- 8. HELPER VIEWS
 -- =====================================================
 
 -- View: Post engagement with company details
@@ -494,7 +562,7 @@ FROM companies
 WHERE total_employee_count IS NOT NULL;
 
 -- =====================================================
--- 7. HELPER FUNCTIONS
+-- 9. HELPER FUNCTIONS
 -- =====================================================
 
 -- Function to update the updated_at timestamp
@@ -549,7 +617,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- =====================================================
--- 8. ROW LEVEL SECURITY (Optional - for Supabase)
+-- 10. ROW LEVEL SECURITY (Optional - for Supabase)
 -- =====================================================
 
 -- Enable RLS
@@ -557,6 +625,8 @@ ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE post_likes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE post_comments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE post_shares ENABLE ROW LEVEL SECURITY;
 ALTER TABLE company_metrics ENABLE ROW LEVEL SECURITY;
 
 -- Create policies (adjust based on your needs)
@@ -573,11 +643,17 @@ FOR SELECT USING (true);
 CREATE POLICY "Enable read access for all users" ON post_likes
 FOR SELECT USING (true);
 
+CREATE POLICY "Enable read access for all users" ON post_comments
+FOR SELECT USING (true);
+
+CREATE POLICY "Enable read access for all users" ON post_shares
+FOR SELECT USING (true);
+
 CREATE POLICY "Enable read access for all users" ON company_metrics
 FOR SELECT USING (true);
 
 -- =====================================================
--- 9. SAMPLE QUERIES
+-- 11. SAMPLE QUERIES
 -- =====================================================
 
 /*

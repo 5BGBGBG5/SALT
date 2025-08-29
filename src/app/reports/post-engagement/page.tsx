@@ -452,15 +452,26 @@ export default function PostEngagementReportPage() {
       setIsLoading(true);
       setError(null);
 
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
+      // Use AiEO project credentials for this report
+      const aieoSupabaseUrl = process.env.NEXT_PUBLIC_AIEO_SUPABASE_URL;
+      const aieoSupabaseKey = process.env.NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY;
+
+      if (!aieoSupabaseUrl || !aieoSupabaseKey) {
+        setError('AiEO Supabase is not configured. Set NEXT_PUBLIC_AIEO_SUPABASE_URL and NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY.');
+        setIsLoading(false);
+        return;
+      }
+
+      const supabase = createClient(aieoSupabaseUrl, aieoSupabaseKey);
 
       const startIndex = (currentPage - 1) * itemsPerPage;
       const endIndex = startIndex + itemsPerPage - 1;
 
       try {
+        console.log('Attempting to connect to AiEO Supabase...');
+        console.log('URL:', aieoSupabaseUrl);
+        console.log('Key length:', aieoSupabaseKey ? aieoSupabaseKey.length : 'NOT SET');
+        
         const { data, error, count } = await supabase
           .from('v_post_engagement')
           .select('*', { count: 'exact' })
@@ -469,15 +480,16 @@ export default function PostEngagementReportPage() {
 
         if (error) {
           console.error('Supabase error:', error);
-          setError(error.message);
+          setError(`Database error: ${error.message} (Code: ${error.code})`);
         } else {
-          console.log('Raw data from Supabase (v_post_engagement):', data);
+          console.log('Raw data from AiEO Supabase (v_post_engagement):', data);
           setPostEngagementData((data as PostEngagementData[]) || []);
           setTotalCount(count || 0);
         }
       } catch (err) {
         console.error('Fetch error:', err);
-        setError('Failed to fetch data');
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        setError(`Network error: ${errorMessage}`);
       } finally {
         setIsLoading(false);
       }
@@ -489,8 +501,8 @@ export default function PostEngagementReportPage() {
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-2xl font-semibold text-gray-900">Post Engagement Report</h2>
-        <p className="mt-1 text-sm text-gray-600">View all post engagements (likes, comments, shares) with post content, profile information, and company details.</p>
+        <h2 className="text-2xl font-semibold text-gray-900">Post Engagement Report (AiEO Project)</h2>
+        <p className="mt-1 text-sm text-gray-600">View all post engagements (likes, comments, shares) with post content, profile information, and company details from the AiEO LinkedIn Data project.</p>
         
         <div className="mt-6">
           <PostEngagementTable 

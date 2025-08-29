@@ -391,16 +391,17 @@ export default function PostLikesReportPage() {
       setIsLoading(true);
       setError(null);
 
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      // Use AiEO project credentials for this report
+      const aieoSupabaseUrl = process.env.NEXT_PUBLIC_AIEO_SUPABASE_URL;
+      const aieoSupabaseKey = process.env.NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY;
 
-      if (!supabaseUrl || !supabaseKey) {
-        setError('Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+      if (!aieoSupabaseUrl || !aieoSupabaseKey) {
+        setError('AiEO Supabase is not configured. Set NEXT_PUBLIC_AIEO_SUPABASE_URL and NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY.');
         setIsLoading(false);
         return;
       }
 
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      const supabase = createClient(aieoSupabaseUrl, aieoSupabaseKey);
 
       try {
         const { data, error } = await supabase
@@ -413,7 +414,7 @@ export default function PostLikesReportPage() {
           console.error('Error fetching data from Supabase:', error);
           setError(error.message);
         } else {
-          console.log('Raw data from Supabase (v_likes_detailed):', data);
+          console.log('Raw data from AiEO Supabase (v_likes_detailed):', data);
           setPostLikesData((data as PostLikeData[]) || []);
         }
       } catch (err) {
@@ -429,8 +430,8 @@ export default function PostLikesReportPage() {
 
   return (
     <>
-      <h2 className="text-2xl font-semibold text-gray-900">Post Likes Report</h2>
-      <p className="mt-1 text-sm text-gray-600">View all post likes with post content, profile information, and company details.</p>
+      <h2 className="text-2xl font-semibold text-gray-900">Post Likes Report (AiEO Project)</h2>
+      <p className="mt-1 text-sm text-gray-600">View all post likes with post content, profile information, and company details from the AiEO LinkedIn Data project.</p>
       
       <div className="mt-6">
         <PostLikesTable 
