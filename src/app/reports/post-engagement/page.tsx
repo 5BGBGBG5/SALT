@@ -3,6 +3,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 type PostEngagementData = {
   // Post information
   post_id: string | null;

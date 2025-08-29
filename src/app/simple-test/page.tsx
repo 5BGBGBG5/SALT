@@ -3,6 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+
 interface TableResult {
   data: Record<string, unknown>[] | null;
   error: { message: string } | null;
