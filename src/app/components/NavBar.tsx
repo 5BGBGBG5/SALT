@@ -42,7 +42,7 @@ export default function NavBar() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-8">
             <Link href="/" className="text-xl font-semibold text-gray-900">
-              Inecta Marketing
+              SALT — inecta
             </Link>
             
             {user && (

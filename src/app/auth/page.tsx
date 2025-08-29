@@ -182,7 +182,7 @@ export default function AuthPage() {
             {isLogin ? 'Sign in to your account' : 'Create your account'}
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Inecta Marketing Dashboard
+            SALT — inecta
             <br />
             <span className="text-xs text-gray-500">(@inecta.com emails only)</span>
           </p>

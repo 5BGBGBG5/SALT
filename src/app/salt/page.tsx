@@ -1,9 +1,9 @@
 import React from 'react';
-import CommandPalette from './components/CommandPalette';
-import PoweredBySALT from './components/PoweredBySALT';
-import ProtectedRoute from './components/ProtectedRoute';
+import CommandPalette from '../components/CommandPalette';
+import PoweredBySALT from '../components/PoweredBySALT';
+import ProtectedRoute from '../components/ProtectedRoute';
 
-export default function HomePage() {
+export default function SaltPage() {
   return (
     <ProtectedRoute>
       <>

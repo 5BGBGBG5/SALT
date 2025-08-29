@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./contexts/AuthContext";
-import NavBar from "./components/NavBar";
+import Header from "./components/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Inecta Marketing Dashboard",
-  description: "Marketing analytics and reporting dashboard for Inecta",
+  title: "SALT — inecta",
+  description: "Sales & Analytics Lab for Team",
 };
 
 export default function RootLayout({
@@ -27,11 +27,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-emerald-900/10`}
       >
         <AuthProvider>
-          <NavBar />
-          {children}
+          <Header />
+          <main>{children}</main>
         </AuthProvider>
       </body>
     </html>
