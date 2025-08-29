@@ -13,22 +13,16 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
 
-  // This effect runs once on the client after the component mounts
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // This effect handles the redirection logic
   useEffect(() => {
-    // We wait until the component has mounted (isClient) AND
-    // the auth state is no longer loading before we check for a user.
     if (isClient && !loading && !user) {
       router.push('/auth');
     }
   }, [user, loading, router, isClient]);
 
-  // While loading the auth state or before the client has mounted,
-  // we show a full-page loader. This prevents any flash of protected content.
   if (loading || !isClient || !user) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -40,6 +34,5 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Only if all checks pass, render the protected content.
   return <>{children}</>;
 }
