@@ -73,7 +73,7 @@ export default function AuthPage() {
           setMessage('Check your email for the confirmation link!');
         }
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
@@ -100,7 +100,7 @@ export default function AuthPage() {
         setMessage('Password reset email sent! Check your inbox.');
         setShowForgotPassword(false);
       }
-    } catch (err) {
+    } catch {
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);

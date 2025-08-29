@@ -7,10 +7,6 @@ interface TableInfo {
   table_name: string;
 }
 
-interface EngagementData {
-  [key: string]: unknown;
-}
-
 export default function TestConnectionPage() {
   const [connectionStatus, setConnectionStatus] = useState<string>('Testing...');
   const [errorDetails, setErrorDetails] = useState<string>('');
