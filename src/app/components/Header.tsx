@@ -36,9 +36,9 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center justify-between px-4 md:px-6 bg-emerald-800 text-white border-b border-white/10">
-      {/* Left: SALT logo + lockup + navigation */}
-      <div className="flex items-center gap-6">
+    <header className="sticky top-0 z-50 flex h-14 items-center px-4 md:px-6 bg-emerald-800 text-white border-b border-white/10">
+      {/* Left: SALT logo + lockup */}
+      <div className="flex items-center">
         <Link href="/salt" className="group flex items-center gap-2" aria-label="SALT home">
           {/* Use the exact provided SVG */}
           <img
@@ -58,21 +58,12 @@ export default function Header() {
             </span>
           </div>
         </Link>
+      </div>
 
-        {/* Navigation Menu */}
+      {/* Center: Navigation Menu */}
+      <div className="flex-1 flex justify-center">
         {user && (
-          <nav className="flex items-center space-x-1">
-            <Link 
-              href="/" 
-              className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                pathname === '/' || pathname === '/salt'
-                  ? 'bg-white/20 text-white' 
-                  : 'text-white/80 hover:text-white hover:bg-white/10'
-              }`}
-            >
-              Home
-            </Link>
-            
+          <nav className="flex items-center">
             {/* Reports Dropdown */}
             <div className="relative" ref={dropdownRef}>
               <button
@@ -88,7 +79,7 @@ export default function Header() {
               </button>
               
               {isReportsOpen && (
-                <div className="absolute top-full left-0 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                   {reportLinks.map((report) => (
                     <Link
                       key={report.href}
