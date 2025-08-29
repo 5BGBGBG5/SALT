@@ -29,17 +29,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Use the Inecta project for authentication
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase environment variables are not configured');
-  }
-  
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  // Initialize supabase client
+  const getSupabaseClient = () => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase environment variables are not configured');
+    }
+    
+    return createClient(supabaseUrl, supabaseKey);
+  };
 
   useEffect(() => {
+    const supabase = getSupabaseClient();
+    
     // Get initial session
     const getInitialSession = async () => {
       const { data: { session: initialSession } } = await supabase.auth.getSession();
@@ -60,9 +64,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
+    const supabase = getSupabaseClient();
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -71,6 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string) => {
+    const supabase = getSupabaseClient();
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -79,10 +85,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    const supabase = getSupabaseClient();
     await supabase.auth.signOut();
   };
 
   const resetPassword = async (email: string) => {
+    const supabase = getSupabaseClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/reset-password`,
     });

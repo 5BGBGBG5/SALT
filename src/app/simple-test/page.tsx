@@ -22,11 +22,6 @@ export default function SimpleTestPage() {
   useEffect(() => {
     const testBasicAccess = async () => {
       try {
-        // Skip during SSR/build time
-        if (typeof window === 'undefined') {
-          return;
-        }
-        
         const aieoSupabaseUrl = process.env.NEXT_PUBLIC_AIEO_SUPABASE_URL;
         const aieoSupabaseKey = process.env.NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY;
 

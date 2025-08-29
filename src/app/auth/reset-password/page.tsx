@@ -17,15 +17,17 @@ export default function ResetPasswordPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Use the Inecta project for authentication
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase environment variables are not configured');
-  }
-  
-  const supabase = createClient(supabaseUrl, supabaseKey);
+  // Initialize supabase client
+  const getSupabaseClient = () => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Supabase environment variables are not configured');
+    }
+    
+    return createClient(supabaseUrl, supabaseKey);
+  };
 
   useEffect(() => {
     // Check if we have the required tokens in the URL
@@ -58,6 +60,7 @@ export default function ResetPasswordPage() {
     }
 
     try {
+      const supabase = getSupabaseClient();
       const { error } = await supabase.auth.updateUser({
         password: password
       });

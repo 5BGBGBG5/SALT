@@ -18,11 +18,6 @@ export default function TestConnectionPage() {
   useEffect(() => {
     const testConnection = async () => {
       try {
-        // Skip during SSR/build time
-        if (typeof window === 'undefined') {
-          return;
-        }
-        
         // Check environment variables
         const aieoSupabaseUrl = process.env.NEXT_PUBLIC_AIEO_SUPABASE_URL;
         const aieoSupabaseKey = process.env.NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY;
