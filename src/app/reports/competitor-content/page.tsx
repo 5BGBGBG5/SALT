@@ -55,7 +55,7 @@ interface PostIdea {
   title: string;
   hook: string | null;
   confidence_score: number;
-  status: 'draft' | 'approved' | 'rejected' | 'published';
+  status: 'draft' | 'approved' | 'rejected' | 'published' | 'pending';
   week_of_date: string; // YYYY-MM-DD
   outline: string | null;
   angle: string | null;
