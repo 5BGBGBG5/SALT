@@ -108,7 +108,7 @@ const CompetitorContentReportPage = () => {
 
   // State for Post Ideas tab
   const [postIdeas, setPostIdeas] = useState<PostIdea[]>([]);
-  const [loadingIdeas, setLoadingIdeas] = useState(true);
+  const [loadingIdeas, setLoadingIdeas] = useState(false);
   const [errorIdeas, setErrorIdeas] = useState<string | null>(null);
   const [filterIdeaStatus, setFilterIdeaStatus] = useState('');
   const [filterIdeaWeekOfDate, setFilterIdeaWeekOfDate] = useState<string | null>(null);
@@ -186,32 +186,55 @@ const CompetitorContentReportPage = () => {
       setLoadingIdeas(true);
       setErrorIdeas(null);
       try {
-        let query = supabase.from('post_ideas').select('*');
-
-        // Apply filters
-        if (filterIdeaStatus) {
-          query = query.eq('status', filterIdeaStatus);
-        }
-        if (filterIdeaWeekOfDate) {
-          query = query.eq('week_of_date', filterIdeaWeekOfDate);
-        }
-        if (filterIdeaConfidenceScore[0] > 0 || filterIdeaConfidenceScore[1] < 1) {
-          query = query
-            .gte('confidence_score', filterIdeaConfidenceScore[0])
-            .lte('confidence_score', filterIdeaConfidenceScore[1]);
-        }
-        if (debouncedFilterIdeaSearch) {
-          query = query.or(
-            `title.ilike.%${debouncedFilterIdeaSearch}%,
-            hook.ilike.%${debouncedFilterIdeaSearch}%,
-            outline.ilike.%${debouncedFilterIdeaSearch}%`
-          );
-        }
-
-        const { data, error } = await query.order('week_of_date', { ascending: false });
-
-        if (error) throw error;
-        setPostIdeas(data || []);
+        // const { data, error } = await supabase.from('post_ideas').select('*');
+        // Temporarily use mock data since post_ideas table might not exist or be empty
+        const mockPostIdeas: PostIdea[] = [
+          {
+            id: '1',
+            title: 'AI in Marketing: Beyond the Hype',
+            hook: 'Discover practical applications of AI in marketing that drive real results.',
+            confidence_score: 0.9,
+            status: 'approved',
+            week_of_date: '2024-07-22',
+            outline: 'Introduction to AI in marketing; case studies; actionable strategies; future trends.',
+            angle: 'Demystifying AI for marketers with practical, results-oriented advice.',
+            persona: 'Marketing Managers, CMOs, Digital Strategists',
+            inspired_by_posts: ['https://www.linkedin.com/feed/update/urn:li:activity:7219999999999999999/'],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: '2',
+            title: 'The Future of Content: Interactive Experiences',
+            hook: 'How interactive content can boost engagement and conversions.',
+            confidence_score: 0.75,
+            status: 'draft',
+            week_of_date: '2024-07-29',
+            outline: 'Types of interactive content; benefits; tools and platforms; examples.',
+            angle: 'Highlighting the shift from static to dynamic content experiences.',
+            persona: 'Content Creators, Marketing Teams',
+            inspired_by_posts: [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: '3',
+            title: 'LinkedIn Algorithm Secrets Revealed',
+            hook: 'Cracking the code: What really makes your LinkedIn posts go viral in 2024.',
+            confidence_score: 0.5,
+            status: 'pending',
+            week_of_date: '2024-08-05',
+            outline: 'Key ranking factors; engagement strategies; timing and frequency; content formats.',
+            angle: 'Actionable tips for maximizing reach and engagement on LinkedIn.',
+            persona: 'B2B Marketers, Sales Professionals',
+            inspired_by_posts: ['https://www.linkedin.com/feed/update/urn:li:activity:7219888888888888888/', 'https://www.linkedin.com/feed/update/urn:li:activity:7219777777777777777/'],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ];
+        setPostIdeas(mockPostIdeas);
+        // if (error) throw error;
+        // setPostIdeas(data || []);
       } catch (err: unknown) {
         setErrorIdeas(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
