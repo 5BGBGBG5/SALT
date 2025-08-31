@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { User, Search, CalendarDays } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -326,459 +327,506 @@ const CompetitorContentReportPage = () => {
   const ideaStatuses = ['draft', 'approved', 'rejected', 'published'];
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Competitor Content Report</h1>
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-6">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 className="text-4xl font-extrabold text-gray-800 dark:text-white mb-8">
+          Competitor Content Report
+        </h1>
 
-      <div className="border-b border-gray-200 mb-4">
-        <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-          <button
-            onClick={() => setActiveTab('posts')}
-            className={`${
-              activeTab === 'posts'
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-          >
-            Competitor Posts
-          </button>
-          <button
-            onClick={() => setActiveTab('ideas')}
-            className={`${
-              activeTab === 'ideas'
-                ? 'border-indigo-500 text-indigo-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-          >
-            Post Ideas
-          </button>
-        </nav>
-      </div>
+        <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+          <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+            <button
+              onClick={() => setActiveTab('posts')}
+              className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out ${
+                activeTab === 'posts'
+                  ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500'
+              }`}
+            >
+              Competitor Posts
+            </button>
+            <button
+              onClick={() => setActiveTab('ideas')}
+              className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out ${
+                activeTab === 'ideas'
+                  ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500'
+              }`}
+            >
+              Post Ideas
+            </button>
+          </nav>
+        </div>
 
-      <div>
-        {activeTab === 'posts' && (
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Competitor Posts</h2>
+        <div>
+          {activeTab === 'posts' && (
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Competitor Posts</h2>
 
-            {/* Filter Controls */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <div>
-                <label htmlFor="author-search" className="block text-sm font-medium text-gray-700">Author Name</label>
-                <input
-                  type="text"
-                  id="author-search"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={filterAuthor}
-                  onChange={(e) => setFilterAuthor(e.target.value)}
-                  placeholder="Search by author"
-                />
-              </div>
-              <div>
-                <label htmlFor="content-search" className="block text-sm font-medium text-gray-700">Post Content</label>
-                <input
-                  type="text"
-                  id="content-search"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={filterContent}
-                  onChange={(e) => setFilterContent(e.target.value)}
-                  placeholder="Search by content"
-                />
-              </div>
-              <div>
-                <label htmlFor="post-type-dropdown" className="block text-sm font-medium text-gray-700">Post Type</label>
-                <select
-                  id="post-type-dropdown"
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                  value={filterPostType}
-                  onChange={(e) => setFilterPostType(e.target.value)}
-                >
-                  <option value="">All Types</option>
-                  {postTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="min-likes" className="block text-sm font-medium text-gray-700">Min Likes: {filterMinLikes}</label>
-                <input
-                  type="range"
-                  id="min-likes"
-                  min="0"
-                  max="1000"
-                  value={filterMinLikes}
-                  onChange={(e) => setFilterMinLikes(Number(e.target.value))}
-                  className="mt-1 block w-full"
-                />
-              </div>
-              <div>
-                <label htmlFor="min-comments" className="block text-sm font-medium text-gray-700">Min Comments: {filterMinComments}</label>
-                <input
-                  type="range"
-                  id="min-comments"
-                  min="0"
-                  max="500"
-                  value={filterMinComments}
-                  onChange={(e) => setFilterMinComments(Number(e.target.value))}
-                  className="mt-1 block w-full"
-                />
-              </div>
-              <div>
-                <label htmlFor="min-reposts" className="block text-sm font-medium text-gray-700">Min Reposts: {filterMinReposts}</label>
-                <input
-                  type="range"
-                  id="min-reposts"
-                  min="0"
-                  max="200"
-                  value={filterMinReposts}
-                  onChange={(e) => setFilterMinReposts(Number(e.target.value))}
-                  className="mt-1 block w-full"
-                />
-              </div>
-              <div>
-                <label htmlFor="start-date" className="block text-sm font-medium text-gray-700">Start Date</label>
-                <input
-                  type="date"
-                  id="start-date"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={filterStartDate || ''}
-                  onChange={(e) => setFilterStartDate(e.target.value || null)}
-                />
-              </div>
-              <div>
-                <label htmlFor="end-date" className="block text-sm font-medium text-gray-700">End Date</label>
-                <input
-                  type="date"
-                  id="end-date"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={filterEndDate || ''}
-                  onChange={(e) => setFilterEndDate(e.target.value || null)}
-                />
-              </div>
-            </div>
-
-
-            {error && <p className="text-red-500">Error: {error}</p>}
-            {loading ? (
-              <p>Loading posts...</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => requestSort('author_name')}
-                      >
-                        Author Name
-                      </th>
-                      <th
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => requestSort('post_content')}
-                      >
-                        Post Content
-                      </th>
-                      <th
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => requestSort('post_type')}
-                      >
-                        Post Type
-                      </th>
-                      <th
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => requestSort('like_count')}
-                      >
-                        Likes
-                      </th>
-                      <th
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => requestSort('comment_count')}
-                      >
-                        Comments
-                      </th>
-                      <th
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => requestSort('repost_count')}
-                      >
-                        Reposts
-                      </th>
-                      <th
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                        onClick={() => requestSort('post_timestamp')}
-                      >
-                        Post Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {sortedPosts.map((post) => (
-                      <tr key={post.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {post.author_url ? (
-                            <a href={post.author_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
-                              {post.author_name || 'Unknown Author'}
-                            </a>
-                          ) : (
-                            post.author_name || 'Unknown Author'
-                          )}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          {post.post_content && post.post_content.length > 100 ? (
-                            <PostContentTruncated content={post.post_content} />
-                          ) : (
-                            post.post_content
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{post.post_type}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{post.like_count}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{post.comment_count}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{post.repost_count}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {post.post_timestamp ? new Date(post.post_timestamp).toLocaleDateString() : 'N/A'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          {post.post_url && (
-                            <a href={post.post_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
-                              View Post
-                            </a>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {/* Pagination Controls */}
-                <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                  <div className="flex-1 flex justify-between sm:hidden">
-                    <button
-                      onClick={() => paginate(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      Previous
-                    </button>
-                    <button
-                      onClick={() => paginate(currentPage + 1)}
-                      disabled={currentPage * postsPerPage >= totalPosts}
-                      className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      Next
-                    </button>
-                  </div>
-                  <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm text-gray-700">
-                        Showing <span className="font-medium">{(currentPage - 1) * postsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * postsPerPage, totalPosts)}</span> of {' '}
-                        <span className="font-medium">{totalPosts}</span> results
-                      </p>
+              {/* Filter Controls */}
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md mb-6 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Filter Competitor Posts</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  <div className="relative">
+                    <label htmlFor="author-search" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Author Name</label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <User className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                      </div>
+                      <input
+                        type="text"
+                        id="author-search"
+                        className="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                        value={filterAuthor}
+                        onChange={(e) => setFilterAuthor(e.target.value)}
+                        placeholder="Search by author"
+                      />
                     </div>
-                    <div>
-                      <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  </div>
+                  <div className="relative">
+                    <label htmlFor="content-search" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Post Content</label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                      </div>
+                      <input
+                        type="text"
+                        id="content-search"
+                        className="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                        value={filterContent}
+                        onChange={(e) => setFilterContent(e.target.value)}
+                        placeholder="Search by content"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label htmlFor="post-type-dropdown" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Post Type</label>
+                    <select
+                      id="post-type-dropdown"
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                      value={filterPostType}
+                      onChange={(e) => setFilterPostType(e.target.value)}
+                    >
+                      <option value="">All Types</option>
+                      {postTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="min-likes" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Min Likes: <span className="font-semibold">{filterMinLikes}</span></label>
+                    <input
+                      type="range"
+                      id="min-likes"
+                      min="0"
+                      max="1000"
+                      value={filterMinLikes}
+                      onChange={(e) => setFilterMinLikes(Number(e.target.value))}
+                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-indigo-600 dark:bg-gray-700 dark:accent-indigo-400"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="min-comments" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Min Comments: <span className="font-semibold">{filterMinComments}</span></label>
+                    <input
+                      type="range"
+                      id="min-comments"
+                      min="0"
+                      max="500"
+                      value={filterMinComments}
+                      onChange={(e) => setFilterMinComments(Number(e.target.value))}
+                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-indigo-600 dark:bg-gray-700 dark:accent-indigo-400"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="min-reposts" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Min Reposts: <span className="font-semibold">{filterMinReposts}</span></label>
+                    <input
+                      type="range"
+                      id="min-reposts"
+                      min="0"
+                      max="200"
+                      value={filterMinReposts}
+                      onChange={(e) => setFilterMinReposts(Number(e.target.value))}
+                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-indigo-600 dark:bg-gray-700 dark:accent-indigo-400"
+                    />
+                  </div>
+                  <div className="relative">
+                    <label htmlFor="start-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <CalendarDays className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                      </div>
+                      <input
+                        type="date"
+                        id="start-date"
+                        className="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                        value={filterStartDate || ''}
+                        onChange={(e) => setFilterStartDate(e.target.value || null)}
+                      />
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <label htmlFor="end-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <CalendarDays className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                      </div>
+                      <input
+                        type="date"
+                        id="end-date"
+                        className="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                        value={filterEndDate || ''}
+                        onChange={(e) => setFilterEndDate(e.target.value || null)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
+              {error && <p className="text-red-500">Error: {error}</p>}
+              {loading ? (
+                <p>Loading posts...</p>
+              ) : (
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Competitor Posts Data</h3>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gray-100 dark:bg-slate-700">
+                        <tr>
+                          <th
+                            className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider cursor-pointer"
+                            onClick={() => requestSort('author_name')}
+                          >
+                            Author Name
+                          </th>
+                          <th
+                            className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider cursor-pointer"
+                            onClick={() => requestSort('post_content')}
+                          >
+                            Post Content
+                          </th>
+                          <th
+                            className="px-6 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider cursor-pointer"
+                            onClick={() => requestSort('post_type')}
+                          >
+                            Post Type
+                          </th>
+                          <th
+                            className="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider cursor-pointer"
+                            onClick={() => requestSort('like_count')}
+                          >
+                            Likes
+                          </th>
+                          <th
+                            className="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider cursor-pointer"
+                            onClick={() => requestSort('comment_count')}
+                          >
+                            Comments
+                          </th>
+                          <th
+                            className="px-6 py-3 text-right text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider cursor-pointer"
+                            onClick={() => requestSort('repost_count')}
+                          >
+                            Reposts
+                          </th>
+                          <th
+                            className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider cursor-pointer"
+                            onClick={() => requestSort('post_timestamp')}
+                          >
+                            Post Date
+                          </th>
+                          <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {sortedPosts.map((post, index) => (
+                          <tr key={post.id} className={index % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-gray-50 dark:bg-slate-700'}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                              {post.author_url ? (
+                                <a href={post.author_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
+                                  {post.author_name || 'Unknown Author'}
+                                </a>
+                              ) : (
+                                post.author_name || 'Unknown Author'
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 text-left">
+                              {post.post_content && post.post_content.length > 100 ? (
+                                <PostContentTruncated content={post.post_content} />
+                              ) : (
+                                post.post_content
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-center">{post.post_type || '—'}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">{post.like_count}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">{post.comment_count}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-right">{post.repost_count}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-left">
+                              {post.post_timestamp ? new Date(post.post_timestamp).toLocaleDateString() : '—'}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                              {post.post_url && (
+                                <a
+                                  href={post.post_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                                >
+                                  View Post
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 ml-2">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                                  </svg>
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {/* Pagination Controls */}
+                    <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
+                      <div className="flex-1 flex justify-between sm:hidden">
                         <button
                           onClick={() => paginate(currentPage - 1)}
                           disabled={currentPage === 1}
-                          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-600"
                         >
                           Previous
                         </button>
-                        {pageNumbers.map((number) => (
-                          <button
-                            key={number}
-                            onClick={() => paginate(number)}
-                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                              number === currentPage
-                                ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
-                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                            }`}
-                          >
-                            {number}
-                          </button>
-                        ))}
                         <button
                           onClick={() => paginate(currentPage + 1)}
                           disabled={currentPage * postsPerPage >= totalPosts}
-                          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-600"
                         >
                           Next
                         </button>
-                      </nav>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-        {activeTab === 'ideas' && (
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Post Ideas</h2>
-            
-            {/* Filter Controls for Post Ideas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-              <div>
-                <label htmlFor="idea-status-dropdown" className="block text-sm font-medium text-gray-700">Status</label>
-                <select
-                  id="idea-status-dropdown"
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                  value={filterIdeaStatus}
-                  onChange={(e) => setFilterIdeaStatus(e.target.value)}
-                >
-                  <option value="">All Statuses</option>
-                  {ideaStatuses.map((status) => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor="idea-week-of-date" className="block text-sm font-medium text-gray-700">Week of Date</label>
-                <input
-                  type="date"
-                  id="idea-week-of-date"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={filterIdeaWeekOfDate || ''}
-                  onChange={(e) => setFilterIdeaWeekOfDate(e.target.value || null)}
-                />
-              </div>
-              <div>
-                <label htmlFor="idea-confidence-score" className="block text-sm font-medium text-gray-700">Confidence Score: {filterIdeaConfidenceScore[0].toFixed(2)} - {filterIdeaConfidenceScore[1].toFixed(2)}</label>
-                <input
-                  type="range"
-                  id="idea-confidence-score-min"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={filterIdeaConfidenceScore[0]}
-                  onChange={(e) => setFilterIdeaConfidenceScore([Number(e.target.value), filterIdeaConfidenceScore[1]])}
-                  className="mt-1 block w-full"
-                />
-                <input
-                  type="range"
-                  id="idea-confidence-score-max"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={filterIdeaConfidenceScore[1]}
-                  onChange={(e) => setFilterIdeaConfidenceScore([filterIdeaConfidenceScore[0], Number(e.target.value)])}
-                  className="mt-1 block w-full"
-                />
-              </div>
-              <div>
-                <label htmlFor="idea-search" className="block text-sm font-medium text-gray-700">Search Ideas</label>
-                <input
-                  type="text"
-                  id="idea-search"
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                  value={filterIdeaSearch}
-                  onChange={(e) => setFilterIdeaSearch(e.target.value)}
-                  placeholder="Search title, hook, outline"
-                />
-              </div>
-            </div>
-
-            {errorIdeas && <p className="text-red-500">Error: {errorIdeas}</p>}
-            {loadingIdeas ? (
-              <p>Loading post ideas...</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {postIdeas.map((idea) => (
-                  <div key={idea.id} className="bg-white shadow rounded-lg p-4">
-                    <h3 className="text-xl font-bold mb-2">{idea.title}</h3>
-                    {idea.hook && <p className="text-gray-700 mb-2"><strong>Hook:</strong> {idea.hook}</p>}
-                    
-                    <div className="mb-2">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        idea.status === 'published' ? 'bg-green-100 text-green-800' :
-                        idea.status === 'approved' ? 'bg-blue-100 text-blue-800' :
-                        idea.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {idea.status}
-                      </span>
-                    </div>
-
-                    <div className="mb-2">
-                      <p className="text-sm font-medium text-gray-700">Confidence Score:</p>
-                      <div className="w-full bg-gray-200 rounded-full h-2.5">
-                        <div 
-                          className={`h-2.5 rounded-full ${
-                            idea.confidence_score >= 0.8 ? 'bg-green-500' :
-                            idea.confidence_score >= 0.6 ? 'bg-yellow-500' :
-                            'bg-red-500'
-                          }`}
-                          style={{ width: `${idea.confidence_score * 100}%`}}
-                        ></div>
                       </div>
-                      <p className="text-xs text-gray-600 mt-1">{(idea.confidence_score * 100).toFixed(0)}%</p>
-                    </div>
-
-                    {idea.week_of_date && <p className="text-sm text-gray-600">Week of: {new Date(idea.week_of_date).toLocaleDateString()}</p>}
-
-                    {idea.outline && (
-                      <details className="mt-2 p-2 bg-gray-50 rounded-md">
-                        <summary className="font-semibold cursor-pointer">Outline</summary>
-                        <p className="text-sm text-gray-800 mt-1">{idea.outline}</p>
-                      </details>
-                    )}
-                    {idea.angle && (
-                      <details className="mt-2 p-2 bg-gray-50 rounded-md">
-                        <summary className="font-semibold cursor-pointer">Angle</summary>
-                        <p className="text-sm text-gray-800 mt-1">{idea.angle}</p>
-                      </details>
-                    )}
-                    {idea.persona && (
-                      <details className="mt-2 p-2 bg-gray-50 rounded-md">
-                        <summary className="font-semibold cursor-pointer">Persona</summary>
-                        <p className="text-sm text-gray-800 mt-1">{idea.persona}</p>
-                      </details>
-                    )}
-
-                    {idea.inspired_by_posts && idea.inspired_by_posts.length > 0 && (
-                      <div className="mt-2 text-sm text-gray-600">
-                        <button
-                          onClick={() => handleViewInspiredPosts(idea.inspired_by_posts || [])}
-                          className="text-indigo-600 hover:text-indigo-900"
-                        >
-                          Inspired by {idea.inspired_by_posts.length} competitor posts
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Inspired Posts Modal */}
-            {showInspiredPostsModal && (
-              <div className="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex justify-center items-center">
-                <div className="relative p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
-                  <h3 className="text-lg font-bold mb-4">Inspired By Competitor Posts</h3>
-                  {loadingInspiredPosts ? (
-                    <p>Loading inspired posts...</p>
-                  ) : errorInspiredPosts ? (
-                    <p className="text-red-500">Error: {errorInspiredPosts}</p>
-                  ) : selectedInspiredPosts.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-4">
-                      {selectedInspiredPosts.map((post) => (
-                        <div key={post.id} className="border p-3 rounded-md shadow-sm">
-                          <p className="text-sm font-medium"><strong>Author:</strong> {post.author_name}</p>
-                          <p className="text-sm"><strong>Content:</strong> {post.post_content?.substring(0, 150)}...</p>
-                          <a href={post.post_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900 text-sm">View Post</a>
+                      <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm text-gray-700 dark:text-gray-300">
+                            Showing <span className="font-medium">{(currentPage - 1) * postsPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPage * postsPerPage, totalPosts)}</span> of {' '}
+                            <span className="font-medium">{totalPosts}</span> results
+                          </p>
                         </div>
-                      ))}
+                        <div>
+                          <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button
+                              onClick={() => paginate(currentPage - 1)}
+                              disabled={currentPage === 1}
+                              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-600"
+                            >
+                              Previous
+                            </button>
+                            {pageNumbers.map((number) => (
+                              <button
+                                key={number}
+                                onClick={() => paginate(number)}
+                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                                  number === currentPage
+                                    ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600 dark:bg-indigo-800 dark:border-indigo-400 dark:text-indigo-200'
+                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-600'
+                                }`}
+                              >
+                                {number}
+                              </button>
+                            ))}
+                            <button
+                              onClick={() => paginate(currentPage + 1)}
+                              disabled={currentPage * postsPerPage >= totalPosts}
+                              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-600"
+                            >
+                              Next
+                            </button>
+                          </nav>
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <p>No inspired posts found.</p>
-                  )}
-                  <button
-                    onClick={() => setShowInspiredPostsModal(false)}
-                    className="mt-4 px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                  >
-                    Close
-                  </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          {activeTab === 'ideas' && (
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Post Ideas</h2>
+              
+              {/* Filter Controls for Post Ideas */}
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md mb-6 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Filter Post Ideas</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  <div>
+                    <label htmlFor="idea-status-dropdown" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                    <select
+                      id="idea-status-dropdown"
+                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                      value={filterIdeaStatus}
+                      onChange={(e) => setFilterIdeaStatus(e.target.value)}
+                    >
+                      <option value="">All Statuses</option>
+                      {ideaStatuses.map((status) => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="idea-week-of-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Week of Date</label>
+                    <input
+                      type="date"
+                      id="idea-week-of-date"
+                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                      value={filterIdeaWeekOfDate || ''}
+                      onChange={(e) => setFilterIdeaWeekOfDate(e.target.value || null)}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="idea-confidence-score" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confidence Score: <span className="font-semibold">{(filterIdeaConfidenceScore[0] * 100).toFixed(0)}% - {(filterIdeaConfidenceScore[1] * 100).toFixed(0)}%</span></label>
+                    <input
+                      type="range"
+                      id="idea-confidence-score-min"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={filterIdeaConfidenceScore[0]}
+                      onChange={(e) => setFilterIdeaConfidenceScore([Number(e.target.value), filterIdeaConfidenceScore[1]])}
+                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-indigo-600 dark:bg-gray-700 dark:accent-indigo-400"
+                    />
+                    <input
+                      type="range"
+                      id="idea-confidence-score-max"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={filterIdeaConfidenceScore[1]}
+                      onChange={(e) => setFilterIdeaConfidenceScore([filterIdeaConfidenceScore[0], Number(e.target.value)])}
+                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-indigo-600 dark:bg-gray-700 dark:accent-indigo-400"
+                    />
+                  </div>
+                  <div className="relative">
+                    <label htmlFor="idea-search" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Search Ideas</label>
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <Search className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                      </div>
+                      <input
+                        type="text"
+                        id="idea-search"
+                        className="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                        value={filterIdeaSearch}
+                        onChange={(e) => setFilterIdeaSearch(e.target.value)}
+                        placeholder="Search title, hook, outline"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            )}
-          </div>
-        )}
+
+              {errorIdeas && <p className="text-red-500">Error: {errorIdeas}</p>}
+              {loadingIdeas ? (
+                <p>Loading post ideas...</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {postIdeas.map((idea) => (
+                    <div key={idea.id} className="bg-white dark:bg-slate-800 shadow rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                      <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">{idea.title}</h3>
+                      {idea.hook && <p className="text-gray-700 dark:text-gray-300 mb-2"><strong>Hook:</strong> {idea.hook}</p>}
+                      
+                      <div className="mb-2">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          idea.status === 'published' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                          idea.status === 'approved' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
+                          idea.status === 'draft' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' :
+                          idea.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
+                          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                        }`}>
+                          {idea.status}
+                        </span>
+                      </div>
+
+                      <div className="mb-2">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Confidence Score:</p>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                          <div 
+                            className={`h-2.5 rounded-full ${
+                              idea.confidence_score >= 0.8 ? 'bg-green-500' :
+                              idea.confidence_score >= 0.6 ? 'bg-yellow-500' :
+                              'bg-red-500'
+                            }`}
+                            style={{ width: `${idea.confidence_score * 100}%`}}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{(idea.confidence_score * 100).toFixed(0)}%</p>
+                      </div>
+
+                      {idea.week_of_date && <p className="text-sm text-gray-600 dark:text-gray-400">Week of: {new Date(idea.week_of_date).toLocaleDateString()}</p>}
+
+                      {idea.outline && (
+                        <details className="mt-2 p-2 bg-gray-50 dark:bg-slate-700 rounded-md">
+                          <summary className="font-semibold cursor-pointer text-gray-800 dark:text-white">Outline</summary>
+                          <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{idea.outline}</p>
+                        </details>
+                      )}
+                      {idea.angle && (
+                        <details className="mt-2 p-2 bg-gray-50 dark:bg-slate-700 rounded-md">
+                          <summary className="font-semibold cursor-pointer text-gray-800 dark:text-white">Angle</summary>
+                          <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{idea.angle}</p>
+                        </details>
+                      )}
+                      {idea.persona && (
+                        <details className="mt-2 p-2 bg-gray-50 dark:bg-slate-700 rounded-md">
+                          <summary className="font-semibold cursor-pointer text-gray-800 dark:text-white">Persona</summary>
+                          <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{idea.persona}</p>
+                        </details>
+                      )}
+
+                      {idea.inspired_by_posts && idea.inspired_by_posts.length > 0 && (
+                        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                          <button
+                            onClick={() => handleViewInspiredPosts(idea.inspired_by_posts || [])}
+                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                          >
+                            Inspired by {idea.inspired_by_posts.length} competitor posts
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Inspired Posts Modal */}
+              {showInspiredPostsModal && (
+                <div className="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex justify-center items-center p-4">
+                  <div className="relative p-6 border w-full max-w-lg shadow-lg rounded-md bg-white dark:bg-slate-800 dark:border-gray-700">
+                    <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Inspired By Competitor Posts</h3>
+                    {loadingInspiredPosts ? (
+                      <p className="text-gray-700 dark:text-gray-300">Loading inspired posts...</p>
+                    ) : errorInspiredPosts ? (
+                      <p className="text-red-500">Error: {errorInspiredPosts}</p>
+                    ) : selectedInspiredPosts.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-4">
+                        {selectedInspiredPosts.map((post) => (
+                          <div key={post.id} className="border border-gray-200 dark:border-gray-700 p-3 rounded-md shadow-sm dark:bg-slate-700">
+                            <p className="text-sm font-medium text-gray-900 dark:text-white"><strong>Author:</strong> {post.author_name}</p>
+                            <p className="text-sm text-gray-700 dark:text-gray-300"><strong>Content:</strong> {post.post_content?.substring(0, 150)}...</p>
+                            <a href={post.post_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900 text-sm dark:text-indigo-400 dark:hover:text-indigo-300">View Post</a>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-700 dark:text-gray-300">No inspired posts found.</p>
+                    )}
+                    <button
+                      onClick={() => setShowInspiredPostsModal(false)}
+                      className="mt-6 px-4 py-2 bg-indigo-600 text-white text-base font-medium rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
