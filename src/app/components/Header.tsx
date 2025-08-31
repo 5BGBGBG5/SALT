@@ -33,6 +33,7 @@ export default function Header() {
     { href: '/reports/post-engagement', label: 'Post Engagement Report' },
     { href: '/reports/aieo', label: 'AiEO Report' },
     { href: '/reports/competition-heatmap', label: 'Competition Heat Map' },
+    { href: '/reports/competitor-content', label: 'Competitor Content Report' },
   ];
 
   return (
