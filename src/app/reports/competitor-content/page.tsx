@@ -55,8 +55,6 @@ interface PostIdea {
   id: string;
   title: string;
   hook: string | null;
-  confidence_score: number;
-  status: 'draft' | 'approved' | 'rejected' | 'published' | 'pending';
   week_of_date: string; // YYYY-MM-DD
   outline: string | null;
   angle: string | null;
@@ -111,9 +109,7 @@ const CompetitorContentReportPage = () => {
   const [postIdeas, setPostIdeas] = useState<PostIdea[]>([]);
   const [loadingIdeas, setLoadingIdeas] = useState(false);
   const [errorIdeas, setErrorIdeas] = useState<string | null>(null);
-  const [filterIdeaStatus, setFilterIdeaStatus] = useState('');
   const [filterIdeaWeekOfDate, setFilterIdeaWeekOfDate] = useState<string | null>(null);
-  const [filterIdeaConfidenceScore, setFilterIdeaConfidenceScore] = useState<[number, number]>([0, 1]); // [min, max]
   const [filterIdeaSearch, setFilterIdeaSearch] = useState('');
 
   // Debounced filter for Post Ideas
@@ -194,8 +190,6 @@ const CompetitorContentReportPage = () => {
             id: '1',
             title: 'AI in Marketing: Beyond the Hype',
             hook: 'Discover practical applications of AI in marketing that drive real results.',
-            confidence_score: 0.9,
-            status: 'approved',
             week_of_date: '2024-07-22',
             outline: 'Introduction to AI in marketing; case studies; actionable strategies; future trends.',
             angle: 'Demystifying AI for marketers with practical, results-oriented advice.',
@@ -208,8 +202,6 @@ const CompetitorContentReportPage = () => {
             id: '2',
             title: 'The Future of Content: Interactive Experiences',
             hook: 'How interactive content can boost engagement and conversions.',
-            confidence_score: 0.75,
-            status: 'draft',
             week_of_date: '2024-07-29',
             outline: 'Types of interactive content; benefits; tools and platforms; examples.',
             angle: 'Highlighting the shift from static to dynamic content experiences.',
@@ -222,8 +214,6 @@ const CompetitorContentReportPage = () => {
             id: '3',
             title: 'LinkedIn Algorithm Secrets Revealed',
             hook: 'Cracking the code: What really makes your LinkedIn posts go viral in 2024.',
-            confidence_score: 0.5,
-            status: 'pending',
             week_of_date: '2024-08-05',
             outline: 'Key ranking factors; engagement strategies; timing and frequency; content formats.',
             angle: 'Actionable tips for maximizing reach and engagement on LinkedIn.',
@@ -248,7 +238,7 @@ const CompetitorContentReportPage = () => {
     } else if (activeTab === 'ideas') {
       fetchPostIdeas();
     }
-  }, [activeTab, currentPage, postsPerPage, debouncedFilterAuthor, debouncedFilterContent, filterPostType, filterMinLikes, filterMinComments, filterMinReposts, filterStartDate, filterEndDate, filterIdeaStatus, filterIdeaWeekOfDate, filterIdeaConfidenceScore, debouncedFilterIdeaSearch]);
+  }, [activeTab, currentPage, postsPerPage, debouncedFilterAuthor, debouncedFilterContent, filterPostType, filterMinLikes, filterMinComments, filterMinReposts, filterStartDate, filterEndDate, filterIdeaWeekOfDate, filterIdeaSearch, debouncedFilterIdeaSearch]);
 
   const fetchInspiredPosts = async (postUrls: string[]) => {
     setLoadingInspiredPosts(true);
@@ -649,25 +639,11 @@ const CompetitorContentReportPage = () => {
           {activeTab === 'ideas' && (
             <div>
               <h2 className="text-2xl font-semibold mb-4">Post Ideas</h2>
-              
+
               {/* Filter Controls for Post Ideas */}
               <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md mb-6 border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Filter Post Ideas</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                  <div>
-                    <label htmlFor="idea-status-dropdown" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                    <select
-                      id="idea-status-dropdown"
-                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-slate-700 dark:border-gray-600 dark:text-white"
-                      value={filterIdeaStatus}
-                      onChange={(e) => setFilterIdeaStatus(e.target.value)}
-                    >
-                      <option value="">All Statuses</option>
-                      {ideaStatuses.map((status) => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
-                  </div>
                   <div>
                     <label htmlFor="idea-week-of-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Week of Date</label>
                     <input
@@ -676,29 +652,6 @@ const CompetitorContentReportPage = () => {
                       className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
                       value={filterIdeaWeekOfDate || ''}
                       onChange={(e) => setFilterIdeaWeekOfDate(e.target.value || null)}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="idea-confidence-score" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Confidence Score: <span className="font-semibold">{(filterIdeaConfidenceScore[0] * 100).toFixed(0)}% - {(filterIdeaConfidenceScore[1] * 100).toFixed(0)}%</span></label>
-                    <input
-                      type="range"
-                      id="idea-confidence-score-min"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={filterIdeaConfidenceScore[0]}
-                      onChange={(e) => setFilterIdeaConfidenceScore([Number(e.target.value), filterIdeaConfidenceScore[1]])}
-                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-indigo-600 dark:bg-gray-700 dark:accent-indigo-400"
-                    />
-                    <input
-                      type="range"
-                      id="idea-confidence-score-max"
-                      min="0"
-                      max="1"
-                      step="0.01"
-                      value={filterIdeaConfidenceScore[1]}
-                      onChange={(e) => setFilterIdeaConfidenceScore([filterIdeaConfidenceScore[0], Number(e.target.value)])}
-                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-indigo-600 dark:bg-gray-700 dark:accent-indigo-400"
                     />
                   </div>
                   <div className="relative">
@@ -730,33 +683,6 @@ const CompetitorContentReportPage = () => {
                       <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">{idea.title}</h3>
                       {idea.hook && <p className="text-gray-700 dark:text-gray-300 mb-2"><strong>Hook:</strong> {idea.hook}</p>}
                       
-                      <div className="mb-2">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          idea.status === 'published' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
-                          idea.status === 'approved' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
-                          idea.status === 'draft' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' :
-                          idea.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
-                          'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                        }`}>
-                          {idea.status}
-                        </span>
-                      </div>
-
-                      <div className="mb-2">
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Confidence Score:</p>
-                        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                          <div 
-                            className={`h-2.5 rounded-full ${
-                              idea.confidence_score >= 0.8 ? 'bg-green-500' :
-                              idea.confidence_score >= 0.6 ? 'bg-yellow-500' :
-                              'bg-red-500'
-                            }`}
-                            style={{ width: `${idea.confidence_score * 100}%`}}
-                          ></div>
-                        </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">{(idea.confidence_score * 100).toFixed(0)}%</p>
-                      </div>
-
                       {idea.week_of_date && <p className="text-sm text-gray-600 dark:text-gray-400">Week of: {new Date(idea.week_of_date).toLocaleDateString()}</p>}
 
                       {idea.outline && (
