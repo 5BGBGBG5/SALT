@@ -1,5 +1,9 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
+
+export const dynamic = 'force-dynamic';
 
 // Custom hook for debouncing values
 function useDebounce<T>(value: T, delay: number): T {
