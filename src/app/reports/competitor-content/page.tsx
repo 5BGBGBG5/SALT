@@ -65,8 +65,6 @@ interface PostIdea {
   updated_at: string;
 }
 
-interface InspiredPostDetail extends Post {}
-
 const PostContentTruncated: React.FC<{ content: string }> = ({ content }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const truncatedContent = content.substring(0, 100);
@@ -122,7 +120,7 @@ const CompetitorContentReportPage = () => {
 
   // State for Inspired Posts Modal
   const [showInspiredPostsModal, setShowInspiredPostsModal] = useState(false);
-  const [selectedInspiredPosts, setSelectedInspiredPosts] = useState<InspiredPostDetail[]>([]);
+  const [selectedInspiredPosts, setSelectedInspiredPosts] = useState<Post[]>([]);
   const [loadingInspiredPosts, setLoadingInspiredPosts] = useState(false);
   const [errorInspiredPosts, setErrorInspiredPosts] = useState<string | null>(null);
 
