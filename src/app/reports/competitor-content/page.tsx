@@ -65,7 +65,7 @@ interface PostIdea {
   updated_at: string;
 }
 
-interface InspiredPostDetail extends Post { /* Potentially add more fields specific to how it's inspired */ }
+interface InspiredPostDetail extends Post {}
 
 const PostContentTruncated: React.FC<{ content: string }> = ({ content }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -177,8 +177,8 @@ const CompetitorContentReportPage = () => {
         if (error) throw error;
         setPosts(data || []);
         setTotalPosts(count || 0);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
         setLoading(false);
       }
@@ -214,8 +214,8 @@ const CompetitorContentReportPage = () => {
 
         if (error) throw error;
         setPostIdeas(data || []);
-      } catch (err: any) {
-        setErrorIdeas(err.message);
+      } catch (err: unknown) {
+        setErrorIdeas(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
         setLoadingIdeas(false);
       }
@@ -239,8 +239,8 @@ const CompetitorContentReportPage = () => {
 
       if (error) throw error;
       setSelectedInspiredPosts(data || []);
-    } catch (err: any) {
-      setErrorInspiredPosts(err.message);
+    } catch (err: unknown) {
+      setErrorInspiredPosts(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setLoadingInspiredPosts(false);
     }
@@ -252,7 +252,7 @@ const CompetitorContentReportPage = () => {
   };
 
   const sortedPosts = React.useMemo(() => {
-    let sortablePosts = [...posts];
+    const sortablePosts = [...posts];
     if (sortConfig !== null) {
       sortablePosts.sort((a, b) => {
         const aValue = a[sortConfig.key];
