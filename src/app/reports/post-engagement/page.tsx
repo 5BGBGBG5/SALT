@@ -313,6 +313,9 @@ const PostEngagementTable = ({
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                 <SortableHeader columnKey="engager_name">Engager Name</SortableHeader>
                 <SortableHeader columnKey="engager_company_name">Company</SortableHeader>
+                <SortableHeader columnKey="engager_company_industry">Industry</SortableHeader>
+                <SortableHeader columnKey="engager_company_size">Company Size</SortableHeader>
+                <SortableHeader columnKey="engager_company_employees">Employees</SortableHeader>
                 <SortableHeader columnKey="engager_job_title">Job Title</SortableHeader>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profile</th>
                 <SortableHeader columnKey="post_content">Post Content</SortableHeader>
@@ -348,6 +351,15 @@ const PostEngagementTable = ({
                     ) : (
                       'N/A'
                     )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {row.engager_company_industry || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {row.engager_company_size || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                    {row.engager_company_employees ? row.engager_company_employees.toLocaleString() : 'N/A'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {row.engager_job_title || 'N/A'}
