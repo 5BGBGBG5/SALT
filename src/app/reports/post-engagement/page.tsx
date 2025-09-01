@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 // Force dynamic rendering
@@ -77,6 +77,46 @@ const PostEngagementTable = ({
   onFilterChange: (key: keyof FilterConfig, value: string) => void;
 }) => {
   const [showFilters, setShowFilters] = useState(false);
+  const [scrollIndicators, setScrollIndicators] = useState({ left: false, right: true });
+  const tableRef = useRef<HTMLDivElement>(null);
+  const [visibleColumns, setVisibleColumns] = useState({
+    type: true,
+    engager_name: true,
+    engager_company_name: true,
+    engager_company_industry: true,
+    engager_company_size: true,
+    engager_company_employees: true,
+    engager_job_title: true,
+    profile: true,
+    post_content: true,
+    details: true,
+    post_url: true,
+    engagement_timestamp: true
+  });
+
+  // Handle scroll indicators
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLDivElement;
+      const { scrollLeft, scrollWidth, clientWidth } = target;
+      setScrollIndicators({
+        left: scrollLeft > 0,
+        right: scrollLeft < scrollWidth - clientWidth - 1
+      });
+    };
+
+    const tableEl = tableRef.current;
+    if (tableEl) {
+      tableEl.addEventListener('scroll', handleScroll);
+      // Check initial state
+      const { scrollLeft, scrollWidth, clientWidth } = tableEl;
+      setScrollIndicators({
+        left: scrollLeft > 0,
+        right: scrollLeft < scrollWidth - clientWidth - 1
+      });
+      return () => tableEl.removeEventListener('scroll', handleScroll);
+    }
+  }, [filteredAndSortedData.length]);
 
   const filteredAndSortedData = useMemo(() => {
     // Filter the data based on current filter settings
@@ -299,35 +339,219 @@ const PostEngagementTable = ({
         </div>
       )}
 
+      {/* Column Visibility Toggle */}
+      <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-medium text-gray-700">Visible Columns</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setVisibleColumns(prev => Object.keys(prev).reduce((acc, key) => ({...acc, [key]: true}), {} as typeof prev))}
+              className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+            >
+              Show All
+            </button>
+            <button
+              onClick={() => setVisibleColumns(prev => Object.keys(prev).reduce((acc, key) => ({...acc, [key]: ['type', 'engager_name', 'engager_company_name'].includes(key)}), {} as typeof prev))}
+              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+            >
+              Essential Only
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          {Object.entries(visibleColumns).map(([key, value]) => (
+            <label key={key} className="inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={value}
+                onChange={(e) => setVisibleColumns(prev => ({...prev, [key]: e.target.checked}))}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-1"
+              />
+              <span className="ml-2 text-sm text-gray-600">
+                {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </span>
+            </label>
+          ))}
+        </div>
+      </div>
+
       {/* Results Count */}
       <div className="text-sm text-gray-600">
         Showing {filteredAndSortedData.length} of {data.length} engagements
       </div>
 
-      {/* Data Table */}
-      <div className="bg-white shadow sm:rounded-md">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+      {/* Data Table - Desktop */}
+      <div className="hidden md:block bg-white shadow sm:rounded-md">
+        <div className="relative">
+          {scrollIndicators.left && (
+            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-gray-50 to-transparent pointer-events-none z-20 border-r border-gray-200" />
+          )}
+          {scrollIndicators.right && (
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-gray-50 to-transparent pointer-events-none z-20 border-l border-gray-200" />
+          )}
+          <div 
+            ref={tableRef} 
+            className="overflow-auto max-h-[70vh] border border-gray-200 rounded-lg"
+            style={{ scrollbarWidth: 'thin' }}
+          >
+            <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <SortableHeader columnKey="engager_name">Engager Name</SortableHeader>
-                <SortableHeader columnKey="engager_company_name">Company</SortableHeader>
-                <SortableHeader columnKey="engager_company_industry">Industry</SortableHeader>
-                <SortableHeader columnKey="engager_company_size">Company Size</SortableHeader>
-                <SortableHeader columnKey="engager_company_employees">Employees</SortableHeader>
-                <SortableHeader columnKey="engager_job_title">Job Title</SortableHeader>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profile</th>
-                <SortableHeader columnKey="post_content">Post Content</SortableHeader>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post URL</th>
-                <SortableHeader columnKey="engagement_timestamp">Engaged At</SortableHeader>
+                {visibleColumns.type && (
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                )}
+                {visibleColumns.engager_name && (
+                  <SortableHeader columnKey="engager_name">Engager Name</SortableHeader>
+                )}
+                {visibleColumns.engager_company_name && (
+                  <SortableHeader columnKey="engager_company_name">Company</SortableHeader>
+                )}
+                {visibleColumns.engager_company_industry && (
+                  <SortableHeader columnKey="engager_company_industry">Industry</SortableHeader>
+                )}
+                {visibleColumns.engager_company_size && (
+                  <SortableHeader columnKey="engager_company_size">Company Size</SortableHeader>
+                )}
+                {visibleColumns.engager_company_employees && (
+                  <SortableHeader columnKey="engager_company_employees">Employees</SortableHeader>
+                )}
+                {visibleColumns.engager_job_title && (
+                  <SortableHeader columnKey="engager_job_title">Job Title</SortableHeader>
+                )}
+                {visibleColumns.profile && (
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profile</th>
+                )}
+                {visibleColumns.post_content && (
+                  <SortableHeader columnKey="post_content">Post Content</SortableHeader>
+                )}
+                {visibleColumns.details && (
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                )}
+                {visibleColumns.post_url && (
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Post URL</th>
+                )}
+                {visibleColumns.engagement_timestamp && (
+                  <SortableHeader columnKey="engagement_timestamp">Engaged At</SortableHeader>
+                )}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAndSortedData.map((row, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-normal min-w-[100px]">
+                  {visibleColumns.type && (
+                    <td className="px-6 py-4 whitespace-normal min-w-[100px]">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        row.engagement_type === 'like' ? 'bg-green-100 text-green-800' :
+                        row.engagement_type === 'comment' ? 'bg-blue-100 text-blue-800' :
+                        'bg-purple-100 text-purple-800'
+                      }`}>
+                        {row.engagement_type.charAt(0).toUpperCase() + row.engagement_type.slice(1)}
+                      </span>
+                    </td>
+                  )}
+                  {visibleColumns.engager_name && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {row.engager_name || 'N/A'}
+                    </td>
+                  )}
+                  {visibleColumns.engager_company_name && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.engager_company_name ? (
+                        row.engager_company_url ? (
+                          <a href={row.engager_company_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
+                            {row.engager_company_name}
+                          </a>
+                        ) : (
+                          row.engager_company_name
+                        )
+                      ) : (
+                        'N/A'
+                      )}
+                    </td>
+                  )}
+                  {visibleColumns.engager_company_industry && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.engager_company_industry || 'N/A'}
+                    </td>
+                  )}
+                  {visibleColumns.engager_company_size && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.engager_company_size || 'N/A'}
+                    </td>
+                  )}
+                  {visibleColumns.engager_company_employees && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                      {row.engager_company_employees ? row.engager_company_employees.toLocaleString() : 'N/A'}
+                    </td>
+                  )}
+                  {visibleColumns.engager_job_title && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.engager_job_title || 'N/A'}
+                    </td>
+                  )}
+                  {visibleColumns.profile && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {row.linkedin_profile_url ? (
+                        <a href={row.linkedin_profile_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
+                          View Profile
+                        </a>
+                      ) : (
+                        'N/A'
+                      )}
+                    </td>
+                  )}
+                  {visibleColumns.post_content && (
+                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs whitespace-normal">
+                      {row.post_content ? (
+                        <div className="max-w-xs">
+                          {row.post_content}
+                        </div>
+                      ) : (
+                        'N/A'
+                      )}
+                    </td>
+                  )}
+                  {visibleColumns.details && (
+                    <td className="px-6 py-4 whitespace-normal text-sm text-gray-500 max-w-xs">
+                      {row.engagement_type === 'comment'
+                        ? `Comment: "${row.reaction_type}"`
+                        : row.engagement_type === 'like'
+                        ? `Reaction: ${row.reaction_type}`
+                        : `Shared`}
+                    </td>
+                  )}
+                  {visibleColumns.post_url && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.post_url ? (
+                        <a href={row.post_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
+                          View Post
+                        </a>
+                      ) : (
+                        'N/A'
+                      )}
+                    </td>
+                  )}
+                  {visibleColumns.engagement_timestamp && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {row.engagement_timestamp ? new Date(row.engagement_timestamp).toLocaleDateString() : 'N/A'}
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {filteredAndSortedData.map((row, index) => (
+          <div key={index} className="bg-white p-4 rounded-lg shadow border border-gray-200">
+            <div className="space-y-3">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       row.engagement_type === 'like' ? 'bg-green-100 text-green-800' :
                       row.engagement_type === 'comment' ? 'bg-blue-100 text-blue-800' :
@@ -335,11 +559,18 @@ const PostEngagementTable = ({
                     }`}>
                       {row.engagement_type.charAt(0).toUpperCase() + row.engagement_type.slice(1)}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {row.engager_name || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <span className="text-xs text-gray-500">
+                      {row.engagement_timestamp ? new Date(row.engagement_timestamp).toLocaleDateString() : 'N/A'}
+                    </span>
+                  </div>
+                  <h3 className="font-medium text-gray-900">{row.engager_name || 'N/A'}</h3>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="font-medium text-gray-600">Company:</span>
+                  <span className="text-gray-900">
                     {row.engager_company_name ? (
                       row.engager_company_url ? (
                         <a href={row.engager_company_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
@@ -351,61 +582,70 @@ const PostEngagementTable = ({
                     ) : (
                       'N/A'
                     )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {row.engager_company_industry || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {row.engager_company_size || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
-                    {row.engager_company_employees ? row.engager_company_employees.toLocaleString() : 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {row.engager_job_title || 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {row.linkedin_profile_url ? (
-                      <a href={row.linkedin_profile_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
-                        View Profile
-                      </a>
-                    ) : (
-                      'N/A'
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 max-w-xs whitespace-normal">
-                    {row.post_content ? (
-                      <div className="max-w-xs">
-                        {row.post_content}
-                      </div>
-                    ) : (
-                      'N/A'
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-normal text-sm text-gray-500 max-w-xs">
-                    {row.engagement_type === 'comment'
-                      ? `Comment: "${row.reaction_type}"`
-                      : row.engagement_type === 'like'
-                      ? `Reaction: ${row.reaction_type}`
-                      : `Shared`}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {row.post_url ? (
-                      <a href={row.post_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
-                        View Post
-                      </a>
-                    ) : (
-                      'N/A'
-                    )}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {row.engagement_timestamp ? new Date(row.engagement_timestamp).toLocaleDateString() : 'N/A'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </span>
+                </div>
+                
+                {row.engager_company_industry && (
+                  <div className="flex justify-between">
+                    <span className="font-medium text-gray-600">Industry:</span>
+                    <span className="text-gray-900">{row.engager_company_industry}</span>
+                  </div>
+                )}
+                
+                {row.engager_job_title && (
+                  <div className="flex justify-between">
+                    <span className="font-medium text-gray-600">Job Title:</span>
+                    <span className="text-gray-900">{row.engager_job_title}</span>
+                  </div>
+                )}
+                
+                {row.engager_company_size && (
+                  <div className="flex justify-between">
+                    <span className="font-medium text-gray-600">Company Size:</span>
+                    <span className="text-gray-900">{row.engager_company_size}</span>
+                  </div>
+                )}
+                
+                {row.engager_company_employees && (
+                  <div className="flex justify-between">
+                    <span className="font-medium text-gray-600">Employees:</span>
+                    <span className="text-gray-900">{row.engager_company_employees.toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+              
+              {row.post_content && (
+                <div className="pt-2 border-t border-gray-200">
+                  <span className="font-medium text-gray-600 text-sm">Post Content:</span>
+                  <p className="text-sm text-gray-900 mt-1">{row.post_content}</p>
+                </div>
+              )}
+              
+              <div className="pt-2 border-t border-gray-200">
+                <div className="text-sm text-gray-500">
+                  {row.engagement_type === 'comment'
+                    ? `Comment: "${row.reaction_type}"`
+                    : row.engagement_type === 'like'
+                    ? `Reaction: ${row.reaction_type}`
+                    : `Shared`}
+                </div>
+              </div>
+              
+              <div className="flex gap-3 pt-2">
+                {row.linkedin_profile_url && (
+                  <a href={row.linkedin_profile_url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-900">
+                    View Profile
+                  </a>
+                )}
+                {row.post_url && (
+                  <a href={row.post_url} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-900">
+                    View Post
+                  </a>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
