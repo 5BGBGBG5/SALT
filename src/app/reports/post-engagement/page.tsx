@@ -94,30 +94,6 @@ const PostEngagementTable = ({
     engagement_timestamp: true
   });
 
-  // Handle scroll indicators
-  useEffect(() => {
-    const handleScroll = (e: Event) => {
-      const target = e.target as HTMLDivElement;
-      const { scrollLeft, scrollWidth, clientWidth } = target;
-      setScrollIndicators({
-        left: scrollLeft > 0,
-        right: scrollLeft < scrollWidth - clientWidth - 1
-      });
-    };
-
-    const tableEl = tableRef.current;
-    if (tableEl) {
-      tableEl.addEventListener('scroll', handleScroll);
-      // Check initial state
-      const { scrollLeft, scrollWidth, clientWidth } = tableEl;
-      setScrollIndicators({
-        left: scrollLeft > 0,
-        right: scrollLeft < scrollWidth - clientWidth - 1
-      });
-      return () => tableEl.removeEventListener('scroll', handleScroll);
-    }
-  }, [filteredAndSortedData.length]);
-
   const filteredAndSortedData = useMemo(() => {
     // Filter the data based on current filter settings
     const filtered = data.filter(row => {
@@ -197,6 +173,30 @@ const PostEngagementTable = ({
 
     return sorted;
   }, [data, filters, sortConfig]);
+
+  // Handle scroll indicators
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLDivElement;
+      const { scrollLeft, scrollWidth, clientWidth } = target;
+      setScrollIndicators({
+        left: scrollLeft > 0,
+        right: scrollLeft < scrollWidth - clientWidth - 1
+      });
+    };
+
+    const tableEl = tableRef.current;
+    if (tableEl) {
+      tableEl.addEventListener('scroll', handleScroll);
+      // Check initial state
+      const { scrollLeft, scrollWidth, clientWidth } = tableEl;
+      setScrollIndicators({
+        left: scrollLeft > 0,
+        right: scrollLeft < scrollWidth - clientWidth - 1
+      });
+      return () => tableEl.removeEventListener('scroll', handleScroll);
+    }
+  }, [filteredAndSortedData.length]);
 
   const SortableHeader = ({ 
     columnKey, 
