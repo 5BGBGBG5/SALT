@@ -74,7 +74,7 @@ const PostContentTruncated: React.FC<{ content: string }> = ({ content }) => {
       {content.length > 100 && (
         <button
           onClick={() => setIsExpanded(!isExpanded)}
-          className="text-indigo-600 hover:text-indigo-900 ml-1"
+          className="text-blue-600 hover:text-blue-800 ml-1 font-medium transition-colors"
         >
           {isExpanded ? 'read less' : 'read more'}
         </button>
@@ -317,30 +317,33 @@ const CompetitorContentReportPage = () => {
   const ideaStatuses = ['draft', 'approved', 'rejected', 'published'];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 py-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-extrabold text-gray-800 dark:text-white mb-8">
-          Competitor Content Report
+        <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-2">
+          LinkedIn Competitor Posts
         </h1>
+        <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+          Track and analyze competitor activity on LinkedIn to inform your content strategy
+        </p>
 
         <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('posts')}
-              className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out ${
+              className={`whitespace-nowrap py-3 px-6 border-b-3 font-medium text-sm transition-all duration-200 ease-in-out ${
                 activeTab === 'posts'
-                  ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500'
+                  ? 'border-blue-600 text-blue-600 bg-blue-50 rounded-t-lg dark:border-blue-400 dark:text-blue-400 dark:bg-blue-900/20'
+                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50 hover:border-gray-300 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-gray-800'
               }`}
             >
               Competitor Posts
             </button>
             <button
               onClick={() => setActiveTab('ideas')}
-              className={`whitespace-nowrap py-3 px-4 border-b-2 font-medium text-sm transition-colors duration-200 ease-in-out ${
+              className={`whitespace-nowrap py-3 px-6 border-b-3 font-medium text-sm transition-all duration-200 ease-in-out ${
                 activeTab === 'ideas'
-                  ? 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-500'
+                  ? 'border-blue-600 text-blue-600 bg-blue-50 rounded-t-lg dark:border-blue-400 dark:text-blue-400 dark:bg-blue-900/20'
+                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50 hover:border-gray-300 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-gray-800'
               }`}
             >
               Post Ideas
@@ -354,8 +357,10 @@ const CompetitorContentReportPage = () => {
               <h2 className="text-2xl font-semibold mb-4">Competitor Posts</h2>
 
               {/* Filter Controls */}
-              <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md mb-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Filter Competitor Posts</h3>
+              <div className="bg-gradient-to-br from-white to-blue-50 dark:from-gray-800/95 dark:to-blue-900/20 p-6 rounded-xl shadow-lg mb-6 border border-blue-100 dark:border-blue-900">
+                <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-4">
+                  Filter LinkedIn Posts
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                   <div className="relative">
                     <label htmlFor="author-search" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Author Name</label>
@@ -366,7 +371,7 @@ const CompetitorContentReportPage = () => {
                       <input
                         type="text"
                         id="author-search"
-                        className="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                        className="block w-full rounded-lg border-gray-300 pl-10 pr-3 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/80 backdrop-blur-sm hover:bg-white dark:bg-gray-700/90 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-800"
                         value={filterAuthor}
                         onChange={(e) => setFilterAuthor(e.target.value)}
                         placeholder="Search by author"
@@ -382,7 +387,7 @@ const CompetitorContentReportPage = () => {
                       <input
                         type="text"
                         id="content-search"
-                        className="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                        className="block w-full rounded-lg border-gray-300 pl-10 pr-3 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/80 backdrop-blur-sm hover:bg-white dark:bg-gray-700/90 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-800"
                         value={filterContent}
                         onChange={(e) => setFilterContent(e.target.value)}
                         placeholder="Search by content"
@@ -393,7 +398,7 @@ const CompetitorContentReportPage = () => {
                     <label htmlFor="post-type-dropdown" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Post Type</label>
                     <select
                       id="post-type-dropdown"
-                      className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                      className="mt-1 block w-full pl-3 pr-10 py-2.5 text-base border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 rounded-lg bg-white/80 backdrop-blur-sm hover:bg-white transition-all dark:bg-gray-700/90 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-800"
                       value={filterPostType}
                       onChange={(e) => setFilterPostType(e.target.value)}
                     >
@@ -412,7 +417,7 @@ const CompetitorContentReportPage = () => {
                       max="1000"
                       value={filterMinLikes}
                       onChange={(e) => setFilterMinLikes(Number(e.target.value))}
-                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-indigo-600 dark:bg-gray-700 dark:accent-indigo-400"
+                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gradient-to-r from-gray-200 to-blue-200 dark:from-gray-700 dark:to-blue-800 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:bg-blue-700 [&::-webkit-slider-thumb]:hover:scale-110"
                     />
                   </div>
                   <div>
@@ -424,7 +429,7 @@ const CompetitorContentReportPage = () => {
                       max="500"
                       value={filterMinComments}
                       onChange={(e) => setFilterMinComments(Number(e.target.value))}
-                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-indigo-600 dark:bg-gray-700 dark:accent-indigo-400"
+                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gradient-to-r from-gray-200 to-blue-200 dark:from-gray-700 dark:to-blue-800 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:bg-blue-700 [&::-webkit-slider-thumb]:hover:scale-110"
                     />
                   </div>
                   <div>
@@ -436,7 +441,7 @@ const CompetitorContentReportPage = () => {
                       max="200"
                       value={filterMinReposts}
                       onChange={(e) => setFilterMinReposts(Number(e.target.value))}
-                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gray-200 accent-indigo-600 dark:bg-gray-700 dark:accent-indigo-400"
+                      className="mt-1 block w-full h-2 rounded-lg appearance-none cursor-pointer bg-gradient-to-r from-gray-200 to-blue-200 dark:from-gray-700 dark:to-blue-800 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-600 [&::-webkit-slider-thumb]:shadow-lg [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:bg-blue-700 [&::-webkit-slider-thumb]:hover:scale-110"
                     />
                   </div>
                   <div className="relative">
@@ -448,7 +453,7 @@ const CompetitorContentReportPage = () => {
                       <input
                         type="date"
                         id="start-date"
-                        className="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                        className="block w-full rounded-lg border-gray-300 pl-10 pr-3 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/80 backdrop-blur-sm hover:bg-white dark:bg-gray-700/90 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-800"
                         value={filterStartDate || ''}
                         onChange={(e) => setFilterStartDate(e.target.value || null)}
                       />
@@ -463,7 +468,7 @@ const CompetitorContentReportPage = () => {
                       <input
                         type="date"
                         id="end-date"
-                        className="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                        className="block w-full rounded-lg border-gray-300 pl-10 pr-3 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/80 backdrop-blur-sm hover:bg-white dark:bg-gray-700/90 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-800"
                         value={filterEndDate || ''}
                         onChange={(e) => setFilterEndDate(e.target.value || null)}
                       />
@@ -472,25 +477,101 @@ const CompetitorContentReportPage = () => {
                 </div>
               </div>
 
+              {/* LinkedIn-style Stats Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-100 text-sm">Total Posts</p>
+                      <p className="text-2xl font-bold">{totalPosts}</p>
+                    </div>
+                    <svg className="w-8 h-8 text-blue-200" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
+                    </svg>
+                  </div>
+                </div>
+                
+                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-100 text-sm">Avg Engagement</p>
+                      <p className="text-2xl font-bold">
+                        {Math.round(sortedPosts.reduce((acc, post) => acc + post.like_count, 0) / sortedPosts.length || 0)}
+                      </p>
+                    </div>
+                    <svg className="w-8 h-8 text-green-200" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-purple-100 text-sm">Top Performer</p>
+                      <p className="text-2xl font-bold">
+                        {Math.max(...sortedPosts.map(post => post.like_count), 0)}
+                      </p>
+                    </div>
+                    <svg className="w-8 h-8 text-purple-200" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd"/>
+                    </svg>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-orange-100 text-sm">This Week</p>
+                      <p className="text-2xl font-bold">
+                        {sortedPosts.filter(post => {
+                          const postDate = new Date(post.post_timestamp || '');
+                          const weekAgo = new Date();
+                          weekAgo.setDate(weekAgo.getDate() - 7);
+                          return postDate >= weekAgo;
+                        }).length}
+                      </p>
+                    </div>
+                    <svg className="w-8 h-8 text-orange-200" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
+                    </svg>
+                  </div>
+                </div>
+              </div>
 
               {error && <p className="text-red-500">Error: {error}</p>}
               {loading ? (
-                <p>Loading posts...</p>
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="relative">
+                    <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-8 h-8 bg-blue-600 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400 animate-pulse">Loading LinkedIn posts...</p>
+                </div>
               ) : (
-                <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Competitor Posts Data</h3>
+                <div className="bg-white dark:bg-gray-800/95 p-6 rounded-xl shadow-xl border border-blue-100 dark:border-blue-900 overflow-hidden">
+                  <div className="mb-4 pb-4 border-b border-blue-100 dark:border-blue-800">
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                      LinkedIn Posts Analysis
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Showing {sortedPosts.length} competitor posts
+                    </p>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                      <thead className="bg-gray-100 dark:bg-slate-700">
+                      <thead className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30">
                         <tr>
                           <th
-                            className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider cursor-pointer"
+                            className="px-6 py-4 text-left text-xs font-bold text-blue-900 dark:text-blue-100 uppercase tracking-wider cursor-pointer hover:bg-blue-200/50 transition-colors"
                             onClick={() => requestSort('author_name')}
                           >
                             Author Name
                           </th>
                           <th
-                            className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider cursor-pointer"
+                            className="px-6 py-4 text-left text-xs font-bold text-blue-900 dark:text-blue-100 uppercase tracking-wider cursor-pointer hover:bg-blue-200/50 transition-colors"
                             onClick={() => requestSort('post_content')}
                           >
                             Post Content
@@ -520,7 +601,7 @@ const CompetitorContentReportPage = () => {
                             Reposts
                           </th>
                           <th
-                            className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider cursor-pointer"
+                            className="px-6 py-4 text-left text-xs font-bold text-blue-900 dark:text-blue-100 uppercase tracking-wider cursor-pointer hover:bg-blue-200/50 transition-colors"
                             onClick={() => requestSort('post_timestamp')}
                           >
                             Post Date
@@ -528,9 +609,9 @@ const CompetitorContentReportPage = () => {
                           <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Actions</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      <tbody className="bg-white dark:bg-gray-800/95 divide-y divide-gray-200 dark:divide-gray-700">
                         {sortedPosts.map((post, index) => (
-                          <tr key={post.id} className={index % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-gray-50 dark:bg-slate-700'}>
+                          <tr key={post.id} className={index % 2 === 0 ? 'bg-white dark:bg-gray-800/95' : 'bg-gray-50 dark:bg-gray-700/90'}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                               {post.author_url ? (
                                 <a href={post.author_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300">
@@ -560,7 +641,7 @@ const CompetitorContentReportPage = () => {
                                   href={post.post_url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600"
+                                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-xs font-semibold rounded-lg shadow-md hover:shadow-xl transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                                 >
                                   View Post
                                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 ml-2">
@@ -579,14 +660,14 @@ const CompetitorContentReportPage = () => {
                         <button
                           onClick={() => paginate(currentPage - 1)}
                           disabled={currentPage === 1}
-                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-600"
+                          className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700/90 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600/90"
                         >
                           Previous
                         </button>
                         <button
                           onClick={() => paginate(currentPage + 1)}
                           disabled={currentPage * postsPerPage >= totalPosts}
-                          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-600"
+                          className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700/90 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600/90"
                         >
                           Next
                         </button>
@@ -603,7 +684,7 @@ const CompetitorContentReportPage = () => {
                             <button
                               onClick={() => paginate(currentPage - 1)}
                               disabled={currentPage === 1}
-                              className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-600"
+                              className="relative inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500 transition-all duration-200 shadow-md hover:shadow-lg mr-2"
                             >
                               Previous
                             </button>
@@ -611,10 +692,10 @@ const CompetitorContentReportPage = () => {
                               <button
                                 key={number}
                                 onClick={() => paginate(number)}
-                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                                className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg mx-1 ${
                                   number === currentPage
-                                    ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600 dark:bg-indigo-800 dark:border-indigo-400 dark:text-indigo-200'
-                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-600'
+                                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
+                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-700/90 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-blue-900/20'
                                 }`}
                               >
                                 {number}
@@ -623,7 +704,7 @@ const CompetitorContentReportPage = () => {
                             <button
                               onClick={() => paginate(currentPage + 1)}
                               disabled={currentPage * postsPerPage >= totalPosts}
-                              className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 dark:bg-slate-700 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-slate-600"
+                              className="relative inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500 transition-all duration-200 shadow-md hover:shadow-lg ml-2"
                             >
                               Next
                             </button>
@@ -641,15 +722,15 @@ const CompetitorContentReportPage = () => {
               <h2 className="text-2xl font-semibold mb-4">Post Ideas</h2>
 
               {/* Filter Controls for Post Ideas */}
-              <div className="bg-white dark:bg-slate-800 p-6 rounded-lg shadow-md mb-6 border border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Filter Post Ideas</h3>
+              <div className="bg-gradient-to-br from-white to-blue-50 dark:from-gray-800/95 dark:to-blue-900/20 p-6 rounded-xl shadow-lg mb-6 border border-blue-100 dark:border-blue-900">
+                <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-4">Filter Post Ideas</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
                   <div>
                     <label htmlFor="idea-week-of-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Week of Date</label>
                     <input
                       type="date"
                       id="idea-week-of-date"
-                      className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white/80 backdrop-blur-sm hover:bg-white dark:bg-gray-700/90 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-800"
                       value={filterIdeaWeekOfDate || ''}
                       onChange={(e) => setFilterIdeaWeekOfDate(e.target.value || null)}
                     />
@@ -663,7 +744,7 @@ const CompetitorContentReportPage = () => {
                       <input
                         type="text"
                         id="idea-search"
-                        className="block w-full rounded-md border-gray-300 pl-10 pr-3 py-2 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm dark:bg-slate-700 dark:border-gray-600 dark:text-white"
+                        className="block w-full rounded-lg border-gray-300 pl-10 pr-3 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/80 backdrop-blur-sm hover:bg-white dark:bg-gray-700/90 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-800"
                         value={filterIdeaSearch}
                         onChange={(e) => setFilterIdeaSearch(e.target.value)}
                         placeholder="Search title, hook, outline"
@@ -675,30 +756,44 @@ const CompetitorContentReportPage = () => {
 
               {errorIdeas && <p className="text-red-500">Error: {errorIdeas}</p>}
               {loadingIdeas ? (
-                <p>Loading post ideas...</p>
+                <div className="flex flex-col items-center justify-center py-12">
+                  <div className="relative">
+                    <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-8 h-8 bg-blue-600 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                  <p className="mt-4 text-gray-600 dark:text-gray-400 animate-pulse">Loading post ideas...</p>
+                </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {postIdeas.map((idea) => (
-                    <div key={idea.id} className="bg-white dark:bg-slate-800 shadow rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                      <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">{idea.title}</h3>
-                      {idea.hook && <p className="text-gray-700 dark:text-gray-300 mb-2"><strong>Hook:</strong> {idea.hook}</p>}
+                    <div key={idea.id} className="group bg-gradient-to-br from-white to-blue-50 dark:from-gray-800/95 dark:to-blue-900/20 shadow-lg hover:shadow-2xl rounded-xl p-6 border border-blue-100 dark:border-blue-900 transform hover:scale-105 transition-all duration-300">
+                      <h3 className="text-xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-blue-900">{idea.title}</h3>
+                      {idea.hook && (
+                        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 mb-3">
+                          <p className="text-gray-700 dark:text-gray-300">
+                            <span className="font-semibold text-blue-600 dark:text-blue-400">Hook:</span> {idea.hook}
+                          </p>
+                        </div>
+                      )}
                       
                       {idea.week_of_date && <p className="text-sm text-gray-600 dark:text-gray-400">Week of: {new Date(idea.week_of_date).toLocaleDateString()}</p>}
 
                       {idea.outline && (
-                        <details className="mt-2 p-2 bg-gray-50 dark:bg-slate-700 rounded-md">
+                        <details className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/90 rounded-md">
                           <summary className="font-semibold cursor-pointer text-gray-800 dark:text-white">Outline</summary>
                           <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{idea.outline}</p>
                         </details>
                       )}
                       {idea.angle && (
-                        <details className="mt-2 p-2 bg-gray-50 dark:bg-slate-700 rounded-md">
+                        <details className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/90 rounded-md">
                           <summary className="font-semibold cursor-pointer text-gray-800 dark:text-white">Angle</summary>
                           <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{idea.angle}</p>
                         </details>
                       )}
                       {idea.persona && (
-                        <details className="mt-2 p-2 bg-gray-50 dark:bg-slate-700 rounded-md">
+                        <details className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/90 rounded-md">
                           <summary className="font-semibold cursor-pointer text-gray-800 dark:text-white">Persona</summary>
                           <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{idea.persona}</p>
                         </details>
@@ -722,7 +817,7 @@ const CompetitorContentReportPage = () => {
               {/* Inspired Posts Modal */}
               {showInspiredPostsModal && (
                 <div className="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex justify-center items-center p-4">
-                  <div className="relative p-6 border w-full max-w-lg shadow-lg rounded-md bg-white dark:bg-slate-800 dark:border-gray-700">
+                  <div className="relative p-6 border w-full max-w-lg shadow-lg rounded-md bg-white dark:bg-gray-800/95 dark:border-gray-700">
                     <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Inspired By Competitor Posts</h3>
                     {loadingInspiredPosts ? (
                       <p className="text-gray-700 dark:text-gray-300">Loading inspired posts...</p>
@@ -731,10 +826,10 @@ const CompetitorContentReportPage = () => {
                     ) : selectedInspiredPosts.length > 0 ? (
                       <div className="grid grid-cols-1 gap-4">
                         {selectedInspiredPosts.map((post) => (
-                          <div key={post.id} className="border border-gray-200 dark:border-gray-700 p-3 rounded-md shadow-sm dark:bg-slate-700">
+                          <div key={post.id} className="border border-gray-200 dark:border-gray-700 p-3 rounded-md shadow-sm dark:bg-gray-700/90">
                             <p className="text-sm font-medium text-gray-900 dark:text-white"><strong>Author:</strong> {post.author_name}</p>
                             <p className="text-sm text-gray-700 dark:text-gray-300"><strong>Content:</strong> {post.post_content?.substring(0, 150)}...</p>
-                            <a href={post.post_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900 text-sm dark:text-indigo-400 dark:hover:text-indigo-300">View Post</a>
+                            <a href={post.post_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-xs font-semibold rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200">View Post</a>
                           </div>
                         ))}
                       </div>
