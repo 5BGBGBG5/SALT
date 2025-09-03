@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import * as XLSX from 'xlsx';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -57,6 +58,8 @@ type FilterConfig = {
   engager_company_location: string;
   engagement_type: string; // 'all', 'like', 'comment', 'share'
   global_search: string;
+  date_from: string;
+  date_to: string;
 };
 
 const PostEngagementTable = ({ 
@@ -66,7 +69,8 @@ const PostEngagementTable = ({
   sortConfig, 
   onSort, 
   filters, 
-  onFilterChange 
+  onFilterChange,
+  onExportToExcel 
 }: { 
   data: PostEngagementData[]; 
   isLoading: boolean; 
@@ -75,6 +79,7 @@ const PostEngagementTable = ({
   onSort: (key: keyof PostEngagementData) => void;
   filters: FilterConfig;
   onFilterChange: (key: keyof FilterConfig, value: string) => void;
+  onExportToExcel: () => void;
 }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [scrollIndicators, setScrollIndicators] = useState({ left: false, right: true });
@@ -100,6 +105,26 @@ const PostEngagementTable = ({
       // Engagement type filter
       if (filters.engagement_type !== 'all' && row.engagement_type !== filters.engagement_type) {
         return false;
+      }
+
+      // Date range filter
+      if (filters.date_from || filters.date_to) {
+        const engagementDate = row.engagement_timestamp ? new Date(row.engagement_timestamp) : null;
+        if (engagementDate) {
+          if (filters.date_from) {
+            const fromDate = new Date(filters.date_from);
+            if (engagementDate < fromDate) {
+              return false;
+            }
+          }
+          if (filters.date_to) {
+            const toDate = new Date(filters.date_to);
+            toDate.setHours(23, 59, 59, 999); // Include the entire end date
+            if (engagementDate > toDate) {
+              return false;
+            }
+          }
+        }
       }
 
       // Global search across all fields
@@ -335,6 +360,37 @@ const PostEngagementTable = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+              <input
+                type="date"
+                value={filters.date_from}
+                onChange={(e) => onFilterChange('date_from', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+              <input
+                type="date"
+                value={filters.date_to}
+                onChange={(e) => onFilterChange('date_to', e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              />
+            </div>
+          </div>
+          
+          {/* Export Button */}
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={onExportToExcel}
+              className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export to Excel
+            </button>
           </div>
         </div>
       )}
@@ -667,7 +723,9 @@ export default function PostEngagementReportPage() {
     engager_company_industry: '',
     engager_company_location: '',
     engagement_type: 'all',
-    global_search: ''
+    global_search: '',
+    date_from: '',
+    date_to: ''
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(100); // Default to 100 entries per page
@@ -698,8 +756,123 @@ export default function PostEngagementReportPage() {
       engager_company_industry: '',
       engager_company_location: '',
       engagement_type: 'all',
-      global_search: ''
+      global_search: '',
+      date_from: '',
+      date_to: ''
     });
+  };
+
+  const handleExportToExcel = () => {
+    // Get the filtered data that's currently displayed in the table
+    const dataToExport = postEngagementData.filter(row => {
+      // Apply the same filtering logic as in the table
+      if (filters.engagement_type !== 'all' && row.engagement_type !== filters.engagement_type) {
+        return false;
+      }
+
+      // Date range filter
+      if (filters.date_from || filters.date_to) {
+        const engagementDate = row.engagement_timestamp ? new Date(row.engagement_timestamp) : null;
+        if (engagementDate) {
+          if (filters.date_from) {
+            const fromDate = new Date(filters.date_from);
+            if (engagementDate < fromDate) {
+              return false;
+            }
+          }
+          if (filters.date_to) {
+            const toDate = new Date(filters.date_to);
+            toDate.setHours(23, 59, 59, 999);
+            if (engagementDate > toDate) {
+              return false;
+            }
+          }
+        }
+      }
+
+      // Global search filter
+      if (filters.global_search) {
+        const searchTerm = filters.global_search.toLowerCase();
+        const searchableFields = [
+          row.engager_name,
+          row.engager_company_name,
+          row.engager_job_title,
+          row.post_content,
+          row.engager_company_industry,
+          row.engager_company_location,
+          row.engager_headline,
+          row.post_author,
+          row.engagement_type,
+          row.reaction_type
+        ].filter(Boolean).join(' ').toLowerCase();
+        
+        if (!searchableFields.includes(searchTerm)) {
+          return false;
+        }
+      }
+
+      // Individual column filters
+      if (filters.engager_name && !row.engager_name?.toLowerCase().includes(filters.engager_name.toLowerCase())) {
+        return false;
+      }
+      if (filters.engager_company_name && !row.engager_company_name?.toLowerCase().includes(filters.engager_company_name.toLowerCase())) {
+        return false;
+      }
+      if (filters.engager_job_title && !row.engager_job_title?.toLowerCase().includes(filters.engager_job_title.toLowerCase())) {
+        return false;
+      }
+      if (filters.post_content && !row.post_content?.toLowerCase().includes(filters.post_content.toLowerCase())) {
+        return false;
+      }
+      if (filters.engager_company_industry && !row.engager_company_industry?.toLowerCase().includes(filters.engager_company_industry.toLowerCase())) {
+        return false;
+      }
+      if (filters.engager_company_location && !row.engager_company_location?.toLowerCase().includes(filters.engager_company_location.toLowerCase())) {
+        return false;
+      }
+
+      return true;
+    });
+
+    // Prepare data for Excel export
+    const exportData = dataToExport.map(row => ({
+      'Engagement Type': row.engagement_type,
+      'Engager Name': row.engager_name || '',
+      'Company Name': row.engager_company_name || '',
+      'Company Industry': row.engager_company_industry || '',
+      'Company Size': row.engager_company_size || '',
+      'Company Employees': row.engager_company_employees || '',
+      'Job Title': row.engager_job_title || '',
+      'LinkedIn Profile': row.linkedin_profile_url || '',
+      'Post Content': row.post_content || '',
+      'Post Author': row.post_author || '',
+      'Like Count': row.like_count || 0,
+      'Comment Count': row.comment_count || 0,
+      'Repost Count': row.repost_count || 0,
+      'Post URL': row.post_url || '',
+      'Engagement Date': row.engagement_timestamp ? new Date(row.engagement_timestamp).toLocaleDateString() : '',
+      'Reaction Type': row.reaction_type || ''
+    }));
+
+    // Create workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+    // Auto-size columns
+    const colWidths = Object.keys(exportData[0] || {}).map(key => ({
+      wch: Math.max(key.length, 15)
+    }));
+    worksheet['!cols'] = colWidths;
+
+    // Add worksheet to workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Post Engagement Data');
+
+    // Generate filename with current date
+    const currentDate = new Date().toISOString().split('T')[0];
+    const filename = `post-engagement-report-${currentDate}.xlsx`;
+
+    // Save the file
+    XLSX.writeFile(workbook, filename);
   };
 
   useEffect(() => {
@@ -768,6 +941,7 @@ export default function PostEngagementReportPage() {
             onSort={handleSort}
             filters={filters}
             onFilterChange={handleFilterChange}
+            onExportToExcel={handleExportToExcel}
           />
         </div>
 
