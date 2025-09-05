@@ -180,6 +180,7 @@ const CompetitorContentReportPage = () => {
     };
 
     const fetchPostIdeas = async () => {
+      console.log('fetchPostIdeas called');
       setLoadingIdeas(true);
       setErrorIdeas(null);
       try {
@@ -195,15 +196,20 @@ const CompetitorContentReportPage = () => {
         
         const { data, error } = await query;
         
+        console.log('Post ideas query result:', { data, error });
+        
         if (error) throw error;
         setPostIdeas(data || []);
       } catch (err: unknown) {
+        console.error('Error fetching post ideas:', err);
         setErrorIdeas(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
         setLoadingIdeas(false);
       }
     };
 
+    console.log('useEffect triggered with activeTab:', activeTab);
+    
     if (activeTab === 'posts') {
       fetchCompetitorPosts();
     } else if (activeTab === 'ideas') {
@@ -725,6 +731,15 @@ const CompetitorContentReportPage = () => {
                 </div>
               </div>
 
+              {/* Debug info */}
+              <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
+                <p>Debug Info:</p>
+                <p>Loading Ideas: {loadingIdeas.toString()}</p>
+                <p>Error Ideas: {errorIdeas || 'None'}</p>
+                <p>Post Ideas Count: {postIdeas.length}</p>
+                <p>Active Tab: {activeTab}</p>
+              </div>
+
               {errorIdeas && <p className="text-red-500">Error: {errorIdeas}</p>}
               {loadingIdeas ? (
                 <div className="flex flex-col items-center justify-center py-12">
@@ -738,7 +753,13 @@ const CompetitorContentReportPage = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {postIdeas.map((idea) => (
+                  {postIdeas.length === 0 ? (
+                    <div className="col-span-full text-center py-12">
+                      <p className="text-gray-500 text-lg">No post ideas found.</p>
+                      <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or check if the post_ideas table has data.</p>
+                    </div>
+                  ) : (
+                    postIdeas.map((idea) => (
                     <div key={idea.id} className="group bg-gradient-to-br from-white to-blue-50 dark:from-gray-800/95 dark:to-blue-900/20 shadow-lg hover:shadow-2xl rounded-xl p-6 border border-blue-100 dark:border-blue-900 transform hover:scale-105 transition-all duration-300">
                       <h3 className="text-xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-blue-900">{idea.title}</h3>
                       {idea.hook && (
@@ -781,7 +802,8 @@ const CompetitorContentReportPage = () => {
                         </div>
                       )}
                     </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               )}
 
