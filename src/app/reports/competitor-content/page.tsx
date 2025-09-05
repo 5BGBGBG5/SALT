@@ -183,49 +183,20 @@ const CompetitorContentReportPage = () => {
       setLoadingIdeas(true);
       setErrorIdeas(null);
       try {
-        // const { data, error } = await supabase.from('post_ideas').select('*');
-        // Temporarily use mock data since post_ideas table might not exist or be empty
-        const mockPostIdeas: PostIdea[] = [
-          {
-            id: '1',
-            title: 'AI in Marketing: Beyond the Hype',
-            hook: 'Discover practical applications of AI in marketing that drive real results.',
-            week_of_date: '2024-07-22',
-            outline: 'Introduction to AI in marketing; case studies; actionable strategies; future trends.',
-            angle: 'Demystifying AI for marketers with practical, results-oriented advice.',
-            persona: 'Marketing Managers, CMOs, Digital Strategists',
-            inspired_by_posts: ['https://www.linkedin.com/feed/update/urn:li:activity:7219999999999999999/'],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: '2',
-            title: 'The Future of Content: Interactive Experiences',
-            hook: 'How interactive content can boost engagement and conversions.',
-            week_of_date: '2024-07-29',
-            outline: 'Types of interactive content; benefits; tools and platforms; examples.',
-            angle: 'Highlighting the shift from static to dynamic content experiences.',
-            persona: 'Content Creators, Marketing Teams',
-            inspired_by_posts: [],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: '3',
-            title: 'LinkedIn Algorithm Secrets Revealed',
-            hook: 'Cracking the code: What really makes your LinkedIn posts go viral in 2024.',
-            week_of_date: '2024-08-05',
-            outline: 'Key ranking factors; engagement strategies; timing and frequency; content formats.',
-            angle: 'Actionable tips for maximizing reach and engagement on LinkedIn.',
-            persona: 'B2B Marketers, Sales Professionals',
-            inspired_by_posts: ['https://www.linkedin.com/feed/update/urn:li:activity:7219888888888888888/', 'https://www.linkedin.com/feed/update/urn:li:activity:7219777777777777777/'],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ];
-        setPostIdeas(mockPostIdeas);
-        // if (error) throw error;
-        // setPostIdeas(data || []);
+        let query = supabase.from('post_ideas').select('*');
+        
+        // Apply filters
+        if (filterIdeaWeekOfDate) {
+          query = query.eq('week_of_date', filterIdeaWeekOfDate);
+        }
+        if (debouncedFilterIdeaSearch) {
+          query = query.or(`title.ilike.%${debouncedFilterIdeaSearch}%,hook.ilike.%${debouncedFilterIdeaSearch}%,outline.ilike.%${debouncedFilterIdeaSearch}%`);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        setPostIdeas(data || []);
       } catch (err: unknown) {
         setErrorIdeas(err instanceof Error ? err.message : 'An unknown error occurred');
       } finally {
