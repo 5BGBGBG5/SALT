@@ -447,18 +447,18 @@ const PostEngagementTable = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="hidden md:block glass-table"
+        className="hidden md:block glass-table flex flex-col"
       >
         <div className="relative">
           {scrollIndicators.left && (
-            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-gray-50 to-transparent pointer-events-none z-20 border-r border-gray-200" />
+            <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[var(--background-secondary)] via-[var(--background-secondary)] to-transparent pointer-events-none z-20" />
           )}
           {scrollIndicators.right && (
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white via-gray-50 to-transparent pointer-events-none z-20 border-l border-gray-200" />
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[var(--background-secondary)] via-[var(--background-secondary)] to-transparent pointer-events-none z-20" />
           )}
           <div 
             ref={tableRef} 
-            className="overflow-auto max-h-[70vh] border border-gray-200 rounded-lg"
+            className="overflow-auto max-h-[70vh] border border-border-primary rounded-lg"
             style={{ scrollbarWidth: 'thin' }}
           >
             <table className="min-w-full divide-y divide-gray-200">
