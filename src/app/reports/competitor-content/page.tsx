@@ -179,34 +179,49 @@ const CompetitorContentReportPage = () => {
       }
     };
 
-    const fetchPostIdeas = async () => {
-      console.log('fetchPostIdeas called');
-      setLoadingIdeas(true);
-      setErrorIdeas(null);
-      try {
-        let query = supabase.from('post_ideas').select('*');
-        
-        // Apply filters
-        if (filterIdeaWeekOfDate) {
-          query = query.eq('week_of_date', filterIdeaWeekOfDate);
-        }
-        if (debouncedFilterIdeaSearch) {
-          query = query.or(`title.ilike.%${debouncedFilterIdeaSearch}%,hook.ilike.%${debouncedFilterIdeaSearch}%,outline.ilike.%${debouncedFilterIdeaSearch}%`);
-        }
-        
-        const { data, error } = await query;
-        
-        console.log('Post ideas query result:', { data, error });
-        
-        if (error) throw error;
-        setPostIdeas(data || []);
-      } catch (err: unknown) {
-        console.error('Error fetching post ideas:', err);
-        setErrorIdeas(err instanceof Error ? err.message : 'An unknown error occurred');
-      } finally {
-        setLoadingIdeas(false);
+  const fetchPostIdeas = async () => {
+    console.log('fetchPostIdeas called');
+    setLoadingIdeas(true);
+    setErrorIdeas(null);
+    try {
+      console.log('Supabase URL:', supabaseUrl ? 'SET' : 'NOT SET');
+      console.log('Supabase Key:', supabaseAnonKey ? 'SET' : 'NOT SET');
+      
+      // Test connection first
+      const { data: connectionTest, error: connectionError } = await supabase
+        .from('post_ideas')
+        .select('count')
+        .limit(1);
+      
+      console.log('Connection test result:', { data: connectionTest, error: connectionError });
+      
+      let query = supabase.from('post_ideas').select('*').order('created_at', { ascending: false });
+      
+      // Apply filters
+      if (filterIdeaWeekOfDate) {
+        query = query.eq('week_of_date', filterIdeaWeekOfDate);
       }
-    };
+      if (debouncedFilterIdeaSearch) {
+        query = query.or(`title.ilike.%${debouncedFilterIdeaSearch}%,hook.ilike.%${debouncedFilterIdeaSearch}%,outline.ilike.%${debouncedFilterIdeaSearch}%`);
+      }
+      
+      const { data, error } = await query;
+      
+      console.log('Post ideas query result:', { data, error });
+      console.log('Number of post ideas found:', data?.length || 0);
+      
+      if (error) {
+        console.error('Database error details:', error);
+        throw error;
+      }
+      setPostIdeas(data || []);
+    } catch (err: unknown) {
+      console.error('Error fetching post ideas:', err);
+      setErrorIdeas(err instanceof Error ? err.message : 'An unknown error occurred');
+    } finally {
+      setLoadingIdeas(false);
+    }
+  };
 
     console.log('useEffect triggered with activeTab:', activeTab);
     
@@ -731,14 +746,128 @@ const CompetitorContentReportPage = () => {
                 </div>
               </div>
 
-              {/* Debug info */}
-              <div className="mb-4 p-3 bg-gray-100 rounded text-sm">
-                <p>Debug Info:</p>
-                <p>Loading Ideas: {loadingIdeas.toString()}</p>
-                <p>Error Ideas: {errorIdeas || 'None'}</p>
-                <p>Post Ideas Count: {postIdeas.length}</p>
-                <p>Active Tab: {activeTab}</p>
+              {/* Debug info and manual refresh */}
+              <div className="mb-4 p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                <div className="flex justify-between items-start mb-3">
+                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Connection Status</h4>
+                  <button
+                    onClick={() => {
+                      console.log('Manual refresh triggered');
+                      fetchPostIdeas();
+                    }}
+                    disabled={loadingIdeas}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {loadingIdeas ? (
+                      <>
+                        <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Refresh
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Status:</span>
+                    <span className={`ml-1 font-medium ${loadingIdeas ? 'text-yellow-600' : errorIdeas ? 'text-red-600' : 'text-green-600'}`}>
+                      {loadingIdeas ? 'Loading...' : errorIdeas ? 'Error' : 'Connected'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Ideas Found:</span>
+                    <span className="ml-1 font-medium text-blue-600">{postIdeas.length}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Supabase:</span>
+                    <span className={`ml-1 font-medium ${supabaseUrl && supabaseAnonKey ? 'text-green-600' : 'text-red-600'}`}>
+                      {supabaseUrl && supabaseAnonKey ? 'Configured' : 'Not Configured'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 dark:text-gray-400">Tab:</span>
+                    <span className="ml-1 font-medium text-gray-700 dark:text-gray-300">{activeTab}</span>
+                  </div>
+                </div>
+                {errorIdeas && (
+                  <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-400 text-xs">
+                    <strong>Error:</strong> {errorIdeas}
+                  </div>
+                )}
               </div>
+
+              {/* Post Ideas Stats Cards */}
+              {!loadingIdeas && !errorIdeas && postIdeas.length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-100 text-sm">Total Ideas</p>
+                        <p className="text-2xl font-bold">{postIdeas.length}</p>
+                      </div>
+                      <svg className="w-8 h-8 text-blue-200" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-green-100 text-sm">This Week</p>
+                        <p className="text-2xl font-bold">
+                          {postIdeas.filter(idea => {
+                            const ideaDate = new Date(idea.week_of_date);
+                            const weekAgo = new Date();
+                            weekAgo.setDate(weekAgo.getDate() - 7);
+                            return ideaDate >= weekAgo;
+                          }).length}
+                        </p>
+                      </div>
+                      <svg className="w-8 h-8 text-green-200" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-purple-100 text-sm">With Hooks</p>
+                        <p className="text-2xl font-bold">
+                          {postIdeas.filter(idea => idea.hook && idea.hook.trim().length > 0).length}
+                        </p>
+                      </div>
+                      <svg className="w-8 h-8 text-purple-200" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white shadow-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-orange-100 text-sm">Inspired By</p>
+                        <p className="text-2xl font-bold">
+                          {postIdeas.filter(idea => idea.inspired_by_posts && idea.inspired_by_posts.length > 0).length}
+                        </p>
+                      </div>
+                      <svg className="w-8 h-8 text-orange-200" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {errorIdeas && <p className="text-red-500">Error: {errorIdeas}</p>}
               {loadingIdeas ? (
@@ -755,8 +884,42 @@ const CompetitorContentReportPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {postIdeas.length === 0 ? (
                     <div className="col-span-full text-center py-12">
-                      <p className="text-gray-500 text-lg">No post ideas found.</p>
-                      <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or check if the post_ideas table has data.</p>
+                      <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/50">
+                        <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      </div>
+                      <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">No post ideas found</h3>
+                      <p className="mt-2 text-gray-500 dark:text-gray-400">
+                        {errorIdeas 
+                          ? "There was an error loading post ideas. Check the connection status above."
+                          : "Try adjusting your filters or ensure the post_ideas table has data."
+                        }
+                      </p>
+                      <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+                        <button
+                          onClick={() => fetchPostIdeas()}
+                          disabled={loadingIdeas}
+                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                          </svg>
+                          Retry Loading
+                        </button>
+                        <button
+                          onClick={() => {
+                            setFilterIdeaWeekOfDate(null);
+                            setFilterIdeaSearch('');
+                          }}
+                          className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                        >
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Clear Filters
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     postIdeas.map((idea) => (
