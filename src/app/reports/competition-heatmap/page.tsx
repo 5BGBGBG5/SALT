@@ -269,13 +269,13 @@ export default function CompetitionHeatMapPage() {
                 return (
                   <tr key={promptId} className="border-b border-teal-500/10 hover:bg-teal-500/5 transition-colors">
                     <td className="p-4 align-top">
-                      <span className="px-2 py-1 rounded-full bg-gray-100 border border-gray-200 text-xs font-medium text-gray-700">
+                      <span className="px-2 py-1 rounded-full bg-background-secondary border border-border-primary text-xs font-medium text-text-secondary">
                         {v.category}
                       </span>
                     </td>
                     <td className="p-4 align-top">
-                      <div className="max-w-3xl leading-6 text-gray-900">{v.text}</div>
-                      <div className="mt-2 text-xs text-gray-500">ID: {promptId}</div>
+                      <div className="max-w-3xl leading-6 text-text-primary">{v.text}</div>
+                      <div className="mt-2 text-xs text-text-secondary">ID: {promptId}</div>
                     </td>
                     {MODELS.map(m => {
                       const cell = v.models[m];
