@@ -309,28 +309,34 @@ export default function CompetitionHeatMapPage() {
             </tbody>
           </table>
         </div>
-      </div>
+        </motion.div>
 
-      {/* Legend */}
-      <div className="bg-gray-50 rounded-lg p-4">
-        <h3 className="font-medium text-gray-900 mb-3">Legend</h3>
+        {/* Legend */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="glass-card p-4"
+        >
+          <h3 className="font-medium text-white mb-3">Legend</h3>
         <div className="flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-green-100 border border-green-200 rounded"></div>
-            <span className="text-gray-700">Green = Inecta mentioned</span>
+            <span className="text-gray-300">Green = Inecta mentioned</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-red-100 border border-red-200 rounded"></div>
-            <span className="text-gray-700">Red = Model answered but didn&apos;t mention Inecta</span>
+            <span className="text-gray-300">Red = Model answered but didn&apos;t mention Inecta</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 bg-gray-100 border border-gray-200 rounded"></div>
-            <span className="text-gray-700">Gray = No response</span>
+            <span className="text-gray-300">Gray = No response</span>
           </div>
         </div>
-        <p className="text-xs text-gray-500 mt-3">
+        <p className="text-xs text-gray-400 mt-3">
           Filter by categories or search prompts to focus on specific areas. Use &quot;Show only misses&quot; to identify opportunities where AI models responded but didn&apos;t mention Inecta.
         </p>
+        </motion.div>
       </div>
     </div>
   );

@@ -435,7 +435,7 @@ const PostEngagementTable = ({
             </label>
           ))}
         </div>
-      </div>
+      </motion.div>
 
       {/* Results Count */}
       <div className="text-sm text-gray-300">
