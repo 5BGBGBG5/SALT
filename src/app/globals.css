@@ -8,27 +8,37 @@
   --inecta-teal: #00CCCC;
   --inecta-dark-green: #2A3D36;
 
-  /* Extended Palette for UI */
-  --dark-bg-primary: #0A0F0D;
-  --dark-bg-secondary: #131A18;
-  --dark-bg-elevated: #1A2422;
-  --glass-bg: rgba(19, 36, 34, 0.7);
+  /* Background Layers - Improved Contrast */
+  --bg-primary: #0F1419;        /* Main dark background */
+  --bg-secondary: #1A1F2E;      /* Slightly lighter for cards */
+  --bg-elevated: #232937;       /* Tables and elevated surfaces */
+  --bg-hover: #2A3142;          /* Hover states */
+  --dark-bg-primary: var(--bg-primary);
+  --dark-bg-secondary: var(--bg-secondary);
+  --dark-bg-elevated: var(--bg-elevated);
 
-  /* Accent Colors */
-  --accent-teal: #00CCCC;
-  --accent-teal-glow: #00FFD4;
-  --accent-emerald: #10B981;
+  /* Glass Effects - Better Visibility */
+  --glass-bg: rgba(26, 31, 46, 0.8);      /* Semi-transparent cards */
+  --glass-border: rgba(71, 85, 105, 0.2);  /* Subtle borders */
+
+  /* Accent Colors - Enhanced */
+  --accent-teal: #14B8A6;       /* Primary teal */
+  --accent-blue: #3B82F6;       /* Links and CTAs */
+  --accent-green: #10B981;      /* Success states */
+  --accent-purple: #8B5CF6;     /* Highlights */
+  --accent-teal-glow: #22D3EE;  /* Hover/glow state */
+  --accent-emerald: var(--accent-green);
   --accent-yellow: #FFD44D;
 
-  /* Text Colors */
-  --text-primary: #FFFFFF;
-  --text-secondary: #A5A59E;
-  --text-muted: #575763;
+  /* Text Colors - High Contrast */
+  --text-primary: #F7F8FA;      /* Main text - almost white */
+  --text-secondary: #CBD5E1;    /* Secondary text - light gray */
+  --text-muted: #94A3B8;        /* Muted text - medium gray */
 
-  /* UI Colors */
-  --border-subtle: rgba(165, 165, 158, 0.1);
-  --border-default: rgba(165, 165, 158, 0.2);
-  --border-strong: rgba(0, 204, 204, 0.3);
+  /* UI Colors - Better Borders */
+  --border-subtle: rgba(71, 85, 105, 0.1);
+  --border-default: rgba(71, 85, 105, 0.2);
+  --border-strong: rgba(20, 184, 166, 0.3);
 
   /* Apply to theme */
   --background: var(--dark-bg-primary);
@@ -44,7 +54,7 @@
 
 /* Dark mode by default - no media query needed */
 body {
-  background: linear-gradient(135deg, #0A0F0D 0%, #131A18 100%);
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
   min-height: 100vh;
   color: var(--text-primary);
   font-family: var(--font-inter), system-ui, sans-serif;
@@ -52,23 +62,21 @@ body {
 
 /* Glass morphism utility classes */
 .glass-card {
-  background: linear-gradient(135deg, 
-    rgba(19, 36, 34, 0.8) 0%, 
-    rgba(26, 36, 34, 0.6) 100%);
+  background: var(--glass-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 204, 204, 0.1);
+  border: 1px solid var(--glass-border);
   border-radius: 16px;
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 8px 32px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .glass-card:hover {
-  border-color: rgba(0, 204, 204, 0.3);
+  border-color: rgba(20, 184, 166, 0.3);
   box-shadow: 
-    0 8px 32px rgba(0, 204, 204, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 8px 32px rgba(20, 184, 166, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
   transform: translateY(-2px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -119,36 +127,39 @@ body {
 
 /* Premium button styles */
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent-teal) 0%, var(--accent-emerald) 100%);
+  background: var(--accent-teal);
   color: white;
   font-weight: 600;
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
   border: none;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.25);
 }
 
 .btn-primary:hover {
-  box-shadow: 0 0 20px rgba(0, 204, 204, 0.5);
-  transform: scale(1.05);
+  background: #0D9488;
+  box-shadow: 0 6px 20px rgba(20, 184, 166, 0.4);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
-  background: rgba(19, 36, 34, 0.8);
+  background: var(--bg-elevated);
   backdrop-filter: blur(20px);
-  color: var(--accent-teal);
+  color: var(--text-secondary);
   font-weight: 600;
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
-  border: 1px solid rgba(0, 204, 204, 0.3);
+  border: 1px solid var(--border-default);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease-in-out;
 }
 
 .btn-secondary:hover {
   border-color: var(--accent-teal);
-  background: rgba(0, 204, 204, 0.1);
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 /* Form inputs with glass morphism */
@@ -175,31 +186,39 @@ body {
 
 /* Table styling */
 .glass-table {
-  background: rgba(19, 36, 34, 0.6);
+  background: var(--bg-elevated);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(0, 204, 204, 0.1);
+  border: 1px solid var(--border-default);
   border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .glass-table thead {
-  background: linear-gradient(135deg, rgba(0, 204, 204, 0.1) 0%, transparent 100%);
-  border-bottom: 1px solid rgba(0, 204, 204, 0.2);
+  background: rgba(71, 85, 105, 0.15);
+  border-bottom: 1px solid var(--border-default);
+}
+
+.glass-table tbody tr {
+  background: rgba(35, 41, 55, 0.3);
+  transition: all 0.2s ease-in-out;
 }
 
 .glass-table tbody tr:hover {
-  background: rgba(0, 204, 204, 0.05);
+  background: var(--bg-hover);
+  transform: scale(1.001);
 }
 
 .glass-table th {
   padding: 1rem 1.5rem;
   text-align: left;
   font-size: 0.75rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   cursor: pointer;
+  transition: color 0.2s ease;
 }
 
 .glass-table th:hover {
@@ -210,5 +229,6 @@ body {
   padding: 1rem 1.5rem;
   font-size: 0.875rem;
   color: var(--text-primary);
-  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: color 0.2s ease;
 }
