@@ -12,14 +12,14 @@ interface MetricCardProps {
   className?: string;
 }
 
-const AnimatedNumber: React.FC<{ value: number; format?: 'number' | 'currency' | 'percentage' }> = ({ 
+const AnimatedNumber: React.FC<{ value: number | string; format?: 'number' | 'currency' | 'percentage' }> = ({ 
   value, 
   format = 'number' 
 }) => {
   const [displayValue, setDisplayValue] = useState(0);
 
   useEffect(() => {
-    const numericValue = typeof value === 'number' ? value : parseFloat(value.toString()) || 0;
+    const numericValue = typeof value === 'number' ? value : parseFloat(String(value)) || 0;
     let start = 0;
     const end = numericValue;
     const duration = 2000; // 2 seconds
@@ -65,7 +65,6 @@ const MetricCard: React.FC<MetricCardProps> = ({
   format = 'number',
   className = '' 
 }) => {
-  const numericValue = typeof value === 'number' ? value : parseFloat(value.toString()) || 0;
 
   return (
     <motion.div
@@ -89,8 +88,8 @@ const MetricCard: React.FC<MetricCardProps> = ({
       <div className="relative z-10">
         <p className="text-gray-400 text-sm mb-2 font-medium">{title}</p>
         <p className="text-3xl font-bold text-white mb-2">
-          {typeof value === 'number' ? (
-            <AnimatedNumber value={numericValue} format={format} />
+          {typeof value === 'number' || (typeof value === 'string' && !isNaN(parseFloat(String(value)))) ? (
+            <AnimatedNumber value={value} format={format} />
           ) : (
             value
           )}
