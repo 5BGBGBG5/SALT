@@ -123,6 +123,13 @@ const CompetitorContentReportPage = () => {
   const [loadingInspiredPosts, setLoadingInspiredPosts] = useState(false);
   const [errorInspiredPosts, setErrorInspiredPosts] = useState<string | null>(null);
 
+  // State for Post Ideas Table
+  const [sortConfigIdeas, setSortConfigIdeas] = useState<{ key: keyof PostIdea; direction: 'ascending' | 'descending' } | null>(null);
+  const [currentPageIdeas, setCurrentPageIdeas] = useState(1);
+  const [ideasPerPage] = useState(25);
+  const [totalIdeas, setTotalIdeas] = useState(0);
+  const [expandedIdeaId, setExpandedIdeaId] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchCompetitorPosts = async () => {
       setLoading(true);
@@ -186,10 +193,7 @@ const CompetitorContentReportPage = () => {
     setLoadingIdeas(true);
     setErrorIdeas(null);
     try {
-      console.log('Supabase URL:', supabaseUrl ? 'SET' : 'NOT SET');
-      console.log('Supabase Key:', supabaseAnonKey ? 'SET' : 'NOT SET');
-      
-      let query = supabase.from('post_ideas').select('*').order('created_at', { ascending: false });
+      let query = supabase.from('post_ideas').select('*', { count: 'exact' });
       
       // Apply filters
       if (filterIdeaWeekOfDate) {
@@ -198,17 +202,17 @@ const CompetitorContentReportPage = () => {
       if (debouncedFilterIdeaSearch) {
         query = query.or(`title.ilike.%${debouncedFilterIdeaSearch}%,hook.ilike.%${debouncedFilterIdeaSearch}%,outline.ilike.%${debouncedFilterIdeaSearch}%,angle.ilike.%${debouncedFilterIdeaSearch}%,persona.ilike.%${debouncedFilterIdeaSearch}%,idea_text.ilike.%${debouncedFilterIdeaSearch}%`);
       }
+
+      // Default sorting: newest first (created_at desc)
+      query = query.order('created_at', { ascending: false });
+
+      const { data, error, count } = await query
+        .limit(ideasPerPage)
+        .range((currentPageIdeas - 1) * ideasPerPage, currentPageIdeas * ideasPerPage - 1);
       
-      const { data, error } = await query;
-      
-      console.log('Post ideas query result:', { data, error });
-      console.log('Number of post ideas found:', data?.length || 0);
-      
-      if (error) {
-        console.error('Database error details:', error);
-        throw error;
-      }
+      if (error) throw error;
       setPostIdeas(data || []);
+      setTotalIdeas(count || 0);
     } catch (err: unknown) {
       console.error('Error fetching post ideas:', err);
       setErrorIdeas(err instanceof Error ? err.message : 'An unknown error occurred');
@@ -224,7 +228,7 @@ const CompetitorContentReportPage = () => {
     } else if (activeTab === 'ideas') {
       fetchPostIdeas();
     }
-  }, [activeTab, currentPage, postsPerPage, debouncedFilterAuthor, debouncedFilterContent, filterPostType, filterMinLikes, filterMinComments, filterMinReposts, filterStartDate, filterEndDate, filterIdeaWeekOfDate, filterIdeaSearch, debouncedFilterIdeaSearch]);
+  }, [activeTab, currentPage, postsPerPage, debouncedFilterAuthor, debouncedFilterContent, filterPostType, filterMinLikes, filterMinComments, filterMinReposts, filterStartDate, filterEndDate, filterIdeaWeekOfDate, debouncedFilterIdeaSearch, currentPageIdeas, ideasPerPage]);
 
   const fetchInspiredPosts = async (postUrls: string[]) => {
     setLoadingInspiredPosts(true);
@@ -298,9 +302,80 @@ const CompetitorContentReportPage = () => {
 
   // Pagination controls
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  const paginateIdeas = (pageNumber: number) => setCurrentPageIdeas(pageNumber);
+
+  // Sorting for Post Ideas
+  const sortedPostIdeas = React.useMemo(() => {
+    const sortableIdeas = [...postIdeas];
+    if (sortConfigIdeas !== null) {
+      sortableIdeas.sort((a, b) => {
+        const aValue = a[sortConfigIdeas.key];
+        const bValue = b[sortConfigIdeas.key];
+
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortConfigIdeas.direction === 'ascending' ? aValue - bValue : bValue - aValue;
+        }
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortConfigIdeas.direction === 'ascending' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        }
+        // Fallback for mixed types or nulls
+        if (aValue == null) return sortConfigIdeas.direction === 'ascending' ? -1 : 1;
+        if (bValue == null) return sortConfigIdeas.direction === 'ascending' ? 1 : -1;
+
+        if (aValue < bValue) {
+          return sortConfigIdeas.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfigIdeas.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableIdeas;
+  }, [postIdeas, sortConfigIdeas]);
+
+  const requestSortIdeas = (key: keyof PostIdea) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (
+      sortConfigIdeas &&
+      sortConfigIdeas.key === key &&
+      sortConfigIdeas.direction === 'ascending'
+    ) {
+      direction = 'descending';
+    }
+    setSortConfigIdeas({ key, direction });
+  };
+
+  // Export functionality
+  const exportToExcel = () => {
+    const csvContent = [
+      ['Idea #', 'Title', 'Week Of', 'Hook', 'Idea Text', 'Outline', 'Angle', 'Persona', 'Inspired By Posts', 'Created At'],
+      ...postIdeas.map(idea => [
+        idea.idea_number || '',
+        idea.title,
+        idea.week_of_date,
+        idea.hook || '',
+        idea.idea_text || '',
+        idea.outline || '',
+        idea.angle || '',
+        idea.persona || '',
+        idea.inspired_by_posts?.join('; ') || '',
+        new Date(idea.created_at).toLocaleDateString()
+      ])
+    ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `post-ideas-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const postTypes = ['Image', 'Video (LinkedIn Source)', 'Text']; // Example post types, replace with actual types from DB
-  const ideaStatuses = ['draft', 'approved', 'rejected', 'published'];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6">
@@ -709,17 +784,36 @@ const CompetitorContentReportPage = () => {
 
               {/* Filter Controls for Post Ideas */}
               <div className="bg-gradient-to-br from-white to-blue-50 dark:from-gray-800/95 dark:to-blue-900/20 p-6 rounded-xl shadow-lg mb-6 border border-blue-100 dark:border-blue-900">
-                <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-4">Filter Post Ideas</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                  <div>
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
+                  <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-4 lg:mb-0">
+                    Filter Post Ideas
+                  </h3>
+                  <button
+                    onClick={exportToExcel}
+                    disabled={loadingIdeas || postIdeas.length === 0}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export to Excel
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="relative">
                     <label htmlFor="idea-week-of-date" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Week of Date</label>
-                    <input
-                      type="date"
-                      id="idea-week-of-date"
-                      className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2.5 px-3 focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition-all bg-white/80 backdrop-blur-sm hover:bg-white dark:bg-gray-700/90 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-800"
-                      value={filterIdeaWeekOfDate || ''}
-                      onChange={(e) => setFilterIdeaWeekOfDate(e.target.value || null)}
-                    />
+                    <div className="mt-1 relative rounded-md shadow-sm">
+                      <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <CalendarDays className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                      </div>
+                      <input
+                        type="date"
+                        id="idea-week-of-date"
+                        className="block w-full rounded-lg border-gray-300 pl-10 pr-3 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/80 backdrop-blur-sm hover:bg-white dark:bg-gray-700/90 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-800"
+                        value={filterIdeaWeekOfDate || ''}
+                        onChange={(e) => setFilterIdeaWeekOfDate(e.target.value || null)}
+                      />
+                    </div>
                   </div>
                   <div className="relative">
                     <label htmlFor="idea-search" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Search Ideas</label>
@@ -740,128 +834,6 @@ const CompetitorContentReportPage = () => {
                 </div>
               </div>
 
-              {/* Debug info and manual refresh */}
-              <div className="mb-4 p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800/50 dark:to-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
-                <div className="flex justify-between items-start mb-3">
-                  <h4 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Connection Status</h4>
-                  <button
-                    onClick={() => {
-                      console.log('Manual refresh triggered');
-                      fetchPostIdeas();
-                    }}
-                    disabled={loadingIdeas}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {loadingIdeas ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Refresh
-                      </>
-                    )}
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400">Status:</span>
-                    <span className={`ml-1 font-medium ${loadingIdeas ? 'text-yellow-600' : errorIdeas ? 'text-red-600' : 'text-green-600'}`}>
-                      {loadingIdeas ? 'Loading...' : errorIdeas ? 'Error' : 'Connected'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400">Ideas Found:</span>
-                    <span className="ml-1 font-medium text-blue-600">{postIdeas.length}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400">Supabase:</span>
-                    <span className={`ml-1 font-medium ${supabaseUrl && supabaseAnonKey ? 'text-green-600' : 'text-red-600'}`}>
-                      {supabaseUrl && supabaseAnonKey ? 'Configured' : 'Not Configured'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 dark:text-gray-400">Tab:</span>
-                    <span className="ml-1 font-medium text-gray-700 dark:text-gray-300">{activeTab}</span>
-                  </div>
-                </div>
-                {errorIdeas && (
-                  <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-red-700 dark:text-red-400 text-xs">
-                    <strong>Error:</strong> {errorIdeas}
-                  </div>
-                )}
-              </div>
-
-              {/* Post Ideas Stats Cards */}
-              {!loadingIdeas && !errorIdeas && postIdeas.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                  <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-blue-100 text-sm">Total Ideas</p>
-                        <p className="text-2xl font-bold">{postIdeas.length}</p>
-                      </div>
-                      <svg className="w-8 h-8 text-blue-200" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-green-100 text-sm">This Week</p>
-                        <p className="text-2xl font-bold">
-                          {postIdeas.filter(idea => {
-                            const ideaDate = new Date(idea.week_of_date);
-                            const weekAgo = new Date();
-                            weekAgo.setDate(weekAgo.getDate() - 7);
-                            return ideaDate >= weekAgo;
-                          }).length}
-                        </p>
-                      </div>
-                      <svg className="w-8 h-8 text-green-200" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-purple-100 text-sm">With Hooks</p>
-                        <p className="text-2xl font-bold">
-                          {postIdeas.filter(idea => idea.hook && idea.hook.trim().length > 0).length}
-                        </p>
-                      </div>
-                      <svg className="w-8 h-8 text-purple-200" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
-                      </svg>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white shadow-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-orange-100 text-sm">Inspired By</p>
-                        <p className="text-2xl font-bold">
-                          {postIdeas.filter(idea => idea.inspired_by_posts && idea.inspired_by_posts.length > 0).length}
-                        </p>
-                      </div>
-                      <svg className="w-8 h-8 text-orange-200" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {errorIdeas && <p className="text-red-500">Error: {errorIdeas}</p>}
               {loadingIdeas ? (
@@ -875,119 +847,240 @@ const CompetitorContentReportPage = () => {
                   <p className="mt-4 text-gray-600 dark:text-gray-400 animate-pulse">Loading post ideas...</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {postIdeas.length === 0 ? (
-                    <div className="col-span-full text-center py-12">
-                      <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/50">
-                        <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                        </svg>
-                      </div>
-                      <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">No post ideas found</h3>
-                      <p className="mt-2 text-gray-500 dark:text-gray-400">
-                        {errorIdeas 
-                          ? "There was an error loading post ideas. Check the connection status above."
-                          : "Try adjusting your filters or ensure the post_ideas table has data."
-                        }
-                      </p>
-                      <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                        <button
-                          onClick={() => fetchPostIdeas()}
-                          disabled={loadingIdeas}
-                          className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          Retry Loading
-                        </button>
-                        <button
-                          onClick={() => {
-                            setFilterIdeaWeekOfDate(null);
-                            setFilterIdeaSearch('');
-                          }}
-                          className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Clear Filters
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    postIdeas.map((idea) => (
-                    <div key={idea.id} className="group bg-gradient-to-br from-white to-blue-50 dark:from-gray-800/95 dark:to-blue-900/20 shadow-lg hover:shadow-2xl rounded-xl p-6 border border-blue-100 dark:border-blue-900 transform hover:scale-105 transition-all duration-300 relative">
-                      {/* Idea Number Badge */}
-                      {idea.idea_number && (
-                        <div className="absolute top-4 right-4">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 shadow-sm">
-                            #{idea.idea_number}
-                          </span>
-                        </div>
-                      )}
-                      
-                      <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-blue-900 pr-16">{idea.title}</h3>
-                      
-                      {idea.week_of_date && (
-                        <div className="mb-3">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
-                            Week of: {new Date(idea.week_of_date).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-
-                      {idea.hook && (
-                        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 mb-4">
-                          <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">Hook:</h4>
-                          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{idea.hook}</p>
-                        </div>
-                      )}
-
-                      {idea.idea_text && (
-                        <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 mb-4 border-l-4 border-yellow-400">
-                          <h4 className="font-semibold text-yellow-700 dark:text-yellow-400 mb-2">Idea Text:</h4>
-                          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-line">{idea.idea_text}</p>
-                        </div>
-                      )}
-
-                      {idea.outline && (
-                        <div className="bg-gray-50 dark:bg-gray-700/90 rounded-lg p-4 mb-3">
-                          <h4 className="font-semibold text-gray-800 dark:text-white mb-2">Outline:</h4>
-                          <div className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line leading-relaxed">{idea.outline}</div>
-                        </div>
-                      )}
-
-                      {idea.angle && (
-                        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 mb-3">
-                          <h4 className="font-semibold text-green-600 dark:text-green-400 mb-1">Angle:</h4>
-                          <p className="text-sm text-gray-700 dark:text-gray-200">{idea.angle}</p>
-                        </div>
-                      )}
-
-                      {idea.persona && (
-                        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 mb-3">
-                          <h4 className="font-semibold text-purple-600 dark:text-purple-400 mb-1">Target Persona:</h4>
-                          <p className="text-sm text-gray-700 dark:text-gray-200">{idea.persona}</p>
-                        </div>
-                      )}
-
-                      {idea.inspired_by_posts && idea.inspired_by_posts.length > 0 && (
-                        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
-                          <button
-                            onClick={() => handleViewInspiredPosts(idea.inspired_by_posts || [])}
-                            className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium transition-colors"
+                <div className="bg-white dark:bg-gray-800/95 p-6 rounded-xl shadow-xl border border-blue-100 dark:border-blue-900 overflow-hidden">
+                  <div className="mb-4 pb-4 border-b border-blue-100 dark:border-blue-800">
+                    <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                      Post Ideas Analysis
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Showing {sortedPostIdeas.length} of {totalIdeas} post ideas
+                    </p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                      <thead className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30">
+                        <tr>
+                          <th
+                            className="px-6 py-4 text-left text-xs font-bold text-blue-900 dark:text-blue-100 uppercase tracking-wider cursor-pointer hover:bg-blue-200/50 transition-colors"
+                            onClick={() => requestSortIdeas('idea_number')}
                           >
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                            </svg>
-                            Inspired by {idea.inspired_by_posts.length} competitor posts
+                            #
+                          </th>
+                          <th
+                            className="px-6 py-4 text-left text-xs font-bold text-blue-900 dark:text-blue-100 uppercase tracking-wider cursor-pointer hover:bg-blue-200/50 transition-colors"
+                            onClick={() => requestSortIdeas('title')}
+                          >
+                            Title
+                          </th>
+                          <th
+                            className="px-6 py-4 text-left text-xs font-bold text-blue-900 dark:text-blue-100 uppercase tracking-wider cursor-pointer hover:bg-blue-200/50 transition-colors"
+                            onClick={() => requestSortIdeas('week_of_date')}
+                          >
+                            Week
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                            Hook
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                            Target Persona
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                            Angle
+                          </th>
+                          <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                            Inspired By
+                          </th>
+                          <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-800/95 divide-y divide-gray-200 dark:divide-gray-700">
+                        {sortedPostIdeas.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="px-6 py-12 text-center">
+                              <div className="flex flex-col items-center">
+                                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/50">
+                                  <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                  </svg>
+                                </div>
+                                <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">No post ideas found</h3>
+                                <p className="mt-2 text-gray-500 dark:text-gray-400">
+                                  Try adjusting your filters or ensure the post_ideas table has data.
+                                </p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          sortedPostIdeas.map((idea, index) => (
+                            <React.Fragment key={idea.id}>
+                              <tr className={`${index % 2 === 0 ? 'bg-white dark:bg-gray-800/95' : 'bg-gray-50 dark:bg-gray-700/90'} hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors cursor-pointer`}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                  {idea.idea_number ? (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200">
+                                      #{idea.idea_number}
+                                    </span>
+                                  ) : (
+                                    '—'
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900 dark:text-white max-w-xs">
+                                  <div className="truncate">{idea.title}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                  {idea.week_of_date ? `Week of ${new Date(idea.week_of_date).toLocaleDateString()}` : '—'}
+                                </td>
+                                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 max-w-xs">
+                                  {idea.hook ? (
+                                    <div className="truncate" title={idea.hook}>
+                                      {idea.hook.length > 100 ? `${idea.hook.substring(0, 100)}...` : idea.hook}
+                                    </div>
+                                  ) : (
+                                    '—'
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                  {idea.persona || '—'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                  {idea.angle || '—'}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 text-center">
+                                  {idea.inspired_by_posts && idea.inspired_by_posts.length > 0 ? (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleViewInspiredPosts(idea.inspired_by_posts || []);
+                                      }}
+                                      className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium"
+                                    >
+                                      {idea.inspired_by_posts.length} posts
+                                    </button>
+                                  ) : (
+                                    '—'
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedIdeaId(expandedIdeaId === idea.id ? null : idea.id);
+                                    }}
+                                    className="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-xs font-semibold rounded-lg shadow-md hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                                  >
+                                    {expandedIdeaId === idea.id ? 'Hide' : 'View'} Details
+                                  </button>
+                                </td>
+                              </tr>
+                              {expandedIdeaId === idea.id && (
+                                <tr className="bg-blue-50 dark:bg-blue-900/10">
+                                  <td colSpan={8} className="px-6 py-6">
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                      {idea.hook && (
+                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                                          <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">Hook:</h4>
+                                          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{idea.hook}</p>
+                                        </div>
+                                      )}
+                                      {idea.idea_text && (
+                                        <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
+                                          <h4 className="font-semibold text-yellow-700 dark:text-yellow-400 mb-2">Idea Text:</h4>
+                                          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-line">{idea.idea_text}</p>
+                                        </div>
+                                      )}
+                                      {idea.outline && (
+                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                                          <h4 className="font-semibold text-gray-800 dark:text-white mb-2">Outline:</h4>
+                                          <div className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line leading-relaxed">{idea.outline}</div>
+                                        </div>
+                                      )}
+                                      {idea.inspired_by_posts && idea.inspired_by_posts.length > 0 && (
+                                        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800">
+                                          <h4 className="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">Inspired By Posts:</h4>
+                                          <div className="space-y-2">
+                                            {idea.inspired_by_posts.map((url, idx) => (
+                                              <a
+                                                key={idx}
+                                                href={url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="block text-sm text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 underline break-all"
+                                              >
+                                                Post {idx + 1}: {url}
+                                              </a>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                    {/* Pagination Controls for Ideas */}
+                    {totalIdeas > ideasPerPage && (
+                      <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
+                        <div className="flex-1 flex justify-between sm:hidden">
+                          <button
+                            onClick={() => paginateIdeas(currentPageIdeas - 1)}
+                            disabled={currentPageIdeas === 1}
+                            className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700/90 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600/90"
+                          >
+                            Previous
+                          </button>
+                          <button
+                            onClick={() => paginateIdeas(currentPageIdeas + 1)}
+                            disabled={currentPageIdeas * ideasPerPage >= totalIdeas}
+                            className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700/90 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-600/90"
+                          >
+                            Next
                           </button>
                         </div>
-                      )}
-                    </div>
-                    ))
-                  )}
+                        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                          <div>
+                            <p className="text-sm text-gray-700 dark:text-gray-300">
+                              Showing <span className="font-medium">{(currentPageIdeas - 1) * ideasPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPageIdeas * ideasPerPage, totalIdeas)}</span> of {' '}
+                              <span className="font-medium">{totalIdeas}</span> results
+                            </p>
+                          </div>
+                          <div>
+                            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                              <button
+                                onClick={() => paginateIdeas(currentPageIdeas - 1)}
+                                disabled={currentPageIdeas === 1}
+                                className="relative inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500 transition-all duration-200 shadow-md hover:shadow-lg mr-2"
+                              >
+                                Previous
+                              </button>
+                              {Array.from({ length: Math.ceil(totalIdeas / ideasPerPage) }, (_, i) => i + 1).map((number) => (
+                                <button
+                                  key={number}
+                                  onClick={() => paginateIdeas(number)}
+                                  className={`relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 shadow-md hover:shadow-lg mx-1 ${
+                                    number === currentPageIdeas
+                                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
+                                      : 'bg-white border border-gray-300 text-gray-700 hover:bg-blue-50 hover:border-blue-300 dark:bg-gray-700/90 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-blue-900/20'
+                                  }`}
+                                >
+                                  {number}
+                                </button>
+                              ))}
+                              <button
+                                onClick={() => paginateIdeas(currentPageIdeas + 1)}
+                                disabled={currentPageIdeas * ideasPerPage >= totalIdeas}
+                                className="relative inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:from-gray-400 disabled:to-gray-500 transition-all duration-200 shadow-md hover:shadow-lg ml-2"
+                              >
+                                Next
+                              </button>
+                            </nav>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
