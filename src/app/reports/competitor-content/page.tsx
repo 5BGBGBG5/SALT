@@ -409,8 +409,8 @@ const CompetitorContentReportPage = () => {
               onClick={() => setActiveTab('ideas')}
               className={`whitespace-nowrap py-3 px-6 border-b-3 font-medium text-sm transition-all duration-200 ease-in-out ${
                 activeTab === 'ideas'
-                  ? 'border-blue-600 text-blue-600 bg-blue-50 rounded-t-lg dark:border-blue-400 dark:text-blue-400 dark:bg-blue-900/20'
-                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50 hover:border-gray-300 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-gray-800'
+                  ? 'border-accent-primary text-accent-primary bg-accent-primary/10 rounded-t-lg'
+                  : 'border-transparent text-text-secondary hover:text-accent-primary hover:bg-background-hover hover:border-border-primary'
               }`}
             >
               Post Ideas
@@ -424,8 +424,8 @@ const CompetitorContentReportPage = () => {
               <h2 className="text-2xl font-semibold mb-4">Competitor Posts</h2>
 
               {/* Filter Controls */}
-              <div className="bg-gradient-to-br from-white to-blue-50 dark:from-gray-800/95 dark:to-blue-900/20 p-6 rounded-xl shadow-lg mb-6 border border-blue-100 dark:border-blue-900">
-                <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-4">
+              <div className="glass-card p-6 mb-6">
+                <h3 className="text-lg font-semibold text-text-primary mb-4">
                   Filter LinkedIn Posts
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -546,51 +546,51 @@ const CompetitorContentReportPage = () => {
 
               {/* LinkedIn-style Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 text-white shadow-lg">
+                <div className="glass-card p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-blue-100 text-sm">Total Posts</p>
-                      <p className="text-2xl font-bold">{totalPosts}</p>
+                      <p className="text-text-secondary text-sm">Total Posts</p>
+                      <p className="text-2xl font-bold text-text-primary">{totalPosts}</p>
                     </div>
-                    <svg className="w-8 h-8 text-blue-200" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-8 h-8 text-accent-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z"/>
                     </svg>
                   </div>
                 </div>
                 
-                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 text-white shadow-lg">
+                <div className="glass-card p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-green-100 text-sm">Avg Engagement</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-text-secondary text-sm">Avg Engagement</p>
+                      <p className="text-2xl font-bold text-text-primary">
                         {Math.round(sortedPosts.reduce((acc, post) => acc + post.like_count, 0) / sortedPosts.length || 0)}
                       </p>
                     </div>
-                    <svg className="w-8 h-8 text-green-200" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-8 h-8 text-accent-success" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z"/>
                     </svg>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 text-white shadow-lg">
+                <div className="glass-card p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-purple-100 text-sm">Top Performer</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-text-secondary text-sm">Top Performer</p>
+                      <p className="text-2xl font-bold text-text-primary">
                         {Math.max(...sortedPosts.map(post => post.like_count), 0)}
                       </p>
                     </div>
-                    <svg className="w-8 h-8 text-purple-200" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-8 h-8 text-accent-secondary" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd"/>
                     </svg>
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-4 text-white shadow-lg">
+                <div className="glass-card p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-orange-100 text-sm">This Week</p>
-                      <p className="text-2xl font-bold">
+                      <p className="text-text-secondary text-sm">This Week</p>
+                      <p className="text-2xl font-bold text-text-primary">
                         {sortedPosts.filter(post => {
                           const postDate = new Date(post.post_timestamp || '');
                           const weekAgo = new Date();
@@ -599,7 +599,7 @@ const CompetitorContentReportPage = () => {
                         }).length}
                       </p>
                     </div>
-                    <svg className="w-8 h-8 text-orange-200" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-8 h-8 text-accent-primary" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"/>
                     </svg>
                   </div>
@@ -618,12 +618,12 @@ const CompetitorContentReportPage = () => {
                   <p className="mt-4 text-gray-600 dark:text-gray-400 animate-pulse">Loading LinkedIn posts...</p>
                 </div>
               ) : (
-                <div className="bg-white dark:bg-gray-800/95 p-6 rounded-xl shadow-xl border border-blue-100 dark:border-blue-900 overflow-hidden">
-                  <div className="mb-4 pb-4 border-b border-blue-100 dark:border-blue-800">
-                    <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                <div className="glass-table p-6 overflow-hidden">
+                  <div className="mb-4 pb-4 border-b border-border-primary">
+                    <h3 className="text-xl font-bold text-text-primary">
                       LinkedIn Posts Analysis
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-text-secondary mt-1">
                       Showing {sortedPosts.length} competitor posts
                     </p>
                   </div>
@@ -789,9 +789,9 @@ const CompetitorContentReportPage = () => {
               <h2 className="text-2xl font-semibold mb-4">Post Ideas</h2>
 
               {/* Filter Controls for Post Ideas */}
-              <div className="bg-gradient-to-br from-white to-blue-50 dark:from-gray-800/95 dark:to-blue-900/20 p-6 rounded-xl shadow-lg mb-6 border border-blue-100 dark:border-blue-900">
+              <div className="glass-card p-6 mb-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
-                  <h3 className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-4 lg:mb-0">
+                  <h3 className="text-lg font-semibold text-text-primary mb-4 lg:mb-0">
                     Filter Post Ideas
                   </h3>
                   <button
@@ -853,12 +853,12 @@ const CompetitorContentReportPage = () => {
                   <p className="mt-4 text-gray-600 dark:text-gray-400 animate-pulse">Loading post ideas...</p>
                 </div>
               ) : (
-                <div className="bg-white dark:bg-gray-800/95 p-6 rounded-xl shadow-xl border border-blue-100 dark:border-blue-900 overflow-hidden">
-                  <div className="mb-4 pb-4 border-b border-blue-100 dark:border-blue-800">
-                    <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+                <div className="glass-table p-6 overflow-hidden">
+                  <div className="mb-4 pb-4 border-b border-border-primary">
+                    <h3 className="text-xl font-bold text-text-primary">
                       Post Ideas Analysis
                     </h3>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-text-secondary mt-1">
                       Showing {sortedPostIdeas.length} of {totalIdeas} post ideas
                     </p>
                     </div>
