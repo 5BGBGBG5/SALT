@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
 import * as XLSX from 'xlsx';
 
@@ -396,19 +397,24 @@ const PostEngagementTable = ({
       )}
 
       {/* Column Visibility Toggle */}
-      <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="glass-card p-4"
+      >
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-gray-700">Visible Columns</h3>
+          <h3 className="text-sm font-medium text-white">Visible Columns</h3>
           <div className="flex gap-2">
             <button
               onClick={() => setVisibleColumns(prev => Object.keys(prev).reduce((acc, key) => ({...acc, [key]: true}), {} as typeof prev))}
-              className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+              className="text-xs px-2 py-1 bg-teal-500/20 text-teal-400 rounded hover:bg-teal-500/30 transition-colors"
             >
               Show All
             </button>
             <button
               onClick={() => setVisibleColumns(prev => Object.keys(prev).reduce((acc, key) => ({...acc, [key]: ['type', 'engager_name', 'engager_company_name'].includes(key)}), {} as typeof prev))}
-              className="text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+              className="text-xs px-2 py-1 bg-gray-700/50 text-gray-300 rounded hover:bg-gray-700/70 transition-colors"
             >
               Essential Only
             </button>
@@ -432,12 +438,17 @@ const PostEngagementTable = ({
       </div>
 
       {/* Results Count */}
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-gray-300">
         Showing {filteredAndSortedData.length} of {data.length} engagements
       </div>
 
       {/* Data Table - Desktop */}
-      <div className="hidden md:block bg-white shadow sm:rounded-md">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="hidden md:block glass-table"
+      >
         <div className="relative">
           {scrollIndicators.left && (
             <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-gray-50 to-transparent pointer-events-none z-20 border-r border-gray-200" />
@@ -491,9 +502,9 @@ const PostEngagementTable = ({
                 )}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-teal-500/20">
               {filteredAndSortedData.map((row, index) => (
-                <tr key={index} className="hover:bg-gray-50">
+                <tr key={index} className="hover:bg-teal-500/5 transition-colors">
                   {visibleColumns.type && (
                     <td className="px-6 py-4 whitespace-normal min-w-[100px]">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -603,7 +614,13 @@ const PostEngagementTable = ({
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {filteredAndSortedData.map((row, index) => (
-          <div key={index} className="bg-white p-4 rounded-lg shadow border border-gray-200">
+          <motion.div 
+            key={index} 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
+            className="glass-card p-4"
+          >
             <div className="space-y-3">
               <div className="flex justify-between items-start">
                 <div className="flex-1">
@@ -927,10 +944,50 @@ export default function PostEngagementReportPage() {
   }, [currentPage, itemsPerPage]); // Add currentPage and itemsPerPage to dependencies
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
-        <h2 className="text-2xl font-semibold text-gray-900">Post Engagement Report (AiEO Project)</h2>
-        <p className="mt-1 text-sm text-gray-600">View all post engagements (likes, comments, shares) with post content, profile information, and company details from the AiEO LinkedIn Data project.</p>
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 relative overflow-hidden">
+      {/* Animated mesh gradient background */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-emerald-500/10 to-teal-600/20 animate-pulse"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      {/* Floating particles effect */}
+      <div className="absolute inset-0 pointer-events-none">
+        {Array.from({ length: 15 }).map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-teal-400/30 rounded-full"
+            animate={{
+              x: [0, Math.random() * 100 - 50],
+              y: [0, Math.random() * 100 - 50],
+              opacity: [0, 1, 0],
+            }}
+            transition={{
+              duration: Math.random() * 3 + 2,
+              repeat: Infinity,
+              delay: Math.random() * 2,
+            }}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-8"
+        >
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-white via-teal-200 to-emerald-200 bg-clip-text text-transparent">
+            Post Engagement Report
+          </h2>
+          <p className="mt-2 text-gray-300">View all post engagements (likes, comments, shares) with post content, profile information, and company details from the AiEO LinkedIn Data project.</p>
+        </motion.div>
         
         <div className="mt-6">
           <PostEngagementTable 

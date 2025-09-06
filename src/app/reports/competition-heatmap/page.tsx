@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
 
 // Use AiEO project credentials for this report since v_high_intent_prompt_mentions exists there
@@ -119,17 +120,61 @@ export default function CompetitionHeatMapPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="border-b border-gray-200 pb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Competition Heat Map</h1>
-        <p className="mt-2 text-lg text-gray-600">
-          Analyze AI model responses and identify where Inecta is mentioned vs. missed opportunities
-        </p>
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 relative overflow-hidden">
+      {/* Animated mesh gradient background */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-emerald-500/10 to-teal-600/20 animate-pulse"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-4 bg-white p-4 rounded-lg border border-gray-200">
+      {/* Floating particles effect */}
+      <div className="absolute inset-0 pointer-events-none">
+        {Array.from({ length: 10 }).map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-teal-400/30 rounded-full"
+            animate={{
+              x: [0, Math.random() * 100 - 50],
+              y: [0, Math.random() * 100 - 50],
+              opacity: [0, 1, 0],
+            }}
+            transition={{
+              duration: Math.random() * 3 + 2,
+              repeat: Infinity,
+              delay: Math.random() * 2,
+            }}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10 space-y-6">
+        {/* Header */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="pb-6"
+        >
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-teal-200 to-emerald-200 bg-clip-text text-transparent">
+            Competition Heat Map
+          </h1>
+          <p className="mt-2 text-lg text-gray-300">
+            Analyze AI model responses and identify where Inecta is mentioned vs. missed opportunities
+          </p>
+        </motion.div>
+
+        {/* Controls */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="glass-card p-4"
+        >
         <div className="flex flex-wrap gap-2">
           {HI_CATS.map(cat => {
             const active = catFilter.includes(cat);
@@ -138,7 +183,7 @@ export default function CompetitionHeatMapPage() {
                 key={cat}
                 onClick={() => setCatFilter(p => active ? p.filter(x=>x!==cat) : [...p, cat])}
                 className={`px-3 py-1 rounded-full text-sm border transition ${
-                  active ? 'bg-blue-600 text-white border-blue-700' : 'bg-white border-gray-300 hover:bg-gray-50'
+                  active ? 'bg-teal-500 text-white border-teal-600' : 'bg-gray-800/30 border-gray-600 text-gray-300 hover:bg-gray-700/50'
                 }`}
               >
                 {cat}
@@ -201,23 +246,28 @@ export default function CompetitionHeatMapPage() {
         </div>
       </div>
 
-      {/* Matrix */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {/* Matrix */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="glass-table overflow-hidden"
+        >
         <div className="overflow-auto">
           <table className="min-w-[900px] w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="border-b border-teal-500/20">
               <tr>
-                <th className="text-left p-4 w-[120px] font-semibold text-gray-900">Category</th>
-                <th className="text-left p-4 font-semibold text-gray-900">Prompt</th>
+                <th className="text-left p-4 w-[120px] font-semibold text-white">Category</th>
+                <th className="text-left p-4 font-semibold text-white">Prompt</th>
                 {MODELS.map(m => (
-                  <th key={m} className="text-center p-4 w-[120px] font-semibold text-gray-900 capitalize">{m}</th>
+                  <th key={m} className="text-center p-4 w-[120px] font-semibold text-white capitalize">{m}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {grouped.map(([promptId, v]) => {
                 return (
-                  <tr key={promptId} className="border-b border-gray-100 hover:bg-gray-50">
+                  <tr key={promptId} className="border-b border-teal-500/10 hover:bg-teal-500/5 transition-colors">
                     <td className="p-4 align-top">
                       <span className="px-2 py-1 rounded-full bg-gray-100 border border-gray-200 text-xs font-medium text-gray-700">
                         {v.category}

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
 // Removed @tremor/react import - package was removed due to React 19 compatibility issues
 import BestRanking from "./components/BestRanking";
@@ -274,45 +275,100 @@ export default function AieoReportPage() {
   }
 
   return (
-    <div className="p-4">
-      <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Engagement Optimization</h1>
-      <p className="text-lg text-gray-600 mb-8">AI-powered insights for optimizing content engagement and performance</p>
-
-      {/* Best Ranking Performance - Full Width */}
-      <div
-        className="bg-white rounded-lg shadow p-6 border border-gray-200 hover:shadow-md transition-shadow cursor-help mb-8"
-        title="Shows your current best ranking position in AI-powered performance metrics. Lower numbers indicate better performance. Rankings are color-coded: green for top performers, yellow for good performers, and red for areas needing improvement."
-      >
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Best Ranking Performance</h3>
-        <BestRanking ranking={bestRanking} />
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8 relative overflow-hidden">
+      {/* Animated mesh gradient background */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-emerald-500/10 to-teal-600/20 animate-pulse"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
       </div>
 
-      {/* Sentiment Chart - Simple Implementation */}
-      <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Sentiment Over Time</h3>
+      {/* Floating particles effect */}
+      <div className="absolute inset-0 pointer-events-none">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-1 h-1 bg-teal-400/30 rounded-full"
+            animate={{
+              x: [0, Math.random() * 100 - 50],
+              y: [0, Math.random() * 100 - 50],
+              opacity: [0, 1, 0],
+            }}
+            transition={{
+              duration: Math.random() * 3 + 2,
+              repeat: Infinity,
+              delay: Math.random() * 2,
+            }}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-8"
+        >
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-white via-teal-200 to-emerald-200 bg-clip-text text-transparent mb-2">
+            AI Engagement Optimization
+          </h1>
+          <p className="text-lg text-gray-300 mb-8">AI-powered insights for optimizing content engagement and performance</p>
+        </motion.div>
+
+        {/* Best Ranking Performance - Full Width */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="glass-card p-6 cursor-help mb-8 hover:scale-[1.01] transition-transform"
+          title="Shows your current best ranking position in AI-powered performance metrics. Lower numbers indicate better performance. Rankings are color-coded: green for top performers, yellow for good performers, and red for areas needing improvement."
+        >
+          <h3 className="text-lg font-semibold text-white mb-4">Best Ranking Performance</h3>
+          <BestRanking ranking={bestRanking} />
+        </motion.div>
+
+        {/* Sentiment Chart - Simple Implementation */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="glass-card p-6 mb-8"
+        >
+          <h3 className="text-lg font-semibold text-white mb-4">Sentiment Over Time</h3>
         {sentimentChartData.length > 0 ? (
           <div className="space-y-2">
             {sentimentChartData.slice(-5).map((item, index) => (
-              <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                <span className="text-sm text-gray-600">{item.date}</span>
-                <span className="text-sm font-medium text-blue-600">{item['Average Sentiment'].toFixed(1)}</span>
+              <div key={index} className="flex justify-between items-center p-2 bg-gray-800/30 rounded">
+                <span className="text-sm text-gray-300">{item.date}</span>
+                <span className="text-sm font-medium text-teal-400">{item['Average Sentiment'].toFixed(1)}</span>
               </div>
             ))}
           </div>
         ) : (
-          <p className="text-gray-600">No sentiment data available</p>
+          <p className="text-gray-400">No sentiment data available</p>
         )}
-      </div>
+        </motion.div>
 
-      <div className="mt-8">
-        <h3 className="text-xl font-semibold text-gray-900 mb-4">Prompt Analysis & Responses</h3>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          className="mt-8"
+        >
+          <h3 className="text-xl font-semibold text-white mb-4">Prompt Analysis & Responses</h3>
         {prompts.length > 0 ? (
           prompts.map(prompt => (
             <PromptAccordion key={prompt.id} prompt={prompt} />
           ))
         ) : (
-          <p className="text-gray-600">No AI prompt analysis data available.</p>
+          <p className="text-gray-400">No AI prompt analysis data available.</p>
         )}
+        </motion.div>
       </div>
     </div>
   );
