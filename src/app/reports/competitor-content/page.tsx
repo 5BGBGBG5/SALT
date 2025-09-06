@@ -378,12 +378,18 @@ const CompetitorContentReportPage = () => {
   const postTypes = ['Image', 'Video (LinkedIn Source)', 'Text']; // Example post types, replace with actual types from DB
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-6">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent mb-2">
+    <div className="min-h-screen py-6 relative overflow-hidden">
+      {/* Animated mesh gradient background */}
+      <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-emerald-500/10 to-teal-600/20 animate-pulse"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-teal-400/10 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
+      </div>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <h1 className="text-4xl font-extrabold bg-gradient-to-r from-white via-teal-200 to-emerald-200 bg-clip-text text-transparent mb-2">
           LinkedIn Competitor Posts
         </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-400 mb-8">
+        <p className="text-lg text-gray-300 mb-8">
           Track and analyze competitor activity on LinkedIn to inform your content strategy
         </p>
 
