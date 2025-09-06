@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Header() {
   const { user, signOut } = useAuth();
@@ -37,86 +38,136 @@ export default function Header() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center px-4 md:px-6 bg-emerald-800 text-white border-b border-white/10">
-      {/* Left: SALT logo + lockup */}
-      <div className="flex items-center">
-        <Link href="/salt" className="group flex items-center gap-2" aria-label="SALT home">
-          {/* Use the exact provided SVG */}
-          <img
-            src="/salt-logo.svg"
-            alt="SALT — Sales & Analytics Lab for Team"
-            className="h-7 w-auto opacity-90 group-hover:opacity-100"
-            fetchPriority="high"
-          />
-          <div className="leading-tight">
-            <div className="flex items-baseline gap-1">
-              <span className="font-semibold lowercase">inecta</span>
-              <span className="opacity-70">·</span>
-              <span className="font-semibold">SALT</span>
+    <header className="fixed top-0 z-50 w-full px-4 py-4">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="glass-card mx-auto max-w-7xl px-6 py-3 flex items-center justify-between"
+      >
+        {/* Left: SALT logo + lockup with glow effect */}
+        <div className="flex items-center gap-3 group">
+          <Link href="/salt" className="flex items-center gap-3" aria-label="SALT home">
+            <img
+              src="/salt-logo.svg"
+              alt="SALT — Sales & Analytics Lab for Team"
+              className="h-8 w-auto transition-all duration-300 group-hover:filter group-hover:brightness-125 group-hover:drop-shadow-[0_0_10px_rgba(0,204,204,0.5)]"
+              fetchPriority="high"
+            />
+            <div className="text-white">
+              <div className="flex items-baseline gap-1">
+                <span className="font-semibold lowercase tracking-wide">inecta</span>
+                <span className="opacity-70 text-teal-400">·</span>
+                <span className="font-semibold text-glow">SALT</span>
+              </div>
+              <div className="text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                Sales & Analytics Lab
+              </div>
             </div>
-            <span className="hidden sm:block text-[11px] opacity-75">
-              Sales &amp; Analytics Lab for Team
-            </span>
-          </div>
-        </Link>
-      </div>
-
-      {/* Center: Navigation Menu */}
-      <div className="flex-1 flex justify-center">
-        {user && (
-          <nav className="flex items-center">
-            {/* Reports Dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsReportsOpen(!isReportsOpen)}
-                className={`flex items-center px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                  pathname.startsWith('/reports')
-                    ? 'bg-white/20 text-white' 
-                    : 'text-white/80 hover:text-white hover:bg-white/10'
-                }`}
-              >
-                Reports
-                <ChevronDown className={`ml-1 w-3 h-3 transition-transform ${isReportsOpen ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {isReportsOpen && (
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-1 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                  {reportLinks.map((report) => (
-                    <Link
-                      key={report.href}
-                      href={report.href}
-                      className={`block px-4 py-2 text-sm transition-colors ${
-                        pathname === report.href
-                          ? 'bg-emerald-50 text-emerald-700'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                      }`}
-                      onClick={() => setIsReportsOpen(false)}
-                    >
-                      {report.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          </nav>
-        )}
-      </div>
-
-      {/* Right: user menu */}
-      <div className="flex items-center gap-4 text-sm">
-        {user ? (
-          <>
-            <span className="text-white/80">{user.email}</span>
-            <button onClick={handleSignOut} className="underline hover:text-white/80">
-              Sign Out
-            </button>
-          </>
-        ) : (
-          <Link href="/auth" className="underline hover:text-white/80">
-            Sign In
           </Link>
-        )}
-      </div>
+        </div>
+
+        {/* Center: Navigation Menu with animated underlines */}
+        <div className="flex-1 flex justify-center">
+          {user && (
+            <nav className="flex items-center">
+              {/* Reports Dropdown */}
+              <div className="relative" ref={dropdownRef}>
+                <motion.button
+                  onClick={() => setIsReportsOpen(!isReportsOpen)}
+                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative ${
+                    pathname.startsWith('/reports')
+                      ? 'text-teal-400 bg-teal-500/10' 
+                      : 'text-gray-300 hover:text-teal-400 hover:bg-teal-500/5'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Reports
+                  <ChevronDown className={`ml-2 w-4 h-4 transition-transform duration-300 ${isReportsOpen ? 'rotate-180' : ''}`} />
+                  
+                  {/* Animated underline */}
+                  {pathname.startsWith('/reports') && (
+                    <motion.div
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-teal-400 to-emerald-400"
+                      layoutId="activeTab"
+                    />
+                  )}
+                </motion.button>
+                
+                <AnimatePresence>
+                  {isReportsOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-72 glass-card py-2 z-50"
+                    >
+                      {reportLinks.map((report, index) => (
+                        <motion.div
+                          key={report.href}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                        >
+                          <Link
+                            href={report.href}
+                            className={`block px-4 py-3 text-sm transition-all duration-300 rounded-lg mx-2 ${
+                              pathname === report.href
+                                ? 'bg-teal-500/20 text-teal-400 border-l-2 border-teal-400'
+                                : 'text-gray-300 hover:bg-teal-500/10 hover:text-teal-400'
+                            }`}
+                            onClick={() => setIsReportsOpen(false)}
+                          >
+                            {report.label}
+                          </Link>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </nav>
+          )}
+        </div>
+
+        {/* Right: User menu with avatar */}
+        <div className="flex items-center gap-4">
+          {user ? (
+            <>
+              <span className="text-gray-300 text-sm hidden sm:block">{user.email}</span>
+              <div className="flex items-center gap-3">
+                {/* User avatar with status indicator */}
+                <div className="relative">
+                  <div className="w-2 h-2 bg-emerald-400 rounded-full absolute -top-0.5 -right-0.5 animate-pulse-glow"></div>
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg">
+                    {user.email?.[0].toUpperCase()}
+                  </div>
+                </div>
+                <motion.button 
+                  onClick={handleSignOut} 
+                  className="btn-secondary text-xs px-3 py-2"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Sign Out
+                </motion.button>
+              </div>
+            </>
+          ) : (
+            <Link href="/auth">
+              <motion.button 
+                className="btn-primary text-sm px-4 py-2"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Sign In
+              </motion.button>
+            </Link>
+          )}
+        </div>
+      </motion.div>
     </header>
   );
 }

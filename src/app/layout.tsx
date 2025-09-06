@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./contexts/AuthContext";
 import Header from "./components/Header";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: 'swap',
 });
 
 const geistMono = Geist_Mono({
@@ -27,11 +28,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-emerald-900/10`}
+        className={`${inter.variable} ${geistMono.variable} font-sans antialiased min-h-screen`}
       >
         <AuthProvider>
           <Header />
-          <main>{children}</main>
+          <main className="pt-24">{children}</main>
         </AuthProvider>
       </body>
     </html>

@@ -1,26 +1,214 @@
 @import "tailwindcss";
 
+/* Inecta Brand Color Palette */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Primary Colors - Inecta Brand */
+  --inecta-primary-green: #12403D;
+  --inecta-green: #131313;
+  --inecta-teal: #00CCCC;
+  --inecta-dark-green: #2A3D36;
+
+  /* Extended Palette for UI */
+  --dark-bg-primary: #0A0F0D;
+  --dark-bg-secondary: #131A18;
+  --dark-bg-elevated: #1A2422;
+  --glass-bg: rgba(19, 36, 34, 0.7);
+
+  /* Accent Colors */
+  --accent-teal: #00CCCC;
+  --accent-teal-glow: #00FFD4;
+  --accent-emerald: #10B981;
+  --accent-yellow: #FFD44D;
+
+  /* Text Colors */
+  --text-primary: #FFFFFF;
+  --text-secondary: #A5A59E;
+  --text-muted: #575763;
+
+  /* UI Colors */
+  --border-subtle: rgba(165, 165, 158, 0.1);
+  --border-default: rgba(165, 165, 158, 0.2);
+  --border-strong: rgba(0, 204, 204, 0.3);
+
+  /* Apply to theme */
+  --background: var(--dark-bg-primary);
+  --foreground: var(--text-primary);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Dark mode by default - no media query needed */
+body {
+  background: linear-gradient(135deg, #0A0F0D 0%, #131A18 100%);
+  min-height: 100vh;
+  color: var(--text-primary);
+  font-family: var(--font-inter), system-ui, sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Glass morphism utility classes */
+.glass-card {
+  background: linear-gradient(135deg, 
+    rgba(19, 36, 34, 0.8) 0%, 
+    rgba(26, 36, 34, 0.6) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 204, 204, 0.1);
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.glass-card:hover {
+  border-color: rgba(0, 204, 204, 0.3);
+  box-shadow: 
+    0 8px 32px rgba(0, 204, 204, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Neon glow effects */
+.neon-glow {
+  box-shadow: 0 0 20px rgba(0, 204, 204, 0.5);
+}
+
+.text-glow {
+  text-shadow: 0 0 20px rgba(0, 204, 204, 0.5);
+}
+
+/* Smooth transitions */
+* {
+  transition: all 0.2s ease;
+}
+
+/* Shimmer animation for loading states */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 1.5s infinite;
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Pulse glow animation */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 204, 204, 0.3); }
+  50% { box-shadow: 0 0 30px rgba(0, 204, 204, 0.6); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Premium button styles */
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent-teal) 0%, var(--accent-emerald) 100%);
+  color: white;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 20px rgba(0, 204, 204, 0.5);
+  transform: scale(1.05);
+}
+
+.btn-secondary {
+  background: rgba(19, 36, 34, 0.8);
+  backdrop-filter: blur(20px);
+  color: var(--accent-teal);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(0, 204, 204, 0.3);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent-teal);
+  background: rgba(0, 204, 204, 0.1);
+}
+
+/* Form inputs with glass morphism */
+.glass-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(26, 36, 34, 0.5);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-default);
+  border-radius: 0.5rem;
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+.glass-input::placeholder {
+  color: var(--text-muted);
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: var(--accent-teal);
+  box-shadow: 0 0 0 3px rgba(0, 204, 204, 0.1);
+}
+
+/* Table styling */
+.glass-table {
+  background: rgba(19, 36, 34, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 204, 204, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.glass-table thead {
+  background: linear-gradient(135deg, rgba(0, 204, 204, 0.1) 0%, transparent 100%);
+  border-bottom: 1px solid rgba(0, 204, 204, 0.2);
+}
+
+.glass-table tbody tr:hover {
+  background: rgba(0, 204, 204, 0.05);
+}
+
+.glass-table th {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.glass-table th:hover {
+  color: var(--accent-teal);
+}
+
+.glass-table td {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
 }
