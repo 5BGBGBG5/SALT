@@ -609,7 +609,7 @@ const PostEngagementTable = ({
           </table>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
