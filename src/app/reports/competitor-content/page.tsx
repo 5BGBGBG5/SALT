@@ -761,42 +761,53 @@ const CompetitorContentReportPage = () => {
                   ) : (
                     postIdeas.map((idea) => (
                     <div key={idea.id} className="group bg-gradient-to-br from-white to-blue-50 dark:from-gray-800/95 dark:to-blue-900/20 shadow-lg hover:shadow-2xl rounded-xl p-6 border border-blue-100 dark:border-blue-900 transform hover:scale-105 transition-all duration-300">
-                      <h3 className="text-xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-blue-900">{idea.title}</h3>
-                      {idea.hook && (
-                        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-3 mb-3">
-                          <p className="text-gray-700 dark:text-gray-300">
-                            <span className="font-semibold text-blue-600 dark:text-blue-400">Hook:</span> {idea.hook}
-                          </p>
+                      <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-blue-900">{idea.title}</h3>
+                      
+                      {idea.week_of_date && (
+                        <div className="mb-3">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                            Week of: {new Date(idea.week_of_date).toLocaleDateString()}
+                          </span>
                         </div>
                       )}
-                      
-                      {idea.week_of_date && <p className="text-sm text-gray-600 dark:text-gray-400">Week of: {new Date(idea.week_of_date).toLocaleDateString()}</p>}
+
+                      {idea.hook && (
+                        <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 mb-4">
+                          <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">Hook:</h4>
+                          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{idea.hook}</p>
+                        </div>
+                      )}
 
                       {idea.outline && (
-                        <details className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/90 rounded-md">
-                          <summary className="font-semibold cursor-pointer text-gray-800 dark:text-white">Outline</summary>
-                          <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{idea.outline}</p>
-                        </details>
+                        <div className="bg-gray-50 dark:bg-gray-700/90 rounded-lg p-4 mb-3">
+                          <h4 className="font-semibold text-gray-800 dark:text-white mb-2">Outline:</h4>
+                          <div className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line leading-relaxed">{idea.outline}</div>
+                        </div>
                       )}
+
                       {idea.angle && (
-                        <details className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/90 rounded-md">
-                          <summary className="font-semibold cursor-pointer text-gray-800 dark:text-white">Angle</summary>
-                          <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{idea.angle}</p>
-                        </details>
+                        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 mb-3">
+                          <h4 className="font-semibold text-green-600 dark:text-green-400 mb-1">Angle:</h4>
+                          <p className="text-sm text-gray-700 dark:text-gray-200">{idea.angle}</p>
+                        </div>
                       )}
+
                       {idea.persona && (
-                        <details className="mt-2 p-2 bg-gray-50 dark:bg-gray-700/90 rounded-md">
-                          <summary className="font-semibold cursor-pointer text-gray-800 dark:text-white">Persona</summary>
-                          <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{idea.persona}</p>
-                        </details>
+                        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 mb-3">
+                          <h4 className="font-semibold text-purple-600 dark:text-purple-400 mb-1">Target Persona:</h4>
+                          <p className="text-sm text-gray-700 dark:text-gray-200">{idea.persona}</p>
+                        </div>
                       )}
 
                       {idea.inspired_by_posts && idea.inspired_by_posts.length > 0 && (
-                        <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
                           <button
                             onClick={() => handleViewInspiredPosts(idea.inspired_by_posts || [])}
-                            className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                            className="inline-flex items-center text-sm text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium transition-colors"
                           >
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                            </svg>
                             Inspired by {idea.inspired_by_posts.length} competitor posts
                           </button>
                         </div>
