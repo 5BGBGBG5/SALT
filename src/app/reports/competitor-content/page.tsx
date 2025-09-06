@@ -62,6 +62,8 @@ interface PostIdea {
   inspired_by_posts: string[] | null; // Array of post URLs
   created_at: string;
   updated_at: string;
+  idea_text: string | null;  // ADD THIS
+  idea_number: string | null; // ADD THIS
 }
 
 const PostContentTruncated: React.FC<{ content: string }> = ({ content }) => {
@@ -187,14 +189,6 @@ const CompetitorContentReportPage = () => {
       console.log('Supabase URL:', supabaseUrl ? 'SET' : 'NOT SET');
       console.log('Supabase Key:', supabaseAnonKey ? 'SET' : 'NOT SET');
       
-      // Test connection first
-      const { data: connectionTest, error: connectionError } = await supabase
-        .from('post_ideas')
-        .select('count')
-        .limit(1);
-      
-      console.log('Connection test result:', { data: connectionTest, error: connectionError });
-      
       let query = supabase.from('post_ideas').select('*').order('created_at', { ascending: false });
       
       // Apply filters
@@ -202,7 +196,7 @@ const CompetitorContentReportPage = () => {
         query = query.eq('week_of_date', filterIdeaWeekOfDate);
       }
       if (debouncedFilterIdeaSearch) {
-        query = query.or(`title.ilike.%${debouncedFilterIdeaSearch}%,hook.ilike.%${debouncedFilterIdeaSearch}%,outline.ilike.%${debouncedFilterIdeaSearch}%`);
+        query = query.or(`title.ilike.%${debouncedFilterIdeaSearch}%,hook.ilike.%${debouncedFilterIdeaSearch}%,outline.ilike.%${debouncedFilterIdeaSearch}%,angle.ilike.%${debouncedFilterIdeaSearch}%,persona.ilike.%${debouncedFilterIdeaSearch}%,idea_text.ilike.%${debouncedFilterIdeaSearch}%`);
       }
       
       const { data, error } = await query;
@@ -739,7 +733,7 @@ const CompetitorContentReportPage = () => {
                         className="block w-full rounded-lg border-gray-300 pl-10 pr-3 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/80 backdrop-blur-sm hover:bg-white dark:bg-gray-700/90 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-800"
                         value={filterIdeaSearch}
                         onChange={(e) => setFilterIdeaSearch(e.target.value)}
-                        placeholder="Search title, hook, outline"
+                        placeholder="Search title, hook, idea text, outline, angle, persona"
                       />
                     </div>
                   </div>
@@ -923,8 +917,17 @@ const CompetitorContentReportPage = () => {
                     </div>
                   ) : (
                     postIdeas.map((idea) => (
-                    <div key={idea.id} className="group bg-gradient-to-br from-white to-blue-50 dark:from-gray-800/95 dark:to-blue-900/20 shadow-lg hover:shadow-2xl rounded-xl p-6 border border-blue-100 dark:border-blue-900 transform hover:scale-105 transition-all duration-300">
-                      <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-blue-900">{idea.title}</h3>
+                    <div key={idea.id} className="group bg-gradient-to-br from-white to-blue-50 dark:from-gray-800/95 dark:to-blue-900/20 shadow-lg hover:shadow-2xl rounded-xl p-6 border border-blue-100 dark:border-blue-900 transform hover:scale-105 transition-all duration-300 relative">
+                      {/* Idea Number Badge */}
+                      {idea.idea_number && (
+                        <div className="absolute top-4 right-4">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-yellow-400 to-yellow-500 text-yellow-900 shadow-sm">
+                            #{idea.idea_number}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent group-hover:from-blue-700 group-hover:to-blue-900 pr-16">{idea.title}</h3>
                       
                       {idea.week_of_date && (
                         <div className="mb-3">
@@ -938,6 +941,13 @@ const CompetitorContentReportPage = () => {
                         <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-4 mb-4">
                           <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">Hook:</h4>
                           <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{idea.hook}</p>
+                        </div>
+                      )}
+
+                      {idea.idea_text && (
+                        <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 mb-4 border-l-4 border-yellow-400">
+                          <h4 className="font-semibold text-yellow-700 dark:text-yellow-400 mb-2">Idea Text:</h4>
+                          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-line">{idea.idea_text}</p>
                         </div>
                       )}
 
