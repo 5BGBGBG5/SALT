@@ -54,13 +54,13 @@ export default function Header() {
               className="h-8 w-auto transition-all duration-300 group-hover:filter group-hover:brightness-125 group-hover:drop-shadow-[0_0_10px_rgba(0,204,204,0.5)]"
               fetchPriority="high"
             />
-            <div className="text-white">
+            <div className="text-text-primary">
               <div className="flex items-baseline gap-1">
                 <span className="font-semibold lowercase tracking-wide">inecta</span>
-                <span className="opacity-70 text-teal-400">·</span>
+                <span className="opacity-70 text-accent-primary">·</span>
                 <span className="font-semibold text-glow">SALT</span>
               </div>
-              <div className="text-xs text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="text-xs text-text-secondary opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 Sales & Analytics Lab
               </div>
             </div>
@@ -76,9 +76,9 @@ export default function Header() {
                 <motion.button
                   onClick={() => setIsReportsOpen(!isReportsOpen)}
                   className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative ${
-                    pathname.startsWith('/reports')
-                      ? 'text-teal-400 bg-teal-500/10' 
-                      : 'text-gray-300 hover:text-teal-400 hover:bg-teal-500/5'
+                    pathname.startsWith('/reports') 
+                      ? 'text-accent-primary bg-accent-primary/10' 
+                      : 'text-text-secondary hover:text-accent-primary hover:bg-accent-primary/5'
                   }`}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -89,7 +89,7 @@ export default function Header() {
                   {/* Animated underline */}
                   {pathname.startsWith('/reports') && (
                     <motion.div
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-teal-400 to-emerald-400"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent-primary to-accent-success"
                       layoutId="activeTab"
                     />
                   )}
@@ -115,8 +115,8 @@ export default function Header() {
                             href={report.href}
                             className={`block px-4 py-3 text-sm transition-all duration-300 rounded-lg mx-2 ${
                               pathname === report.href
-                                ? 'bg-teal-500/20 text-teal-400 border-l-2 border-teal-400'
-                                : 'text-gray-300 hover:bg-teal-500/10 hover:text-teal-400'
+                                ? 'bg-accent-primary/20 text-accent-primary border-l-2 border-accent-primary'
+                                : 'text-text-secondary hover:bg-accent-primary/10 hover:text-accent-primary'
                             }`}
                             onClick={() => setIsReportsOpen(false)}
                           >
@@ -136,12 +136,12 @@ export default function Header() {
         <div className="flex items-center gap-4">
           {user ? (
             <>
-              <span className="text-gray-300 text-sm hidden sm:block">{user.email}</span>
+              <span className="text-text-secondary text-sm hidden sm:block">{user.email}</span>
               <div className="flex items-center gap-3">
                 {/* User avatar with status indicator */}
                 <div className="relative">
-                  <div className="w-2 h-2 bg-emerald-400 rounded-full absolute -top-0.5 -right-0.5 animate-pulse-glow"></div>
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg">
+                  <div className="w-2 h-2 bg-accent-success rounded-full absolute -top-0.5 -right-0.5 animate-pulse-glow"></div>
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary to-accent-success flex items-center justify-center text-white font-semibold text-sm shadow-lg">
                     {user.email?.[0].toUpperCase()}
                   </div>
                 </div>

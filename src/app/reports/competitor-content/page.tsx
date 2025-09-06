@@ -188,38 +188,38 @@ const CompetitorContentReportPage = () => {
       }
     };
 
-  const fetchPostIdeas = async () => {
-    console.log('fetchPostIdeas called');
-    setLoadingIdeas(true);
-    setErrorIdeas(null);
-    try {
+    const fetchPostIdeas = async () => {
+      console.log('fetchPostIdeas called');
+      setLoadingIdeas(true);
+      setErrorIdeas(null);
+      try {
       let query = supabase.from('post_ideas').select('*', { count: 'exact' });
-      
-      // Apply filters
-      if (filterIdeaWeekOfDate) {
-        query = query.eq('week_of_date', filterIdeaWeekOfDate);
-      }
-      if (debouncedFilterIdeaSearch) {
+        
+        // Apply filters
+        if (filterIdeaWeekOfDate) {
+          query = query.eq('week_of_date', filterIdeaWeekOfDate);
+        }
+        if (debouncedFilterIdeaSearch) {
         query = query.or(`title.ilike.%${debouncedFilterIdeaSearch}%,hook.ilike.%${debouncedFilterIdeaSearch}%,outline.ilike.%${debouncedFilterIdeaSearch}%,angle.ilike.%${debouncedFilterIdeaSearch}%,persona.ilike.%${debouncedFilterIdeaSearch}%,idea_text.ilike.%${debouncedFilterIdeaSearch}%`);
-      }
-
+        }
+        
       // Default sorting: newest first (created_at desc)
       query = query.order('created_at', { ascending: false });
-
+        
       const { data, error, count } = await query
         .limit(ideasPerPage)
         .range((currentPageIdeas - 1) * ideasPerPage, currentPageIdeas * ideasPerPage - 1);
-      
-      if (error) throw error;
-      setPostIdeas(data || []);
+        
+        if (error) throw error;
+        setPostIdeas(data || []);
       setTotalIdeas(count || 0);
-    } catch (err: unknown) {
-      console.error('Error fetching post ideas:', err);
-      setErrorIdeas(err instanceof Error ? err.message : 'An unknown error occurred');
-    } finally {
-      setLoadingIdeas(false);
-    }
-  };
+      } catch (err: unknown) {
+        console.error('Error fetching post ideas:', err);
+        setErrorIdeas(err instanceof Error ? err.message : 'An unknown error occurred');
+      } finally {
+        setLoadingIdeas(false);
+      }
+    };
 
     console.log('useEffect triggered with activeTab:', activeTab);
     
@@ -386,21 +386,21 @@ const CompetitorContentReportPage = () => {
         <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-emerald-400/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
       </div>
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <h1 className="text-4xl font-extrabold bg-gradient-to-r from-white via-teal-200 to-emerald-200 bg-clip-text text-transparent mb-2">
+        <h1 className="text-4xl font-extrabold bg-gradient-to-r from-text-primary via-accent-primary to-accent-success bg-clip-text text-transparent mb-2">
           LinkedIn Competitor Posts
         </h1>
-        <p className="text-lg text-gray-300 mb-8">
+        <p className="text-lg text-text-secondary mb-8">
           Track and analyze competitor activity on LinkedIn to inform your content strategy
         </p>
 
-        <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+        <div className="border-b border-border-primary mb-6">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             <button
               onClick={() => setActiveTab('posts')}
               className={`whitespace-nowrap py-3 px-6 border-b-3 font-medium text-sm transition-all duration-200 ease-in-out ${
                 activeTab === 'posts'
-                  ? 'border-blue-600 text-blue-600 bg-blue-50 rounded-t-lg dark:border-blue-400 dark:text-blue-400 dark:bg-blue-900/20'
-                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:bg-gray-50 hover:border-gray-300 dark:text-gray-400 dark:hover:text-blue-400 dark:hover:bg-gray-800'
+                  ? 'border-accent-primary text-accent-primary bg-accent-primary/10 rounded-t-lg'
+                  : 'border-transparent text-text-secondary hover:text-accent-primary hover:bg-background-hover hover:border-border-primary'
               }`}
             >
               Competitor Posts
@@ -812,13 +812,13 @@ const CompetitorContentReportPage = () => {
                       <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                         <CalendarDays className="h-5 w-5 text-gray-400" aria-hidden="true" />
                       </div>
-                      <input
-                        type="date"
-                        id="idea-week-of-date"
+                    <input
+                      type="date"
+                      id="idea-week-of-date"
                         className="block w-full rounded-lg border-gray-300 pl-10 pr-3 py-2.5 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all bg-white/80 backdrop-blur-sm hover:bg-white dark:bg-gray-700/90 dark:border-gray-600 dark:text-white dark:focus:border-blue-400 dark:focus:ring-blue-800"
-                        value={filterIdeaWeekOfDate || ''}
-                        onChange={(e) => setFilterIdeaWeekOfDate(e.target.value || null)}
-                      />
+                      value={filterIdeaWeekOfDate || ''}
+                      onChange={(e) => setFilterIdeaWeekOfDate(e.target.value || null)}
+                    />
                     </div>
                   </div>
                   <div className="relative">
@@ -861,7 +861,7 @@ const CompetitorContentReportPage = () => {
                     <p className="text-sm text-gray-600 mt-1">
                       Showing {sortedPostIdeas.length} of {totalIdeas} post ideas
                     </p>
-                  </div>
+                    </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                       <thead className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30">
@@ -924,7 +924,7 @@ const CompetitorContentReportPage = () => {
                                   {idea.idea_number ? (
                                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200">
                                       #{idea.idea_number}
-                                    </span>
+                          </span>
                                   ) : (
                                     '—'
                                   )}
@@ -939,7 +939,7 @@ const CompetitorContentReportPage = () => {
                                   {idea.hook ? (
                                     <div className="truncate" title={idea.hook}>
                                       {idea.hook.length > 100 ? `${idea.hook.substring(0, 100)}...` : idea.hook}
-                                    </div>
+                        </div>
                                   ) : (
                                     '—'
                                   )}
@@ -981,24 +981,24 @@ const CompetitorContentReportPage = () => {
                                 <tr className="bg-blue-50 dark:bg-blue-900/10">
                                   <td colSpan={8} className="px-6 py-6">
                                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                      {idea.hook && (
+                      {idea.hook && (
                                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                                          <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">Hook:</h4>
-                                          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{idea.hook}</p>
-                                        </div>
-                                      )}
+                          <h4 className="font-semibold text-blue-600 dark:text-blue-400 mb-2">Hook:</h4>
+                          <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{idea.hook}</p>
+                        </div>
+                      )}
                                       {idea.idea_text && (
                                         <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
                                           <h4 className="font-semibold text-yellow-700 dark:text-yellow-400 mb-2">Idea Text:</h4>
                                           <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed whitespace-pre-line">{idea.idea_text}</p>
                                         </div>
                                       )}
-                                      {idea.outline && (
+                      {idea.outline && (
                                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                                          <h4 className="font-semibold text-gray-800 dark:text-white mb-2">Outline:</h4>
-                                          <div className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line leading-relaxed">{idea.outline}</div>
-                                        </div>
-                                      )}
+                          <h4 className="font-semibold text-gray-800 dark:text-white mb-2">Outline:</h4>
+                          <div className="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-line leading-relaxed">{idea.outline}</div>
+                        </div>
+                      )}
                                       {idea.inspired_by_posts && idea.inspired_by_posts.length > 0 && (
                                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800">
                                           <h4 className="font-semibold text-indigo-600 dark:text-indigo-400 mb-2">Inspired By Posts:</h4>
@@ -1015,9 +1015,9 @@ const CompetitorContentReportPage = () => {
                                               </a>
                                             ))}
                                           </div>
-                                        </div>
-                                      )}
-                                    </div>
+                        </div>
+                      )}
+                        </div>
                                   </td>
                                 </tr>
                               )}
@@ -1051,7 +1051,7 @@ const CompetitorContentReportPage = () => {
                               Showing <span className="font-medium">{(currentPageIdeas - 1) * ideasPerPage + 1}</span> to <span className="font-medium">{Math.min(currentPageIdeas * ideasPerPage, totalIdeas)}</span> of {' '}
                               <span className="font-medium">{totalIdeas}</span> results
                             </p>
-                          </div>
+                    </div>
                           <div>
                             <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
                               <button
