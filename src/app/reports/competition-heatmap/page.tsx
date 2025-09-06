@@ -210,13 +210,13 @@ export default function CompetitionHeatMapPage() {
           Show only misses
         </label>
 
-        <input
-          className="px-3 py-2 rounded-md border border-gray-300 bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Search prompts…"
-          value={q}
-          onChange={e=>setQ(e.target.value)}
-        />
-      </div>
+          <input
+            className="glass-input px-3 py-2 rounded-md border border-teal-500/20 text-white placeholder-gray-400 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            placeholder="Search prompts…"
+            value={q}
+            onChange={e=>setQ(e.target.value)}
+          />
+        </motion.div>
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
