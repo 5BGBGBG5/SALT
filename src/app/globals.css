@@ -1,48 +1,37 @@
 @import "tailwindcss";
 
-/* Inecta Brand Color Palette */
+/* Sleek & Modern Dark Theme */
 :root {
-  /* Primary Colors - Inecta Brand */
-  --inecta-primary-green: #12403D;
-  --inecta-green: #131313;
-  --inecta-teal: #00CCCC;
-  --inecta-dark-green: #2A3D36;
+  /* Backgrounds */
+  --background-primary: #0D1117;   /* Deep charcoal, almost black */
+  --background-secondary: #161B22;  /* Slightly lighter for cards/elevated surfaces */
+  --background-hover: #1F242C;      /* Hover states for interactive elements */
 
-  /* Background Layers - Improved Contrast */
-  --bg-primary: #0F1419;        /* Main dark background */
-  --bg-secondary: #1A1F2E;      /* Slightly lighter for cards */
-  --bg-elevated: #232937;       /* Tables and elevated surfaces */
-  --bg-hover: #2A3142;          /* Hover states */
-  --dark-bg-primary: var(--bg-primary);
-  --dark-bg-secondary: var(--bg-secondary);
-  --dark-bg-elevated: var(--bg-elevated);
+  /* Text */
+  --text-primary: #E6EDF3;         /* Near-white for high contrast */
+  --text-secondary: #8B949E;        /* Grey for secondary info, placeholders */
+  --text-accent: #58A6FF;           /* Blue for links and interactive text */
 
-  /* Glass Effects - Better Visibility */
-  --glass-bg: rgba(26, 31, 46, 0.8);      /* Semi-transparent cards */
-  --glass-border: rgba(71, 85, 105, 0.2);  /* Subtle borders */
+  /* Accents */
+  --accent-primary: #22D3EE;       /* Bright, vibrant cyan/teal for primary actions */
+  --accent-secondary: #2472C8;      /* A calmer blue for secondary elements */
+  --accent-success: #34D399;        /* Green for success states */
+  --accent-error: #F87171;          /* Red for error states */
 
-  /* Accent Colors - Enhanced */
-  --accent-teal: #14B8A6;       /* Primary teal */
-  --accent-blue: #3B82F6;       /* Links and CTAs */
-  --accent-green: #10B981;      /* Success states */
-  --accent-purple: #8B5CF6;     /* Highlights */
-  --accent-teal-glow: #22D3EE;  /* Hover/glow state */
-  --accent-emerald: var(--accent-green);
-  --accent-yellow: #FFD44D;
+  /* Borders & Dividers */
+  --border-primary: #30363D;        /* Standard borders */
+  --border-secondary: #21262D;      /* Subtle dividers */
 
-  /* Text Colors - High Contrast */
-  --text-primary: #F7F8FA;      /* Main text - almost white */
-  --text-secondary: #CBD5E1;    /* Secondary text - light gray */
-  --text-muted: #94A3B8;        /* Muted text - medium gray */
+  /* Glass Effects (for .glass-card) */
+  --glass-bg: rgba(22, 27, 34, 0.7); /* Semi-transparent background */
+  --glass-border: rgba(48, 54, 61, 0.5); /* Subtle border for the glass effect */
+  --glass-border-hover: rgba(34, 211, 238, 0.4); /* Accent border on hover */
 
-  /* UI Colors - Better Borders */
-  --border-subtle: rgba(71, 85, 105, 0.1);
-  --border-default: rgba(71, 85, 105, 0.2);
-  --border-strong: rgba(20, 184, 166, 0.3);
-
-  /* Apply to theme */
-  --background: var(--dark-bg-primary);
+  /* Legacy compatibility - map old variables to new ones */
+  --background: var(--background-primary);
   --foreground: var(--text-primary);
+  --accent-teal: var(--accent-primary);
+  --accent-green: var(--accent-success);
 }
 
 @theme inline {
@@ -54,7 +43,7 @@
 
 /* Dark mode by default - no media query needed */
 body {
-  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  background: linear-gradient(135deg, var(--background-primary) 0%, var(--background-secondary) 100%);
   min-height: 100vh;
   color: var(--text-primary);
   font-family: var(--font-inter), system-ui, sans-serif;
@@ -73,9 +62,9 @@ body {
 }
 
 .glass-card:hover {
-  border-color: rgba(20, 184, 166, 0.3);
+  border-color: var(--glass-border-hover);
   box-shadow: 
-    0 8px 32px rgba(20, 184, 166, 0.15),
+    0 8px 32px rgba(34, 211, 238, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
   transform: translateY(-2px);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -127,7 +116,7 @@ body {
 
 /* Premium button styles */
 .btn-primary {
-  background: var(--accent-teal);
+  background: var(--accent-primary);
   color: white;
   font-weight: 600;
   padding: 0.75rem 1.5rem;
@@ -135,30 +124,30 @@ body {
   border: none;
   cursor: pointer;
   transition: all 0.2s ease-in-out;
-  box-shadow: 0 4px 12px rgba(20, 184, 166, 0.25);
+  box-shadow: 0 4px 12px rgba(34, 211, 238, 0.25);
 }
 
 .btn-primary:hover {
-  background: #0D9488;
-  box-shadow: 0 6px 20px rgba(20, 184, 166, 0.4);
+  background: #0891B2;
+  box-shadow: 0 6px 20px rgba(34, 211, 238, 0.4);
   transform: translateY(-1px);
 }
 
 .btn-secondary {
-  background: var(--bg-elevated);
+  background: var(--background-secondary);
   backdrop-filter: blur(20px);
   color: var(--text-secondary);
   font-weight: 600;
   padding: 0.75rem 1.5rem;
   border-radius: 0.5rem;
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-primary);
   cursor: pointer;
   transition: all 0.2s ease-in-out;
 }
 
 .btn-secondary:hover {
-  border-color: var(--accent-teal);
-  background: var(--bg-hover);
+  border-color: var(--accent-primary);
+  background: var(--background-hover);
   color: var(--text-primary);
 }
 
@@ -186,26 +175,26 @@ body {
 
 /* Table styling */
 .glass-table {
-  background: var(--bg-elevated);
+  background: var(--background-secondary);
   backdrop-filter: blur(20px);
-  border: 1px solid var(--border-default);
+  border: 1px solid var(--border-primary);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .glass-table thead {
-  background: rgba(71, 85, 105, 0.15);
-  border-bottom: 1px solid var(--border-default);
+  background: rgba(48, 54, 61, 0.3);
+  border-bottom: 1px solid var(--border-primary);
 }
 
 .glass-table tbody tr {
-  background: rgba(35, 41, 55, 0.3);
+  background: rgba(22, 27, 34, 0.3);
   transition: all 0.2s ease-in-out;
 }
 
 .glass-table tbody tr:hover {
-  background: var(--bg-hover);
+  background: var(--background-hover);
   transform: scale(1.001);
 }
 
@@ -222,13 +211,13 @@ body {
 }
 
 .glass-table th:hover {
-  color: var(--accent-teal);
+  color: var(--accent-primary);
 }
 
 .glass-table td {
   padding: 1rem 1.5rem;
   font-size: 0.875rem;
   color: var(--text-primary);
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-secondary);
   transition: color 0.2s ease;
 }
