@@ -1,278 +1,586 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, TrendingUp, Building2, Bot, FileBarChart } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { 
+  Search, 
+  Upload, 
+  FileText, 
+  Building2, 
+  Users, 
+  TrendingUp, 
+  X, 
+  ChevronRight, 
+  File, 
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  ArrowLeft
+} from 'lucide-react';
 
-const N8N_INGEST_WEBHOOK = process.env.NEXT_PUBLIC_N8N_INGEST_URL!;
-
-// Helper functions
-function sanitize(n: string){ return n.replace(/[^a-z0-9.\-_]/gi, '_'); }
-function guessTitle(n: string){ return n.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').trim(); }
-function guessCompetitor(s = ''){
-  const known = ['NetSuite','Aptean','JustFood','Deacom','Infor','Sage','Epicor'];
-  return known.find(k => new RegExp(k, 'i').test(s)) || '';
-}
-
-function parseFlagsAndFreeText(s: string){
-  const take = (re: RegExp) => { const m = s.match(re); return m ? (m[1] || m[2] || '') : ''; };
-  const text = take(/--text=(?:"([^"]+)"|([^\s]+))/i);
-  const title = take(/--title=(?:"([^"]+)"|([^\s]+))/i);
-  const competitor = take(/--competitor=(\S+)/i);
-  const verts = (take(/--verticals=([^\s]+)/i) || '').split(',').map(v=>v.trim()).filter(Boolean);
-  const verified = /--verified\b/i.test(s);
-  const risk = (take(/--risk=(low|med|high)/i) || 'low').toLowerCase();
-
-  const cleaned = s
-    .replace(/--text=(?:"[^"]+"|\S+)/i,'')
-    .replace(/--title=(?:"[^"]+"|\S+)/i,'')
-    .replace(/--competitor=\S+/i,'')
-    .replace(/--verticals=\S+/i,'')
-    .replace(/--verified\b/i,'')
-    .replace(/--risk=(low|med|high)/i,'')
-    .trim();
-
-  return { flags: { text, title, competitor, verticals: verts, verified, risk }, freeText: cleaned };
-}
-
-async function pickFile(selector = '#ragBattleFile'): Promise<File|null>{
-  return new Promise(resolve => {
-    const input = document.querySelector<HTMLInputElement>(selector)!;
-    input.onchange = () => resolve(input.files?.[0] || null);
-    input.click();
-  });
-}
-
-interface Suggestion {
+// TypeScript Interfaces
+interface Command {
+  id: string;
+  name: string;
+  description: string;
   icon: React.ReactNode;
-  text: string;
+  category: 'competitive' | 'crm' | 'analysis' | 'upload';
   action: () => void;
+  keywords?: string[];
 }
+
+interface UploadState {
+  isUploading: boolean;
+  progress: number;
+  error: string | null;
+  success: boolean;
+}
+
+interface BattlecardForm {
+  competitor: string;
+  verticals: string[];
+  content: string;
+  file: File | null;
+  sourceType: string;
+}
+
+type ViewState = 'main' | 'battlecard-upload' | 'company-analysis';
 
 export default function CommandPalette() {
+  // State Management
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentView, setCurrentView] = useState<ViewState>('main');
   const [query, setQuery] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [uploadState, setUploadState] = useState<UploadState>({
+    isUploading: false,
+    progress: 0,
+    error: null,
+    success: false
+  });
+  
+  // Form state for battlecard upload
+  const [battlecardForm, setBattlecardForm] = useState<BattlecardForm>({
+    competitor: '',
+    verticals: [],
+    content: '',
+    file: null,
+    sourceType: 'battlecard'
+  });
 
-  const suggestions: Suggestion[] = [
+  // Refs
+  const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  // Commands Configuration
+  const commands: Command[] = [
     {
-      icon: <TrendingUp className="w-4 h-4" />,
-      text: "Show me this week's engagement metrics",
-      action: () => console.log('Show engagement metrics')
+      id: 'upload-battlecard',
+      name: 'Upload Battlecard',
+      description: 'Add competitive intelligence documents',
+      icon: <Upload className="w-4 h-4" />,
+      category: 'upload',
+      action: () => setCurrentView('battlecard-upload'),
+      keywords: ['upload', 'battlecard', 'competitive', 'intelligence', 'document']
     },
     {
+      id: 'company-deep-dive',
+      name: 'Company Deep Dive',
+      description: 'Generate comprehensive company analysis',
       icon: <Building2 className="w-4 h-4" />,
-      text: "Which companies engaged with our content?",
-      action: () => console.log('Show company engagement')
+      category: 'analysis',
+      action: () => console.log('Company Deep Dive - Coming Soon'),
+      keywords: ['company', 'analysis', 'deep', 'dive', 'research']
     },
     {
-      icon: <Bot className="w-4 h-4" />,
-      text: "How is Inecta performing in AI responses?",
-      action: () => console.log('Show AI performance')
+      id: 'search-hubspot-deals',
+      name: 'Search HubSpot Deals',
+      description: 'Query CRM deals and opportunities',
+      icon: <TrendingUp className="w-4 h-4" />,
+      category: 'crm',
+      action: () => console.log('HubSpot Deals Search - Coming Soon'),
+      keywords: ['hubspot', 'deals', 'crm', 'opportunities', 'sales']
     },
     {
-      icon: <FileBarChart className="w-4 h-4" />,
-      text: "Generate weekly performance report",
-      action: () => console.log('Generate report')
+      id: 'search-hubspot-contacts',
+      name: 'Search HubSpot Contacts',
+      description: 'Query CRM contacts and leads',
+      icon: <Users className="w-4 h-4" />,
+      category: 'crm',
+      action: () => console.log('HubSpot Contacts Search - Coming Soon'),
+      keywords: ['hubspot', 'contacts', 'crm', 'leads', 'people']
+    },
+    {
+      id: 'competitor-comparison',
+      name: 'Competitor Comparison',
+      description: 'Compare competitors side by side',
+      icon: <FileText className="w-4 h-4" />,
+      category: 'competitive',
+      action: () => console.log('Competitor Comparison - Coming Soon'),
+      keywords: ['competitor', 'comparison', 'competitive', 'analysis', 'compare']
     }
   ];
 
+  // Filtered commands based on search query
+  const filteredCommands = commands.filter(command => {
+    if (!query.trim()) return true;
+    const searchTerm = query.toLowerCase();
+    return (
+      command.name.toLowerCase().includes(searchTerm) ||
+      command.description.toLowerCase().includes(searchTerm) ||
+      command.keywords?.some(keyword => keyword.toLowerCase().includes(searchTerm))
+    );
+  });
+
+  // Keyboard Navigation Effects
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + K to focus search
+      // Cmd/Ctrl + K to toggle palette
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        inputRef.current?.focus();
+        setIsOpen(!isOpen);
+        if (!isOpen) {
+          setCurrentView('main');
+          setQuery('');
+          setSelectedIndex(0);
+        }
+        return;
       }
-      
-      // Escape to clear and blur
+
+      if (!isOpen) return;
+
+      // Escape to close or go back
       if (e.key === 'Escape') {
-        setQuery('');
-        inputRef.current?.blur();
+        e.preventDefault();
+        if (currentView !== 'main') {
+          setCurrentView('main');
+        } else {
+          setIsOpen(false);
+        }
+        return;
+      }
+
+      // Only handle arrow keys and enter in main view
+      if (currentView === 'main') {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSelectedIndex(prev => 
+            prev < filteredCommands.length - 1 ? prev + 1 : 0
+          );
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSelectedIndex(prev => 
+            prev > 0 ? prev - 1 : filteredCommands.length - 1
+          );
+        } else if (e.key === 'Enter' && filteredCommands[selectedIndex]) {
+          e.preventDefault();
+          filteredCommands[selectedIndex].action();
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isOpen, currentView, filteredCommands, selectedIndex]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
-    setIsTyping(true);
-    
-    // Reset typing indicator after user stops typing
-    setTimeout(() => setIsTyping(false), 1000);
-  };
+  // Auto-focus search input when palette opens
+  useEffect(() => {
+    if (isOpen && currentView === 'main' && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen, currentView]);
 
-  const handleAddToBattle = async (raw: string) => {
-    setIsProcessing(true);
-    try {
-      const { flags, freeText } = parseFlagsAndFreeText(raw);
-      const text = (flags.text || freeText || '').trim();
+  // Reset selected index when query changes
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query]);
 
-      // TEXT path
-      if (text) {
-        await fetch(N8N_INGEST_WEBHOOK, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            mode: 'text',
-            text,
-            source: {
-              source_type: 'battle_card',
-              title: flags.title || text.slice(0,80),
-              competitor: flags.competitor || guessCompetitor(flags.title || text),
-              verticals: flags.verticals || [],
-              verified: !!flags.verified,
-              risk_level: flags.risk || 'low',
-              owner: 'marketing'
-            }
-          })
-        });
-        console.log('✅ Text sent for indexing');
+  // Click outside to close
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  // File Upload Handler
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      const validTypes = ['.pdf', '.docx', '.txt', '.md'];
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      
+      if (!validTypes.includes(fileExtension)) {
+        setUploadState(prev => ({
+          ...prev,
+          error: 'Invalid file type. Please select PDF, DOCX, TXT, or MD files.'
+        }));
         return;
       }
 
-      // FILE path
-      const file = await pickFile();
-      if (!file) return;
+      // Validate file size (10MB max)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        setUploadState(prev => ({
+          ...prev,
+          error: 'File size too large. Please select a file smaller than 10MB.'
+        }));
+        return;
+      }
 
-      const user = await supabase.auth.getUser();
-      const userId = user.data.user?.id || 'anon';
-      const path = `${userId}/${Date.now()}_${sanitize(file.name)}`;
-
-      const up = await supabase.storage.from('kb-uploads').upload(path, file, { upsert: false });
-      if (up.error) throw up.error;
-
-      const signed = await supabase.storage.from('kb-uploads').createSignedUrl(path, 3600);
-      if (signed.error) throw signed.error;
-
-      await fetch(N8N_INGEST_WEBHOOK, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          mode: 'file',
-          signed_url: signed.data.signedUrl,
-          file: { bucket: 'kb-uploads', path, name: file.name, mime: file.type || 'application/octet-stream' },
-          source: {
-            source_type: 'battle_card',
-            title: flags.title || guessTitle(file.name),
-            competitor: flags.competitor || guessCompetitor(file.name),
-            verticals: flags.verticals || [],
-            url: signed.data.signedUrl,
-            verified: !!flags.verified,
-            risk_level: flags.risk || 'low',
-            owner: 'marketing'
-          }
-        })
-      });
-      console.log('✅ File uploaded and sent for indexing');
-    } catch (error) {
-      console.error('❌ Error processing /addtobattle:', error);
-    } finally {
-      setIsProcessing(false);
+      setBattlecardForm(prev => ({ 
+        ...prev, 
+        file,
+        content: '' // Clear content when file is selected
+      }));
+      setUploadState(prev => ({ ...prev, error: null }));
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Form Submission Handler
+  const handleBattlecardSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const input = query.trim();
-    if (!input || isProcessing) return;
-
-    const [cmd, ...rest] = input.split(/\s+/);
-    if (cmd === '/addtobattle') {
-      await handleAddToBattle(rest.join(' '));
-      setQuery('');
+    
+    // Validation
+    if (!battlecardForm.competitor.trim()) {
+      setUploadState(prev => ({ ...prev, error: 'Competitor name is required' }));
       return;
     }
 
-    // Handle other commands or normal search here
-    console.log('Normal search/command:', input);
-    setQuery('');
-  };
+    if (!battlecardForm.content.trim() && !battlecardForm.file) {
+      setUploadState(prev => ({ ...prev, error: 'Either content or file is required' }));
+      return;
+    }
 
-  const handleSuggestionClick = (suggestion: Suggestion) => {
-    setQuery(suggestion.text);
-    suggestion.action();
-    inputRef.current?.focus();
-  };
+    setUploadState({
+      isUploading: true,
+      progress: 0,
+      error: null,
+      success: false
+    });
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmit(e);
+    try {
+      const formData = new FormData();
+      formData.append('competitor', battlecardForm.competitor.trim());
+      formData.append('verticals', battlecardForm.verticals.join(','));
+      formData.append('sourceType', battlecardForm.sourceType);
+      
+      if (battlecardForm.file) {
+        formData.append('file', battlecardForm.file);
+      } else {
+        formData.append('content', battlecardForm.content.trim());
+      }
+
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setUploadState(prev => ({
+          ...prev,
+          progress: Math.min(prev.progress + 10, 90)
+        }));
+      }, 200);
+
+      const response = await fetch('/api/n8n/upload-battlecard', {
+        method: 'POST',
+        body: formData,
+      });
+
+      clearInterval(progressInterval);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
+      }
+
+      setUploadState({
+        isUploading: false,
+        progress: 100,
+        error: null,
+        success: true
+      });
+
+      // Reset form
+      setBattlecardForm({
+        competitor: '',
+        verticals: [],
+        content: '',
+        file: null,
+        sourceType: 'battlecard'
+      });
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+      // Auto-close after success
+      setTimeout(() => {
+        setCurrentView('main');
+        setUploadState(prev => ({ ...prev, success: false, progress: 0 }));
+      }, 2000);
+
+    } catch (error) {
+      setUploadState({
+        isUploading: false,
+        progress: 0,
+        error: error instanceof Error ? error.message : 'Upload failed',
+        success: false
+      });
     }
   };
 
-  return (
-    <div className="w-full max-w-3xl mx-auto">
-      <form onSubmit={handleSubmit}>
-        <input id="ragBattleFile" type="file" accept=".pdf,.docx,.md,.txt" hidden />
-        <div className="glass-card overflow-hidden transform transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl">
-          <div className="relative flex items-center">
-            <Search className={`absolute left-6 w-5 h-5 transition-colors duration-300 ${
-              isTyping ? 'text-teal-400' : isProcessing ? 'text-yellow-400' : 'text-gray-400'
-            }`} />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              disabled={isProcessing}
-              className="w-full pl-14 pr-6 py-6 text-lg outline-none bg-transparent text-white placeholder-gray-400 font-medium disabled:opacity-50"
-              placeholder="Ask a question, search, or try /addtobattle..."
-              autoFocus
-            />
-            {(isTyping || isProcessing) && (
-              <div className="absolute right-6 flex items-center">
-                <div className={`w-2 h-2 rounded-full animate-pulse ${
-                  isProcessing ? 'bg-yellow-400' : 'bg-teal-400'
-                }`}></div>
-              </div>
-            )}
+  // Render Main View
+  const renderMainView = () => (
+    <>
+      <div className="relative flex items-center border-b border-emerald-500/20">
+        <Search className="absolute left-4 w-5 h-5 text-emerald-400" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="w-full pl-12 pr-4 py-4 text-lg outline-none bg-transparent text-white placeholder-gray-400 font-medium"
+          placeholder="Search commands..."
+          autoFocus
+        />
+      </div>
+      
+      <div className="max-h-80 overflow-y-auto">
+        {filteredCommands.length === 0 ? (
+          <div className="p-8 text-center text-gray-400">
+            No commands found for "{query}"
           </div>
-
-        <div className="border-t border-teal-500/20">
-          <div className="p-3">
-            {suggestions.map((suggestion, index) => (
-              <button
-                key={index}
-                onClick={() => handleSuggestionClick(suggestion)}
-                className="w-full flex items-center gap-4 px-4 py-4 text-left rounded-lg hover:bg-teal-500/10 transition-all duration-300 group transform hover:scale-[1.01]"
-              >
-                <span className="text-teal-400/60 group-hover:text-teal-400 transition-colors duration-300 flex-shrink-0">
-                  {suggestion.icon}
-                </span>
-                <span className="text-gray-300 group-hover:text-white transition-colors duration-300 font-medium">
-                  {suggestion.text}
-                </span>
-                <div className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <div className="w-6 h-6 rounded-full border border-teal-400/30 flex items-center justify-center">
-                    <div className="w-2 h-2 bg-teal-400 rounded-full"></div>
-                  </div>
+        ) : (
+          filteredCommands.map((command, index) => (
+            <button
+              key={command.id}
+              onClick={command.action}
+              className={`w-full flex items-center gap-4 px-4 py-3 text-left transition-all duration-200 ${
+                index === selectedIndex
+                  ? 'bg-emerald-500/20 border-r-2 border-emerald-400'
+                  : 'hover:bg-emerald-500/10'
+              }`}
+            >
+              <span className={`transition-colors duration-200 flex-shrink-0 ${
+                index === selectedIndex ? 'text-emerald-400' : 'text-emerald-400/60'
+              }`}>
+                {command.icon}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className={`font-medium transition-colors duration-200 ${
+                  index === selectedIndex ? 'text-white' : 'text-gray-300'
+                }`}>
+                  {command.name}
                 </div>
-              </button>
-            ))}
+                <div className="text-sm text-gray-400 truncate">
+                  {command.description}
+                </div>
+              </div>
+              <ChevronRight className={`w-4 h-4 transition-all duration-200 ${
+                index === selectedIndex ? 'text-emerald-400 opacity-100' : 'text-gray-400 opacity-0'
+              }`} />
+            </button>
+          ))
+        )}
+      </div>
+    </>
+  );
+
+  // Render Battlecard Upload View
+  const renderBattlecardUploadView = () => (
+    <>
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-emerald-500/20">
+        <button
+          onClick={() => setCurrentView('main')}
+          className="p-1 rounded-lg hover:bg-emerald-500/20 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4 text-emerald-400" />
+        </button>
+        <Upload className="w-5 h-5 text-emerald-400" />
+        <h2 className="text-lg font-semibold text-white">Upload Battlecard</h2>
+      </div>
+
+      <form onSubmit={handleBattlecardSubmit} className="p-4 space-y-4">
+        {/* Competitor Name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Competitor Name *
+          </label>
+          <input
+            type="text"
+            value={battlecardForm.competitor}
+            onChange={(e) => setBattlecardForm(prev => ({ ...prev, competitor: e.target.value }))}
+            className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all"
+            placeholder="e.g., NetSuite, Salesforce, HubSpot"
+            required
+            disabled={uploadState.isUploading}
+          />
+        </div>
+
+        {/* Verticals */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Verticals (comma-separated)
+          </label>
+          <input
+            type="text"
+            value={battlecardForm.verticals.join(', ')}
+            onChange={(e) => setBattlecardForm(prev => ({ 
+              ...prev, 
+              verticals: e.target.value.split(',').map(v => v.trim()).filter(Boolean)
+            }))}
+            className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all"
+            placeholder="e.g., Manufacturing, Healthcare, Retail"
+            disabled={uploadState.isUploading}
+          />
+        </div>
+
+        {/* File Upload */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Upload Document
+          </label>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx,.txt,.md"
+            onChange={handleFileSelect}
+            className="hidden"
+            disabled={uploadState.isUploading}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploadState.isUploading}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-600 rounded-lg text-gray-400 hover:border-emerald-500 hover:text-emerald-400 transition-all disabled:opacity-50"
+          >
+            <File className="w-4 h-4" />
+            {battlecardForm.file ? battlecardForm.file.name : 'Select PDF, DOCX, TXT, or MD file'}
+          </button>
+        </div>
+
+        {/* Content Text Area */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">
+            Or paste content directly
+          </label>
+          <textarea
+            value={battlecardForm.content}
+            onChange={(e) => setBattlecardForm(prev => ({ ...prev, content: e.target.value }))}
+            disabled={!!battlecardForm.file || uploadState.isUploading}
+            className="w-full px-3 py-2 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all resize-none disabled:opacity-50"
+            rows={6}
+            placeholder="Paste your battlecard content here..."
+          />
+        </div>
+
+        {/* Progress Bar */}
+        {uploadState.isUploading && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-gray-300">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Uploading... {uploadState.progress}%
+            </div>
+            <div className="w-full bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-emerald-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadState.progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {uploadState.error && (
+          <div className="flex items-center gap-2 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm">{uploadState.error}</span>
+          </div>
+        )}
+
+        {/* Success Message */}
+        {uploadState.success && (
+          <div className="flex items-center gap-2 p-3 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-400">
+            <CheckCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm">Battlecard uploaded successfully!</span>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => setCurrentView('main')}
+            disabled={uploadState.isUploading}
+            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={uploadState.isUploading || (!battlecardForm.content.trim() && !battlecardForm.file)}
+            className="flex-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {uploadState.isUploading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              'Upload Battlecard'
+            )}
+          </button>
+        </div>
+      </form>
+    </>
+  );
+
+  return (
+    <>
+      {/* Trigger Button */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-6 right-6 p-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40"
+      >
+        <Search className="w-5 h-5" />
+      </button>
+
+      {/* Modal Overlay */}
+      {isOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-20">
+          <div
+            ref={modalRef}
+            className="w-full max-w-2xl mx-4 bg-gray-900/95 backdrop-blur-xl border border-emerald-500/20 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-top-4 duration-300"
+          >
+            {currentView === 'main' && renderMainView()}
+            {currentView === 'battlecard-upload' && renderBattlecardUploadView()}
+            
+            {/* Close Button */}
+            <button
+              onClick={() => setIsOpen(false)}
+              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
-      </div>
-      </form>
+      )}
 
-      <div className="flex justify-center gap-8 mt-8 text-gray-400 text-sm">
-        <div className="flex items-center gap-2 group">
-          <kbd className="glass-card px-3 py-1.5 text-xs font-mono text-teal-400 group-hover:text-teal-300 transition-colors">⌘K</kbd>
-          <span className="group-hover:text-gray-300 transition-colors">Quick search</span>
+      {/* Keyboard Shortcuts Help */}
+      {!isOpen && (
+        <div className="fixed bottom-6 left-6 flex items-center gap-2 text-gray-400 text-sm z-40">
+          <kbd className="px-2 py-1 bg-gray-800/80 backdrop-blur-sm border border-gray-600 rounded text-xs font-mono text-emerald-400">
+            ⌘K
+          </kbd>
+          <span>Open command palette</span>
         </div>
-        <div className="flex items-center gap-2 group">
-          <kbd className="glass-card px-3 py-1.5 text-xs font-mono text-teal-400 group-hover:text-teal-300 transition-colors">⌘/</kbd>
-          <span className="group-hover:text-gray-300 transition-colors">AI assist</span>
-        </div>
-        <div className="flex items-center gap-2 group">
-          <kbd className="glass-card px-3 py-1.5 text-xs font-mono text-teal-400 group-hover:text-teal-300 transition-colors">ESC</kbd>
-          <span className="group-hover:text-gray-300 transition-colors">Clear</span>
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
