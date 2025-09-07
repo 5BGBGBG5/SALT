@@ -5,7 +5,7 @@ interface ErrorResponse {
   error: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
   timestamp: string;
   path: string;
@@ -15,7 +15,7 @@ interface HubSpotQueryRequest {
   action: 'search_deals' | 'search_contacts' | 'search_companies' | 'get_record';
   params: {
     query?: string;
-    filters?: Record<string, any>;
+    filters?: Record<string, unknown>;
     properties?: string[];
     limit?: number;
     objectType?: string;
@@ -25,7 +25,7 @@ interface HubSpotQueryRequest {
 
 interface HubSpotResponse {
   success: boolean;
-  data?: any;
+  data?: unknown;
   total?: number;
   error?: string;
   metadata?: {
@@ -40,7 +40,7 @@ function createErrorResponse(
   message: string,
   status: number,
   request: NextRequest,
-  details?: any
+  details?: unknown
 ): NextResponse<ErrorResponse> {
   const errorResponse: ErrorResponse = {
     error: {
@@ -183,37 +183,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response);
 
     } catch (n8nError) {
-      const error = n8nError as Error;
+      const n8nErrorTyped = n8nError as Error;
       
       // Determine error type based on error message
       let errorCode = 'EXTERNAL_API_ERROR';
       let status = 502;
 
-      if (error.message.includes('timeout') || error.message.includes('AbortError')) {
+      if (n8nErrorTyped.message.includes('timeout') || n8nErrorTyped.message.includes('AbortError')) {
         errorCode = 'TIMEOUT_ERROR';
         status = 504;
-      } else if (error.message.includes('401') || error.message.includes('unauthorized')) {
+      } else if (n8nErrorTyped.message.includes('401') || n8nErrorTyped.message.includes('unauthorized')) {
         errorCode = 'AUTHENTICATION_ERROR';
         status = 401;
-      } else if (error.message.includes('403') || error.message.includes('forbidden')) {
+      } else if (n8nErrorTyped.message.includes('403') || n8nErrorTyped.message.includes('forbidden')) {
         errorCode = 'AUTHORIZATION_ERROR';
         status = 403;
-      } else if (error.message.includes('404')) {
+      } else if (n8nErrorTyped.message.includes('404')) {
         errorCode = 'RESOURCE_NOT_FOUND';
         status = 404;
-      } else if (error.message.includes('429')) {
+      } else if (n8nErrorTyped.message.includes('429')) {
         errorCode = 'RATE_LIMIT_ERROR';
         status = 429;
       }
 
       return createErrorResponse(
         errorCode,
-        `HubSpot query failed: ${error.message}`,
+        `HubSpot query failed: ${n8nErrorTyped.message}`,
         status,
         request,
         {
           action,
-          n8nError: error.message,
+          n8nError: n8nErrorTyped.message,
           processingTime: Date.now() - startTime
         }
       );

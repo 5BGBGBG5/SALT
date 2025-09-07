@@ -96,7 +96,7 @@ export const validateFileContent = async (file: File): Promise<FileValidationRes
     }
 
     return basicValidation;
-  } catch (error) {
+  } catch {
     return {
       isValid: false,
       error: 'Unable to validate file content',

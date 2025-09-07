@@ -5,9 +5,9 @@ interface N8nNotification {
   workflowId: string;
   status: 'started' | 'processing' | 'completed' | 'failed';
   progress?: number;
-  result?: any;
+  result?: unknown;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   timestamp?: string;
 }
 
@@ -16,9 +16,9 @@ interface JobStatus {
   workflow_id: string;
   status: string;
   progress: number;
-  result: any;
+  result: unknown;
   error: string | null;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 }
@@ -275,8 +275,8 @@ export async function GET(request: NextRequest) {
 // Helper function to handle workflow completion
 async function handleWorkflowCompletion(
   workflowId: string, 
-  result: any, 
-  metadata?: Record<string, any>
+  result: unknown, 
+  metadata?: Record<string, unknown>
 ) {
   try {
     // Example: Send notification email, update related records, etc.
@@ -315,7 +315,7 @@ async function handleWorkflowCompletion(
 async function handleWorkflowFailure(
   workflowId: string, 
   error?: string, 
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ) {
   try {
     // Example: Send error notification, log to monitoring system, etc.

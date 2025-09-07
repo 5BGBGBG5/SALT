@@ -6,7 +6,7 @@ interface ErrorResponse {
   error: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
   timestamp: string;
   path: string;
@@ -42,7 +42,7 @@ function createErrorResponse(
   message: string,
   status: number,
   request: NextRequest,
-  details?: any
+  details?: unknown
 ): NextResponse<ErrorResponse> {
   const errorResponse: ErrorResponse = {
     error: {
@@ -233,32 +233,32 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(response);
 
     } catch (n8nError) {
-      const error = n8nError as Error;
+      const n8nErrorTyped = n8nError as Error;
       
       // Determine error type based on error message
       let errorCode = 'EXTERNAL_API_ERROR';
       let status = 502;
 
-      if (error.message.includes('timeout') || error.message.includes('AbortError')) {
+      if (n8nErrorTyped.message.includes('timeout') || n8nErrorTyped.message.includes('AbortError')) {
         errorCode = 'TIMEOUT_ERROR';
         status = 504;
-      } else if (error.message.includes('429')) {
+      } else if (n8nErrorTyped.message.includes('429')) {
         errorCode = 'RATE_LIMIT_ERROR';
         status = 429;
-      } else if (error.message.includes('404')) {
+      } else if (n8nErrorTyped.message.includes('404')) {
         errorCode = 'RESOURCE_NOT_FOUND';
         status = 404;
       }
 
       return createErrorResponse(
         errorCode,
-        `Company analysis failed: ${error.message}`,
+        `Company analysis failed: ${n8nErrorTyped.message}`,
         status,
         request,
         {
           company: companyName,
           analysisTypes: analysisType,
-          n8nError: error.message,
+          n8nError: n8nErrorTyped.message,
           processingTime: Date.now() - startTime
         }
       );

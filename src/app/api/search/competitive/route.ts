@@ -6,7 +6,7 @@ interface ErrorResponse {
   error: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
   timestamp: string;
   path: string;
@@ -40,7 +40,7 @@ function createErrorResponse(
   message: string,
   status: number,
   request: NextRequest,
-  details?: any
+  details?: unknown
 ): NextResponse<ErrorResponse> {
   const errorResponse: ErrorResponse = {
     error: {
@@ -153,14 +153,14 @@ export async function POST(request: NextRequest) {
       }));
 
     } catch (embeddingError) {
-      const error = embeddingError as Error;
+      const embeddingErrorTyped = embeddingError as Error;
       
       // Try to provide cached results if available (placeholder for future implementation)
       console.log(JSON.stringify({
         level: 'warn',
         timestamp: new Date().toISOString(),
         message: 'Failed to generate embedding, attempting fallback',
-        error: error.message
+        error: embeddingErrorTyped.message
       }));
 
       return createErrorResponse(
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
         'Failed to generate embedding for search query',
         503,
         request,
-        { embeddingError: error.message }
+        { embeddingError: embeddingErrorTyped.message }
       );
     }
 
@@ -190,14 +190,14 @@ export async function POST(request: NextRequest) {
       }));
 
     } catch (searchError) {
-      const error = searchError as Error;
+      const searchErrorTyped = searchError as Error;
       
       return createErrorResponse(
         'DATABASE_ERROR',
         'Failed to search knowledge base',
         500,
         request,
-        { searchError: error.message }
+        { searchError: searchErrorTyped.message }
       );
     }
 

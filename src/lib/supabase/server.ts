@@ -27,7 +27,7 @@ export interface SearchResult {
   competitor: string;
   verticals: string[];
   similarity: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export async function searchKnowledgeBase(
@@ -86,7 +86,7 @@ export async function insertKnowledgeSource(sourceData: {
   url?: string;
   verified?: boolean;
   risk_level?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }): Promise<string> {
   const supabase = createServerSupabaseClient();
 
@@ -118,7 +118,7 @@ export async function insertKnowledgeChunks(chunks: Array<{
   corpus: string;
   content: string;
   embedding: number[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }>): Promise<number[]> {
   const supabase = createServerSupabaseClient();
 
@@ -173,7 +173,7 @@ export async function updateKnowledgeSource(
     verticals: string[];
     verified: boolean;
     risk_level: string;
-    metadata: Record<string, any>;
+    metadata: Record<string, unknown>;
   }>
 ) {
   const supabase = createServerSupabaseClient();

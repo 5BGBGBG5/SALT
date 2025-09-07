@@ -6,26 +6,19 @@ interface ErrorResponse {
   error: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
   timestamp: string;
   path: string;
 }
 
-interface BattlecardUploadRequest {
-  competitor: string;
-  verticals: string[];
-  sourceType: string;
-  content?: string;
-  file?: File;
-}
 
 function createErrorResponse(
   code: string,
   message: string,
   status: number,
   request: NextRequest,
-  details?: any
+  details?: unknown
 ): NextResponse<ErrorResponse> {
   const errorResponse: ErrorResponse = {
     error: {
@@ -203,30 +196,30 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (n8nError) {
-      const error = n8nError as Error;
+      const n8nErrorTyped = n8nError as Error;
       
       // Determine error type based on error message
       let errorCode = 'WEBHOOK_ERROR';
       let status = 502;
 
-      if (error.message.includes('timeout') || error.message.includes('AbortError')) {
+      if (n8nErrorTyped.message.includes('timeout') || n8nErrorTyped.message.includes('AbortError')) {
         errorCode = 'TIMEOUT_ERROR';
         status = 504;
-      } else if (error.message.includes('413')) {
+      } else if (n8nErrorTyped.message.includes('413')) {
         errorCode = 'FILE_TOO_LARGE';
         status = 413;
-      } else if (error.message.includes('400')) {
+      } else if (n8nErrorTyped.message.includes('400')) {
         errorCode = 'VALIDATION_ERROR';
         status = 400;
       }
 
       return createErrorResponse(
         errorCode,
-        `Failed to process battlecard upload: ${error.message}`,
+        `Failed to process battlecard upload: ${n8nErrorTyped.message}`,
         status,
         request,
         {
-          n8nError: error.message,
+          n8nError: n8nErrorTyped.message,
           processingTime: Date.now() - startTime
         }
       );
@@ -248,7 +241,7 @@ export async function POST(request: NextRequest) {
 }
 
 // Health check endpoint
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const isHealthy = await n8nClient.healthCheck();
     

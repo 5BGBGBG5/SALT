@@ -4,7 +4,7 @@ interface N8nWebhookResponse {
   sourceId?: string;
   chunksCreated?: number;
   error?: string;
-  data?: any;
+  data?: unknown;
 }
 
 interface N8nRequestOptions {
@@ -30,7 +30,7 @@ class N8nClient {
 
   async sendWebhook(
     endpoint: string, 
-    data: any, 
+    data: unknown, 
     options: N8nRequestOptions = {}
   ): Promise<N8nWebhookResponse> {
     const { timeout = this.defaultTimeout, retries = this.defaultRetries } = options;
@@ -155,4 +155,5 @@ class N8nClient {
   }
 }
 
-export default new N8nClient();
+const n8nClient = new N8nClient();
+export default n8nClient;
