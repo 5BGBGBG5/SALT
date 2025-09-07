@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import CommandPalette from './components/CommandPalette';
+import SearchInput from './components/SearchInput';
 import PoweredBySALT from './components/PoweredBySALT';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -70,7 +70,7 @@ export default function HomePage() {
             transition={{ duration: 0.5, delay: 0.6 }}
             className="mb-8"
           >
-            <CommandPalette />
+            <SearchInput />
           </motion.div>
 
           {/* Powered by SALT */}

@@ -3,6 +3,7 @@ import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "./contexts/AuthContext";
 import Header from "./components/Header";
+import CommandPalette from "./components/CommandPalette";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -33,6 +34,7 @@ export default function RootLayout({
         <AuthProvider>
           <Header />
           <main className="pt-24">{children}</main>
+          <CommandPalette />
         </AuthProvider>
       </body>
     </html>

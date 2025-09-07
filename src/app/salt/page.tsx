@@ -1,5 +1,5 @@
 import React from 'react';
-import CommandPalette from '../components/CommandPalette';
+import SearchInput from '../components/SearchInput';
 import PoweredBySALT from '../components/PoweredBySALT';
 import ProtectedRoute from '../components/ProtectedRoute';
 
@@ -23,7 +23,7 @@ export default function SaltPage() {
         }} />
         <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center p-6 animated-gradient">
           <div className="w-full max-w-3xl mx-auto text-center">
-            <CommandPalette />
+            <SearchInput />
             <PoweredBySALT />
           </div>
         </div>
