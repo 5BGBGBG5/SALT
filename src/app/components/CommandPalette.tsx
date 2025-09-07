@@ -354,7 +354,7 @@ export default function CommandPalette() {
       <div className="max-h-80 overflow-y-auto">
         {filteredCommands.length === 0 ? (
           <div className="p-8 text-center text-gray-400">
-            No commands found for "{query}"
+            No commands found for &quot;{query}&quot;
           </div>
         ) : (
           filteredCommands.map((command, index) => (
