@@ -86,19 +86,40 @@ export default function SearchInput() {
     try {
       const formData = new FormData();
       formData.append('competitor', uploadForm.competitor);
-      formData.append('verticals', uploadForm.verticals);
+      formData.append('verticals', JSON.stringify(uploadForm.verticals.split(',').map(v => v.trim())));
       formData.append('sourceType', 'battlecard');
       
       if (uploadForm.file) {
+        // For file upload - send the actual file
         formData.append('file', uploadForm.file);
+        
+        // Also read file content as base64 for n8n processing
+        const reader = new FileReader();
+        const fileContent = await new Promise<string>((resolve, reject) => {
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(uploadForm.file!);
+        });
+        
+        formData.append('fileContent', fileContent);
+        formData.append('fileName', uploadForm.file.name);
+        formData.append('fileType', uploadForm.file.type);
       } else {
+        // For text content
         formData.append('content', uploadForm.content);
       }
 
       const response = await fetch('/api/battlecard/upload', {
         method: 'POST',
+        // Important: Don't set Content-Type header - let browser set it for FormData
         body: formData,
       });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Upload failed:', errorText);
+        throw new Error('Upload failed');
+      }
 
       const result = await response.json();
 
@@ -110,7 +131,8 @@ export default function SearchInput() {
         setUploadError(result.error || 'Upload failed');
       }
     } catch (error) {
-      setUploadError('Failed to upload battlecard');
+      console.error('Upload error:', error);
+      setUploadError('Failed to upload battlecard. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -294,7 +316,27 @@ export default function SearchInput() {
                 <input
                   type="file"
                   accept=".pdf,.docx,.txt,.md"
-                  onChange={(e) => setUploadForm({...uploadForm, file: e.target.files?.[0] || null})}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // Check file size (10MB limit)
+                      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+                      if (file.size > maxSize) {
+                        setUploadError('File size must be less than 10MB');
+                        return;
+                      }
+                      
+                      // Check file type
+                      const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'text/markdown'];
+                      if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|docx|txt|md)$/i)) {
+                        setUploadError('Only PDF, DOCX, TXT, and MD files are allowed');
+                        return;
+                      }
+                      
+                      setUploadForm({...uploadForm, file: file});
+                      setUploadError(''); // Clear any previous errors
+                    }
+                  }}
                   className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg outline-none file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-teal-600 file:text-white hover:file:bg-teal-700"
                 />
               </div>
