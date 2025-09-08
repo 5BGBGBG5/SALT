@@ -5,6 +5,14 @@ interface N8nWebhookResponse {
   chunksCreated?: number;
   error?: string;
   data?: unknown;
+  sections?: Array<{
+    type: string;
+    title: string;
+    content: string;
+    sources?: string[];
+  }>;
+  dataPoints?: number;
+  total?: number;
 }
 
 interface N8nRequestOptions {

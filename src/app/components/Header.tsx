@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -48,11 +49,13 @@ export default function Header() {
         {/* Left: SALT logo + lockup with glow effect */}
         <div className="flex items-center gap-3 group">
           <Link href="/salt" className="flex items-center gap-3" aria-label="SALT home">
-            <img
+            <Image
               src="/salt-logo.svg"
               alt="SALT — Sales & Analytics Lab for Team"
+              width={32}
+              height={32}
               className="h-8 w-auto transition-all duration-300 group-hover:filter group-hover:brightness-125 group-hover:drop-shadow-[0_0_10px_rgba(0,204,204,0.5)]"
-              fetchPriority="high"
+              priority
             />
             <div className="text-text-primary">
               <div className="flex items-baseline gap-1">
