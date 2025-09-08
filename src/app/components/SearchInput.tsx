@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from 'react';
-import { Search, TrendingUp, Building2, Bot, FileBarChart } from 'lucide-react';
+import { Search, TrendingUp, Building2, FileText, BarChart3 } from 'lucide-react';
 
 interface Suggestion {
   icon: React.ReactNode;
@@ -14,26 +14,57 @@ export default function SearchInput() {
   const [isTyping, setIsTyping] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Handler functions for each suggestion
+  const handleBattlecardUpload = () => {
+    // TODO: Open upload modal or navigate to battlecard upload view
+    console.log('Opening battlecard upload interface...');
+    // Example: router.push('/battlecard/upload') or setShowUploadModal(true)
+  };
+
+  const handleDealSearch = () => {
+    // TODO: Execute HubSpot API call and display results
+    console.log('Searching HubSpot deals in pipeline...');
+    // Example: fetchHubSpotDeals() or router.push('/deals')
+  };
+
+  const handleCompanyAnalysis = () => {
+    // Focus input with pre-filled text for company analysis
+    setQuery('Analyze company: ');
+    inputRef.current?.focus();
+    // Position cursor at the end
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.setSelectionRange(inputRef.current.value.length, inputRef.current.value.length);
+      }
+    }, 0);
+  };
+
+  const handleWeeklyReport = () => {
+    // TODO: Trigger report generation workflow
+    console.log('Generating weekly sales report...');
+    // Example: generateWeeklyReport() or router.push('/reports/weekly')
+  };
+
   const suggestions: Suggestion[] = [
     {
+      icon: <FileText className="w-4 h-4" />,
+      text: 'Upload battlecard for competitor',
+      action: handleBattlecardUpload
+    },
+    {
       icon: <TrendingUp className="w-4 h-4" />,
-      text: "Show me this week's engagement metrics",
-      action: () => console.log('Show engagement metrics')
+      text: 'Search deals in pipeline',
+      action: handleDealSearch
     },
     {
       icon: <Building2 className="w-4 h-4" />,
-      text: "Which companies engaged with our content?",
-      action: () => console.log('Show company engagement')
+      text: 'Analyze company: [company name]',
+      action: handleCompanyAnalysis
     },
     {
-      icon: <Bot className="w-4 h-4" />,
-      text: "How is Inecta performing in AI responses?",
-      action: () => console.log('Show AI performance')
-    },
-    {
-      icon: <FileBarChart className="w-4 h-4" />,
-      text: "Generate weekly performance report",
-      action: () => console.log('Generate report')
+      icon: <BarChart3 className="w-4 h-4" />,
+      text: 'Generate weekly sales report',
+      action: handleWeeklyReport
     }
   ];
 
@@ -116,3 +147,5 @@ export default function SearchInput() {
     </div>
   );
 }
+
+
