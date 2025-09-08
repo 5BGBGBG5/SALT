@@ -240,6 +240,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Configure route segment to allow larger payloads
+export const runtime = 'nodejs';
+export const maxDuration = 60; // 60 seconds timeout for large files
+
 // Health check endpoint
 export async function GET() {
   try {

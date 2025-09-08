@@ -286,7 +286,7 @@ export default function CommandPalette() {
         }));
       }, 200);
 
-      const response = await fetch('/api/n8n/upload-battlecard', {
+      const response = await fetch('/api/battlecard/upload', {
         method: 'POST',
         body: formData,
       });

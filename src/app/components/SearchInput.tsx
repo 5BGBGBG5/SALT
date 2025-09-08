@@ -90,20 +90,38 @@ export default function SearchInput() {
       formData.append('sourceType', 'battlecard');
       
       if (uploadForm.file) {
+        // Check file size before processing
+        const maxSize = 5 * 1024 * 1024; // 5MB limit for base64 encoding
+        if (uploadForm.file.size > maxSize) {
+          setUploadError('File size must be less than 5MB for upload. Larger files are not supported yet.');
+          return;
+        }
+
         // For file upload - send the actual file
         formData.append('file', uploadForm.file);
-        
-        // Also read file content as base64 for n8n processing
-        const reader = new FileReader();
-        const fileContent = await new Promise<string>((resolve, reject) => {
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(uploadForm.file!);
-        });
-        
-        formData.append('fileContent', fileContent);
         formData.append('fileName', uploadForm.file.name);
         formData.append('fileType', uploadForm.file.type);
+        
+        // Read file as text for PDFs (if possible) or as base64
+        try {
+          if (uploadForm.file.type === 'text/plain' || uploadForm.file.type === 'text/markdown') {
+            const textContent = await uploadForm.file.text();
+            formData.append('content', textContent);
+          } else {
+            // For binary files like PDF, read as base64 but with size limit
+            const reader = new FileReader();
+            const fileContent = await new Promise<string>((resolve, reject) => {
+              reader.onload = (e) => resolve(e.target?.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(uploadForm.file!);
+            });
+            formData.append('fileContent', fileContent);
+          }
+        } catch (error) {
+          console.error('File reading error:', error);
+          setUploadError('Failed to read file content');
+          return;
+        }
       } else {
         // For text content
         formData.append('content', uploadForm.content);
@@ -319,10 +337,10 @@ export default function SearchInput() {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      // Check file size (10MB limit)
-                      const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+                      // Check file size (5MB limit for base64 encoding)
+                      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
                       if (file.size > maxSize) {
-                        setUploadError('File size must be less than 10MB');
+                        setUploadError('File size must be less than 5MB for upload');
                         return;
                       }
                       

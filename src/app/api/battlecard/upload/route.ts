@@ -25,19 +25,58 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Prepare JSON payload for n8n webhook
-    const payload = {
-      competitor,
-      verticals: JSON.parse(verticals || '[]'),
-      sourceType: sourceType || 'battlecard',
-      content: content || '',
-      file: file ? {
-        name: fileName,
-        content: fileContent, // Base64 encoded
-        size: file.size,
-        type: fileType
-      } : null
-    };
+    // Prepare payload for n8n webhook
+    let payload: any;
+    
+    if (fileContent) {
+      // New approach with base64 content (from SearchInput)
+      payload = {
+        competitor,
+        verticals: JSON.parse(verticals || '[]'),
+        sourceType: sourceType || 'battlecard',
+        content: content || '',
+        file: file ? {
+          name: fileName,
+          content: fileContent, // Base64 encoded
+          size: file.size,
+          type: fileType
+        } : null
+      };
+    } else {
+      // Simple approach (from CommandPalette) - forward FormData to n8n
+      console.log('Using FormData approach for n8n');
+      const n8nFormData = new FormData();
+      n8nFormData.append('competitor', competitor);
+      n8nFormData.append('verticals', verticals || '[]');
+      n8nFormData.append('sourceType', sourceType || 'battlecard');
+      
+      if (file) {
+        n8nFormData.append('file', file);
+      } else if (content) {
+        n8nFormData.append('content', content);
+      }
+
+      // Send FormData directly to n8n
+      const response = await fetch(`${N8N_WEBHOOK_URL}/upload-battlecard`, {
+        method: 'POST',
+        body: n8nFormData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('n8n webhook error:', errorText);
+        throw new Error(`n8n webhook failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Battlecard uploaded successfully',
+        sourceId: result.sourceId,
+        chunks: result.chunks
+      });
+    }
 
     console.log('Sending to n8n:', {
       competitor: payload.competitor,
