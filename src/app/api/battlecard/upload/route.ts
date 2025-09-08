@@ -26,7 +26,20 @@ export async function POST(request: NextRequest) {
     }
     
     // Prepare payload for n8n webhook
-    let payload: any;
+    interface N8nPayload {
+      competitor: string;
+      verticals: string[];
+      sourceType: string;
+      content: string;
+      file?: {
+        name: string;
+        content: string;
+        size: number;
+        type: string;
+      } | null;
+    }
+    
+    let payload: N8nPayload;
     
     if (fileContent) {
       // New approach with base64 content (from SearchInput)
