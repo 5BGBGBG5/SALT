@@ -7,15 +7,7 @@ const nextConfig: NextConfig = {
     ];
   },
   // Configure for larger file uploads (battlecard PDFs)
-  experimental: {
-    serverComponentsExternalPackages: [],
-  },
-  // Increase body size limit for file uploads
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
+  serverExternalPackages: [],
 };
 
 export default nextConfig;

@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -14,7 +14,7 @@ export interface KbSource {
   verticals: string[]
   url?: string
   verified: boolean
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   created_at: string
   updated_at: string
 }
@@ -24,7 +24,7 @@ export interface KbChunk {
   source_id: string
   content: string
   embedding?: number[]
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
   created_at: string
 }
 

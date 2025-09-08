@@ -1,8 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { NextResponse } from 'next/server'
 
-export async function GET(request: NextRequest) {
+export const dynamic = 'force-dynamic'
+
+export async function GET() {
   try {
+    // Check if Supabase is configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      return NextResponse.json(
+        { success: false, error: 'Database not configured' },
+        { status: 503 }
+      )
+    }
+
+    const { supabase } = await import('@/lib/supabase')
     const { data, error } = await supabase
       .from('kb_sources')
       .select('*')

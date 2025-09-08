@@ -83,7 +83,7 @@ export default function BattlecardsPage() {
             </p>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg">
               <kbd className="px-2 py-1 text-xs bg-gray-700 rounded text-gray-300">⌘K</kbd>
-              <span className="text-sm text-gray-400">then select "Upload battlecard"</span>
+              <span className="text-sm text-gray-400">then select &quot;Upload battlecard&quot;</span>
             </div>
           </div>
         ) : (

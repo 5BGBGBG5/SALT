@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Upload, FileText, Building2, TrendingUp, BarChart3, X } from 'lucide-react';
+import { Search, FileText, Building2, TrendingUp, BarChart3, X } from 'lucide-react';
 
 interface Command {
   id: string;

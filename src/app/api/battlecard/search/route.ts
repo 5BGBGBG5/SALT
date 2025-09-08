@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+
+export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if Supabase is configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      return NextResponse.json(
+        { success: false, error: 'Database not configured' },
+        { status: 503 }
+      )
+    }
+
     const { query, competitor, limit = 5 } = await request.json()
+
+    const { supabase } = await import('@/lib/supabase')
 
     // For now, do a simple text search
     // Later, you can add embedding-based search
