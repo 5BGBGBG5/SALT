@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Competitive Intelligence Dashboard - SALT Platform</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Mobile Menu Overlay -->
+    <div id="mobile-overlay" class="mobile-overlay"></div>
+    
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg class="logo-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                    <rect width="32" height="32" rx="8" fill="currentColor"/>
+                    <path d="M8 12h16M8 16h16M8 20h12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <span class="logo-text">SALT CI</span>
+            </div>
+            <button id="sidebar-close" class="sidebar-close">
+                <i data-lucide="x"></i>
+            </button>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul class="nav-list">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link active">
+                        <i data-lucide="layout-dashboard"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="competitors.html" class="nav-link">
+                        <i data-lucide="users"></i>
+                        <span>Competitors</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="compare.html" class="nav-link">
+                        <i data-lucide="git-compare"></i>
+                        <span>Compare</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="battlecards.html" class="nav-link">
+                        <i data-lucide="file-text"></i>
+                        <span>Battlecards</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="insights.html" class="nav-link">
+                        <i data-lucide="brain"></i>
+                        <span>Insights</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <div class="nav-section">
+                <h3 class="nav-section-title">Quick Actions</h3>
+                <ul class="nav-list">
+                    <li class="nav-item">
+                        <a href="../" class="nav-link">
+                            <i data-lucide="upload"></i>
+                            <span>Upload Battlecard</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link" id="export-data">
+                            <i data-lucide="download"></i>
+                            <span>Export Data</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i data-lucide="user"></i>
+                </div>
+                <div class="user-details">
+                    <div class="user-name">Demo User</div>
+                    <div class="user-role">Analyst</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <button id="sidebar-toggle" class="sidebar-toggle">
+                    <i data-lucide="menu"></i>
+                </button>
+                <h1 class="page-title">Competitive Intelligence Dashboard</h1>
+            </div>
+            
+            <div class="header-right">
+                <div class="search-container">
+                    <div class="search-input-wrapper">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input 
+                            type="text" 
+                            id="global-search" 
+                            class="search-input" 
+                            placeholder="Search competitors, battlecards..."
+                        >
+                    </div>
+                    <div id="search-results" class="search-results"></div>
+                </div>
+                
+                <div class="header-actions">
+                    <button class="header-action" id="refresh-data" title="Refresh Data">
+                        <i data-lucide="refresh-cw"></i>
+                    </button>
+                    <button class="header-action" id="notifications" title="Notifications">
+                        <i data-lucide="bell"></i>
+                        <span class="notification-badge">3</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Dashboard Content -->
+        <div class="dashboard-content">
+            <!-- Statistics Bar -->
+            <div class="stats-bar">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i data-lucide="users"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-competitors">-</div>
+                        <div class="stat-label">Total Competitors</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i data-lucide="file-text"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-documents">-</div>
+                        <div class="stat-label">Total Documents</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i data-lucide="trending-up"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="active-verticals">-</div>
+                        <div class="stat-label">Active Verticals</div>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i data-lucide="clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="last-updated">-</div>
+                        <div class="stat-label">Last Updated</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filters -->
+            <div class="filters-section">
+                <div class="filters-left">
+                    <div class="filter-group">
+                        <label for="vertical-filter" class="filter-label">Filter by Vertical:</label>
+                        <select id="vertical-filter" class="filter-select">
+                            <option value="">All Verticals</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="source-filter" class="filter-label">Source Type:</label>
+                        <select id="source-filter" class="filter-select">
+                            <option value="">All Sources</option>
+                            <option value="battlecard">Battlecard</option>
+                            <option value="website">Website</option>
+                            <option value="document">Document</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="filters-right">
+                    <button class="btn btn-secondary" id="clear-filters">
+                        <i data-lucide="x"></i>
+                        Clear Filters
+                    </button>
+                    <button class="btn btn-primary" id="add-competitor">
+                        <i data-lucide="plus"></i>
+                        Add Competitor
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Main Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Competitors Grid -->
+                <div class="dashboard-section competitors-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Competitors</h2>
+                        <div class="section-actions">
+                            <button class="btn btn-ghost btn-sm" id="view-toggle">
+                                <i data-lucide="grid-3x3"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="competitors-grid" class="competitors-grid">
+                        <!-- Competitor cards will be dynamically loaded here -->
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                            <p>Loading competitors...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="dashboard-section activity-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Recent Activity</h2>
+                        <a href="activity.html" class="section-link">View All</a>
+                    </div>
+                    
+                    <div id="recent-activity" class="activity-feed">
+                        <!-- Activity items will be dynamically loaded here -->
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                            <p>Loading activity...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analytics Chart -->
+                <div class="dashboard-section chart-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Content Distribution</h2>
+                        <div class="chart-controls">
+                            <select id="chart-period" class="chart-select">
+                                <option value="7">Last 7 days</option>
+                                <option value="30" selected>Last 30 days</option>
+                                <option value="90">Last 90 days</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="content-chart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Top Verticals -->
+                <div class="dashboard-section verticals-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Top Verticals</h2>
+                    </div>
+                    
+                    <div id="verticals-list" class="verticals-list">
+                        <!-- Verticals will be dynamically loaded here -->
+                        <div class="loading-state">
+                            <div class="spinner"></div>
+                            <p>Loading verticals...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner large"></div>
+            <p>Loading dashboard...</p>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="js/config.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/components.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
