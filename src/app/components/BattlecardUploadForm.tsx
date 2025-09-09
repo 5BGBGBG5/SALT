@@ -1,11 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, X, ChevronDown, Plus, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Upload, X, ChevronDown, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface Competitor {
   value: string;
   label: string;
+}
+
+interface CompetitorApiResponse {
+  value?: string;
+  name?: string;
+  id?: string;
+  label?: string;
 }
 
 interface FormData {
@@ -86,7 +93,7 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
       if (data.success && Array.isArray(data.competitors)) {
         // Format competitors and add "Add New" option
         const competitorOptions: Competitor[] = [
-          ...data.competitors.map((comp: any) => ({
+          ...data.competitors.map((comp: CompetitorApiResponse) => ({
             value: comp.value || comp.name || comp.id,
             label: comp.label || comp.name || comp.id
           })),

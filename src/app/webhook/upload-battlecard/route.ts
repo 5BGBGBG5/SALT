@@ -4,15 +4,6 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-interface BattlecardData {
-  competitorSelect: string;
-  newCompetitorName?: string;
-  verticals: string[];
-  sourceType: string;
-  content: string;
-  file?: File;
-}
-
 export async function POST(request: NextRequest) {
   try {
     console.log('Processing battlecard upload...');

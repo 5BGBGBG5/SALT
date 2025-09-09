@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     let requestBody: CompetitiveSearchRequest;
     try {
       requestBody = await request.json();
-    } catch (_error) {
+    } catch () {
       return createErrorResponse(
         'VALIDATION_ERROR',
         'Invalid JSON in request body',
