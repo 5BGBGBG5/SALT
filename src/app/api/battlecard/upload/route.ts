@@ -39,6 +39,24 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Validate file size to prevent Vercel function payload limits
+    if (file && file.size > 3 * 1024 * 1024) {
+      console.error('File too large:', file.size, 'bytes (limit: 3MB)');
+      return NextResponse.json(
+        { success: false, error: 'File size must be less than 3MB due to Vercel serverless function limitations' },
+        { status: 413 }
+      );
+    }
+
+    // Validate content requirements
+    if (!file && !content) {
+      console.error('No file or content provided');
+      return NextResponse.json(
+        { success: false, error: 'Either a file or text content is required' },
+        { status: 400 }
+      );
+    }
     
     
     // Always use FormData approach to avoid payload size issues

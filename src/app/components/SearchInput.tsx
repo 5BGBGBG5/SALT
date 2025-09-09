@@ -109,10 +109,11 @@ export default function SearchInput() {
       formData.append('sourceType', 'battlecard');
       
       if (uploadForm.file) {
-        // Check file size before processing - increased limit since we're not base64 encoding
-        const maxSize = 8 * 1024 * 1024; // 8MB limit for direct file upload
+        // Vercel serverless functions have a ~4.5MB request body limit
+        // We need to stay well under this to account for form data overhead
+        const maxSize = 3 * 1024 * 1024; // 3MB limit to stay within Vercel limits
         if (uploadForm.file.size > maxSize) {
-          setUploadError('File size must be less than 8MB for upload.');
+          setUploadError('File size must be less than 3MB for upload. This is a Vercel serverless function limitation.');
           return;
         }
 
@@ -376,16 +377,19 @@ export default function SearchInput() {
 
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Upload File</label>
+                <div className="text-xs text-gray-500 mb-2">
+                  Maximum file size: 3MB (Vercel serverless limitation). For larger files, paste content below.
+                </div>
                 <input
                   type="file"
                   accept=".pdf,.docx,.txt,.md"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      // Check file size (8MB limit for direct upload)
-                      const maxSize = 8 * 1024 * 1024; // 8MB in bytes
+                      // Check file size (3MB limit for Vercel serverless functions)
+                      const maxSize = 3 * 1024 * 1024; // 3MB in bytes
                       if (file.size > maxSize) {
-                        setUploadError('File size must be less than 8MB for upload');
+                        setUploadError('File size must be less than 3MB for upload (Vercel limitation)');
                         return;
                       }
                       
@@ -408,12 +412,15 @@ export default function SearchInput() {
 
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Paste Content</label>
+                <div className="text-xs text-gray-500 mb-2">
+                  For larger documents (&gt;3MB), copy and paste the text content here instead of uploading the file.
+                </div>
                 <textarea
                   value={uploadForm.content}
                   onChange={(e) => setUploadForm({...uploadForm, content: e.target.value})}
                   disabled={!!uploadForm.file}
                   className="w-full px-3 py-2 bg-gray-700 text-white rounded-lg outline-none focus:ring-2 focus:ring-teal-500 h-32 resize-none disabled:opacity-50"
-                  placeholder="Paste battlecard content here..."
+                  placeholder="Paste battlecard content here (recommended for large documents)..."
                 />
               </div>
 
