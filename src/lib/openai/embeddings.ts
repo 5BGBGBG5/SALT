@@ -173,3 +173,6 @@ export function cleanupEmbeddingCache(): void {
 
 // Run cleanup every hour
 setInterval(cleanupEmbeddingCache, 60 * 60 * 1000);
+
+
+
