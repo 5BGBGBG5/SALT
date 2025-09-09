@@ -34,6 +34,7 @@ export default function NavBar() {
     { href: '/reports/post-engagement', label: 'Post Engagement Report' },
     { href: '/reports/aieo', label: 'AiEO Report' },
     { href: '/reports/competition-heatmap', label: 'Competition Heat Map' },
+    { href: '/dashboard/', label: 'Competitive Intelligence Dashboard' },
   ];
 
   return (
