@@ -4,8 +4,11 @@ const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://inecta.app.n8n.c
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== Battlecard Upload API Called ===');
+    
     // Parse FormData from request
     const formData = await request.formData();
+    console.log('FormData keys:', Array.from(formData.keys()));
     
     // Extract all form fields
     const competitor = formData.get('competitor') as string;
@@ -17,8 +20,20 @@ export async function POST(request: NextRequest) {
     const fileName = formData.get('fileName') as string;
     const fileType = formData.get('fileType') as string;
     
+    console.log('Extracted fields:', {
+      competitor,
+      verticals,
+      sourceType,
+      content: content ? `${content.length} chars` : 'none',
+      fileName,
+      fileType,
+      fileSize: file?.size,
+      hasFileContent: !!fileContent
+    });
+
     // Validate required fields
     if (!competitor) {
+      console.error('Missing competitor name');
       return NextResponse.json(
         { success: false, error: 'Competitor name is required' },
         { status: 400 }
@@ -43,9 +58,20 @@ export async function POST(request: NextRequest) {
     
     if (fileContent) {
       // New approach with base64 content (from SearchInput)
+      let parsedVerticals: string[] = [];
+      if (verticals) {
+        try {
+          // Try to parse as JSON first (old format)
+          parsedVerticals = JSON.parse(verticals);
+        } catch {
+          // If not JSON, treat as comma-separated string
+          parsedVerticals = verticals.split(',').map(v => v.trim()).filter(Boolean);
+        }
+      }
+      
       payload = {
         competitor,
-        verticals: JSON.parse(verticals || '[]'),
+        verticals: parsedVerticals,
         sourceType: sourceType || 'battlecard',
         content: content || '',
         file: file ? {

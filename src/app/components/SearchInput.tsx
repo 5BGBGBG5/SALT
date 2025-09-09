@@ -84,9 +84,28 @@ export default function SearchInput() {
     setUploadError('');
 
     try {
+      // Validate required fields
+      if (!uploadForm.competitor.trim()) {
+        setUploadError('Competitor name is required');
+        return;
+      }
+
+      if (!uploadForm.file && !uploadForm.content.trim()) {
+        setUploadError('Please upload a file or enter content');
+        return;
+      }
+
+      console.log('Starting upload with:', {
+        competitor: uploadForm.competitor,
+        hasFile: !!uploadForm.file,
+        hasContent: !!uploadForm.content,
+        fileName: uploadForm.file?.name,
+        fileSize: uploadForm.file?.size
+      });
+
       const formData = new FormData();
-      formData.append('competitor', uploadForm.competitor);
-      formData.append('verticals', JSON.stringify(uploadForm.verticals.split(',').map(v => v.trim())));
+      formData.append('competitor', uploadForm.competitor.trim());
+      formData.append('verticals', uploadForm.verticals.trim());
       formData.append('sourceType', 'battlecard');
       
       if (uploadForm.file) {
@@ -96,6 +115,8 @@ export default function SearchInput() {
           setUploadError('File size must be less than 5MB for upload. Larger files are not supported yet.');
           return;
         }
+
+        console.log('Processing file:', uploadForm.file.name, 'Type:', uploadForm.file.type);
 
         // For file upload - send the actual file
         formData.append('file', uploadForm.file);
@@ -107,6 +128,7 @@ export default function SearchInput() {
           if (uploadForm.file.type === 'text/plain' || uploadForm.file.type === 'text/markdown') {
             const textContent = await uploadForm.file.text();
             formData.append('content', textContent);
+            console.log('Read file as text, length:', textContent.length);
           } else {
             // For binary files like PDF, read as base64 but with size limit
             const reader = new FileReader();
@@ -116,16 +138,20 @@ export default function SearchInput() {
               reader.readAsDataURL(uploadForm.file!);
             });
             formData.append('fileContent', fileContent);
+            console.log('Read file as base64, length:', fileContent.length);
           }
         } catch (error) {
           console.error('File reading error:', error);
-          setUploadError('Failed to read file content');
+          setUploadError('Failed to read file content: ' + (error instanceof Error ? error.message : 'Unknown error'));
           return;
         }
       } else {
         // For text content
-        formData.append('content', uploadForm.content);
+        formData.append('content', uploadForm.content.trim());
+        console.log('Using text content, length:', uploadForm.content.trim().length);
       }
+
+      console.log('Sending request to /api/battlecard/upload');
 
       const response = await fetch('/api/battlecard/upload', {
         method: 'POST',
@@ -133,24 +159,54 @@ export default function SearchInput() {
         body: formData,
       });
 
+      console.log('Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Upload failed:', errorText);
-        throw new Error('Upload failed');
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorText = await response.text();
+          console.error('Upload failed response:', errorText);
+          
+          // Try to parse as JSON to get more detailed error
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            // If not JSON, use the raw text
+            errorMessage = errorText || errorMessage;
+          }
+        } catch (e) {
+          console.error('Error reading response:', e);
+        }
+        
+        setUploadError(`Upload failed: ${errorMessage}`);
+        return;
       }
 
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+        console.log('Upload response:', result);
+      } catch (e) {
+        console.error('Error parsing response JSON:', e);
+        setUploadError('Invalid response from server');
+        return;
+      }
 
       if (result.success) {
         setShowUploadModal(false);
         setUploadForm({ competitor: '', verticals: '', content: '', file: null });
         alert('Battlecard uploaded successfully!');
+        console.log('Upload successful:', result);
       } else {
-        setUploadError(result.error || 'Upload failed');
+        const errorMsg = result.error || 'Upload failed - no error message provided';
+        console.error('Upload failed with result:', result);
+        setUploadError(errorMsg);
       }
     } catch (error) {
-      console.error('Upload error:', error);
-      setUploadError('Failed to upload battlecard. Please try again.');
+      console.error('Upload error (catch block):', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error occurred';
+      setUploadError(`Failed to upload battlecard: ${errorMsg}`);
     } finally {
       setIsUploading(false);
     }
