@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import SearchInput from './components/SearchInput';
+import BattlecardUpload from './components/BattlecardUpload';
 // Dynamic imports for Supabase-dependent components
 // import UploadDropzone from './components/UploadDropzone';
 // import BigUpload from './components/BigUpload'; // Uncomment when needed
@@ -133,11 +134,21 @@ export default function HomePage() {
             */}
           </motion.div>
 
+          {/* Battlecard Upload Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.9 }}
+            className="mb-8"
+          >
+            <BattlecardUpload />
+          </motion.div>
+
           {/* Powered by SALT */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 1.0 }}
+            transition={{ duration: 0.5, delay: 1.1 }}
           >
             <PoweredBySALT />
           </motion.div>
