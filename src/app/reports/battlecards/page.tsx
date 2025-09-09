@@ -1,184 +1,345 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import type { KbSource } from '@/lib/supabase';
-import { FileText, Building2, Calendar, CheckCircle, XCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Upload, Plus, Check, AlertCircle, ChevronDown, Tag, FileText, Building2 } from 'lucide-react';
+
+interface Competitor {
+  value: string;
+  label: string;
+}
 
 export default function BattlecardsPage() {
-  const [battlecards, setBattlecards] = useState<KbSource[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [competitors, setCompetitors] = useState<Competitor[]>([]);
+  const [selectedCompetitor, setSelectedCompetitor] = useState('');
+  const [newCompetitorName, setNewCompetitorName] = useState('');
+  const [showNewCompetitor, setShowNewCompetitor] = useState(false);
+  const [verticals, setVerticals] = useState('');
+  const [sourceType, setSourceType] = useState('battlecard');
+  const [content, setContent] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingCompetitors, setLoadingCompetitors] = useState(true);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
-    fetchBattlecards();
+    fetchCompetitors();
   }, []);
 
-  const fetchBattlecards = async () => {
+  const fetchCompetitors = async () => {
     try {
-      const { data, error } = await supabase
-        .from('kb_sources')
-        .select('*')
-        .eq('source_type', 'battlecard')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setBattlecards(data || []);
+      setLoadingCompetitors(true);
+      const response = await fetch('https://inecta.app.n8n.cloud/webhook/get-competitors');
+      
+      if (!response.ok) throw new Error('Failed to fetch competitors');
+      
+      const data = await response.json();
+      
+      if (data.success && data.competitors) {
+        setCompetitors(data.competitors);
+      }
     } catch (error) {
-      console.error('Error fetching battlecards:', error);
-      setError('Failed to load battlecards');
+      console.error('Failed to fetch competitors:', error);
+      setCompetitors([{ value: '__new__', label: '➕ Add New Competitor...' }]);
+      setErrorMessage('Could not load competitors. You can still add new ones.');
+    } finally {
+      setLoadingCompetitors(false);
+    }
+  };
+
+  const handleCompetitorChange = (value: string) => {
+    setSelectedCompetitor(value);
+    setShowNewCompetitor(value === '__new__');
+    if (value !== '__new__') {
+      setNewCompetitorName('');
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    const finalCompetitor = selectedCompetitor === '__new__' ? newCompetitorName : selectedCompetitor;
+    
+    const formData = {
+      competitorSelect: selectedCompetitor,
+      newCompetitorName: showNewCompetitor ? newCompetitorName : '',
+      competitor: finalCompetitor,
+      verticals: verticals.split(',').map(v => v.trim()).filter(v => v),
+      sourceType: sourceType,
+      content: content
+    };
+
+    try {
+      const response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        setSuccessMessage(`Battlecard for ${finalCompetitor} uploaded successfully!`);
+        
+        // Reset form
+        setSelectedCompetitor('');
+        setNewCompetitorName('');
+        setVerticals('');
+        setContent('');
+        setFile(null);
+        setShowNewCompetitor(false);
+        
+        // Refresh competitors if new one was added
+        if (selectedCompetitor === '__new__') {
+          fetchCompetitors();
+        }
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setErrorMessage('Failed to upload battlecard. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-400"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center">
-            <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold mb-2">Error Loading Battlecards</h2>
-            <p className="text-gray-400 mb-4">{error}</p>
-            <button
-              onClick={fetchBattlecards}
-              className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors"
-            >
-              Try Again
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Battlecards</h1>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 p-6">
+      {/* Background effects */}
+      <div className="fixed inset-0 opacity-30 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/20 via-emerald-500/10 to-teal-600/20"></div>
+      </div>
+
+      <div className="max-w-4xl mx-auto relative z-10">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8"
+        >
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-teal-400 to-emerald-400 bg-clip-text text-transparent mb-2">
+            Battlecard Upload
+          </h1>
           <p className="text-gray-400">
-            Competitive intelligence documents for sales enablement
+            Add competitive intelligence to your knowledge base
           </p>
-        </div>
-        
-        {battlecards.length === 0 ? (
-          <div className="text-center py-16">
-            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">No Battlecards Found</h2>
-            <p className="text-gray-400 mb-6">
-              Upload your first battlecard using the command palette (⌘K)
-            </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 rounded-lg">
-              <kbd className="px-2 py-1 text-xs bg-gray-700 rounded text-gray-300">⌘K</kbd>
-              <span className="text-sm text-gray-400">then select &quot;Upload battlecard&quot;</span>
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {battlecards.map((card) => (
-              <div 
-                key={card.id} 
-                className="bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-teal-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-teal-500/10"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-teal-600/20 rounded-lg">
-                      <FileText className="w-5 h-5 text-teal-400" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">
-                        {card.title || 'Battlecard'}
-                      </h3>
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
-                        <Building2 className="w-4 h-4" />
-                        <span>{card.competitor}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    {card.verified ? (
-                      <CheckCircle className="w-5 h-5 text-green-400" />
-                    ) : (
-                      <div className="w-5 h-5 rounded-full bg-yellow-400/20 border border-yellow-400/40" />
-                    )}
-                  </div>
-                </div>
+        </motion.div>
 
-                {card.verticals && card.verticals.length > 0 && (
-                  <div className="mb-4">
-                    <div className="text-sm text-gray-400 mb-2">Verticals:</div>
-                    <div className="flex flex-wrap gap-2">
-                      {card.verticals.map((vertical, index) => (
-                        <span
-                          key={index}
-                          className="px-2 py-1 text-xs bg-teal-600/20 text-teal-300 rounded-full border border-teal-600/30"
-                        >
-                          {vertical}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between text-sm text-gray-500">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {new Date(card.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="text-xs">
-                    {card.verified ? 'Verified' : 'Pending'}
-                  </div>
-                </div>
-
-                {card.url && (
-                  <div className="mt-4 pt-4 border-t border-gray-700">
-                    <a
-                      href={card.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm text-teal-400 hover:text-teal-300 transition-colors"
-                    >
-                      View Source →
-                    </a>
-                  </div>
-                )}
+        {/* Main Form Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-gray-800/50 backdrop-blur-lg rounded-2xl p-8 border border-gray-700/50 shadow-2xl"
+        >
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Competitor Selection */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-3">
+                <Building2 className="w-4 h-4 text-teal-400" />
+                Select Competitor
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedCompetitor}
+                  onChange={(e) => handleCompetitorChange(e.target.value)}
+                  required
+                  disabled={loadingCompetitors}
+                  className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-xl text-white 
+                           focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none
+                           disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                >
+                  <option value="">
+                    {loadingCompetitors ? '⏳ Loading competitors...' : '-- Select a competitor --'}
+                  </option>
+                  {competitors.map((comp) => (
+                    <option key={comp.value} value={comp.value}>
+                      {comp.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
               </div>
-            ))}
-          </div>
-        )}
-
-        <div className="mt-12 text-center">
-          <div className="inline-flex items-center gap-4 px-6 py-3 bg-gray-800 rounded-lg border border-gray-700">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-teal-400 rounded-full"></div>
-              <span className="text-sm text-gray-300">
-                {battlecards.length} battlecard{battlecards.length !== 1 ? 's' : ''} loaded
-              </span>
             </div>
-            <div className="w-px h-4 bg-gray-600"></div>
-            <button
-              onClick={fetchBattlecards}
-              className="text-sm text-teal-400 hover:text-teal-300 transition-colors"
+
+            {/* New Competitor Name */}
+            <AnimatePresence>
+              {showNewCompetitor && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginTop: 24 }}
+                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-3">
+                    <Plus className="w-4 h-4 text-emerald-400" />
+                    New Competitor Name
+                  </label>
+                  <input
+                    type="text"
+                    value={newCompetitorName}
+                    onChange={(e) => setNewCompetitorName(e.target.value)}
+                    required={showNewCompetitor}
+                    placeholder="Enter new competitor name"
+                    className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-xl text-white 
+                             placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:border-transparent
+                             transition-all duration-200"
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Verticals */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-3">
+                <Tag className="w-4 h-4 text-teal-400" />
+                Verticals
+              </label>
+              <input
+                type="text"
+                value={verticals}
+                onChange={(e) => setVerticals(e.target.value)}
+                placeholder="e.g., SaaS, Enterprise, Healthcare (comma-separated)"
+                className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-xl text-white 
+                         placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:border-transparent
+                         transition-all duration-200"
+              />
+            </div>
+
+            {/* Source Type */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-3">
+                <FileText className="w-4 h-4 text-teal-400" />
+                Source Type
+              </label>
+              <select
+                value={sourceType}
+                onChange={(e) => setSourceType(e.target.value)}
+                className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-xl text-white 
+                         focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none
+                         transition-all duration-200"
+              >
+                <option value="battlecard">Battlecard</option>
+                <option value="website">Website</option>
+                <option value="document">Document</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            {/* Content */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-3">
+                <FileText className="w-4 h-4 text-teal-400" />
+                Content
+              </label>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                required
+                rows={8}
+                placeholder="Enter competitive intelligence information..."
+                className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-xl text-white 
+                         placeholder-gray-500 focus:ring-2 focus:ring-teal-500 focus:border-transparent 
+                         resize-none transition-all duration-200"
+              />
+            </div>
+
+            {/* File Upload (Optional) */}
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300 mb-3">
+                <Upload className="w-4 h-4 text-teal-400" />
+                Upload File (Optional)
+              </label>
+              <div className="relative">
+                <input
+                  type="file"
+                  onChange={handleFileChange}
+                  accept=".pdf,.docx,.txt,.md"
+                  className="hidden"
+                  id="file-upload"
+                />
+                <label
+                  htmlFor="file-upload"
+                  className="flex items-center justify-center w-full px-4 py-3 bg-gray-900/50 
+                           border-2 border-dashed border-gray-600 rounded-xl text-gray-400 
+                           hover:border-teal-500 hover:text-gray-300 cursor-pointer 
+                           transition-all duration-200"
+                >
+                  {file ? (
+                    <span className="text-teal-400">{file.name}</span>
+                  ) : (
+                    <span>Click to upload or drag and drop</span>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <motion.button
+              type="submit"
+              disabled={loading}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white 
+                       font-semibold rounded-xl shadow-lg hover:from-teal-600 hover:to-emerald-600 
+                       transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed
+                       flex items-center justify-center gap-2"
             >
-              Refresh
-            </button>
-          </div>
-        </div>
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-5 h-5" />
+                  Upload Battlecard
+                </>
+              )}
+            </motion.button>
+          </form>
+
+          {/* Success Message */}
+          <AnimatePresence>
+            {successMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-6 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-xl flex items-center gap-3"
+              >
+                <Check className="w-5 h-5 text-emerald-400" />
+                <p className="text-emerald-300">{successMessage}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Error Message */}
+          <AnimatePresence>
+            {errorMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mt-6 p-4 bg-red-500/20 border border-red-500/50 rounded-xl flex items-center gap-3"
+              >
+                <AlertCircle className="w-5 h-5 text-red-400" />
+                <p className="text-red-300">{errorMessage}</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
     </div>
   );
