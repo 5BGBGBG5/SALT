@@ -34,6 +34,7 @@ export default function NavBar() {
     { href: '/reports/post-engagement', label: 'Post Engagement Report' },
     { href: '/reports/aieo', label: 'AiEO Report' },
     { href: '/reports/competition-heatmap', label: 'Competition Heat Map' },
+    { href: '/reports/battlecards', label: 'Battlecards' },
     { href: '/dashboard/', label: 'Competitive Intelligence Dashboard' },
   ];
 
@@ -64,7 +65,7 @@ export default function NavBar() {
                   <button
                     onClick={() => setIsReportsOpen(!isReportsOpen)}
                     className={`flex items-center px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      pathname.startsWith('/reports')
+                      pathname.startsWith('/reports') || pathname.startsWith('/dashboard')
                         ? 'bg-emerald-50 text-emerald-700' 
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                     }`}
