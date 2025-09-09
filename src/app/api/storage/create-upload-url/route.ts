@@ -1,14 +1,24 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // server-only
-);
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: Request) {
   try {
-    const { userId, filename, contentType } = await request.json();
+    // Check if Supabase is configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json(
+        { error: 'Supabase not configured' },
+        { status: 503 }
+      );
+    }
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY! // server-only
+    );
+
+    const { userId, filename } = await request.json();
 
     // Validate required fields
     if (!userId || !filename) {
@@ -25,9 +35,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabase
       .storage
       .from('uploads')
-      .createSignedUploadUrl(objectPath, { 
-        contentType: contentType || 'application/octet-stream'
-      });
+      .createSignedUploadUrl(objectPath);
 
     if (error) {
       console.error('Supabase storage error:', error);
@@ -49,5 +57,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-export const dynamic = 'force-dynamic';

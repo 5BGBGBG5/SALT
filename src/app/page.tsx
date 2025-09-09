@@ -1,14 +1,31 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import SearchInput from './components/SearchInput';
-import UploadDropzone from './components/UploadDropzone';
-import BigUpload from './components/BigUpload';
+// Dynamic imports for Supabase-dependent components
+// import UploadDropzone from './components/UploadDropzone';
+// import BigUpload from './components/BigUpload'; // Uncomment when needed
 import PoweredBySALT from './components/PoweredBySALT';
 import ProtectedRoute from './components/ProtectedRoute';
 
+interface UploadDropzoneProps {
+  userId: string;
+  onUploadComplete: (url: string, path: string) => void;
+}
+
 export default function HomePage() {
+  const [isClient, setIsClient] = useState(false);
+  const [UploadDropzone, setUploadDropzone] = useState<React.ComponentType<UploadDropzoneProps> | null>(null);
+
+  useEffect(() => {
+    setIsClient(true);
+    // Dynamically import UploadDropzone only on client side
+    import('./components/UploadDropzone').then((module) => {
+      setUploadDropzone(() => module.default);
+    });
+  }, []);
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
@@ -85,19 +102,21 @@ export default function HomePage() {
             <div className="mb-6">
               <h2 className="text-2xl font-semibold text-white mb-2">File Upload</h2>
               <p className="text-gray-400 text-sm mb-6">
-                Upload files directly to Supabase Storage, bypassing Vercel's body limits
+                Upload files directly to Supabase Storage, bypassing Vercel&apos;s body limits
               </p>
             </div>
             
-            {/* Simple uploader for small/medium files */}
-            <div className="mb-8">
-              <UploadDropzone 
-                userId="demo-user-id"
-                onUploadComplete={(url, path) => {
-                  console.log('Upload completed:', { url, path });
-                }}
-              />
-            </div>
+            {/* Simple uploader for small/medium files - only render on client */}
+            {isClient && UploadDropzone && (
+              <div className="mb-8">
+                <UploadDropzone 
+                  userId="demo-user-id"
+                  onUploadComplete={(url: string, path: string) => {
+                    console.log('Upload completed:', { url, path });
+                  }}
+                />
+              </div>
+            )}
             
             {/* TODO: Uncomment below to use TUS uploader for large files instead */}
             {/*

@@ -138,7 +138,7 @@ export default function BigUpload({
             ? 'border-teal-400 bg-teal-400/5 scale-[1.02]' 
             : 'border-white/20 hover:border-teal-400/50'
           }
-          ${status === 'uploading' ? 'opacity-90' : status !== 'uploading' ? 'cursor-pointer hover:bg-white/5' : ''}
+          ${status === 'uploading' ? 'opacity-90' : 'cursor-pointer hover:bg-white/5'}
           backdrop-blur-xl bg-white/5
         `}
         onDragEnter={handleDrag}
