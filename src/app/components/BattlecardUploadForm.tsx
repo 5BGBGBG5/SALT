@@ -4,8 +4,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Upload, X, ChevronDown, Plus, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface Competitor {
-  id: string;
-  name: string;
+  value: string;
+  label: string;
 }
 
 interface FormData {
@@ -75,22 +75,30 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
   const fetchCompetitors = async () => {
     try {
       setIsLoadingCompetitors(true);
-      const response = await fetch('/webhook/get-competitors');
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch competitors: ${response.status}`);
-      }
+      // Use the correct n8n webhook URL for getting competitors
+      const response = await fetch('https://inecta.app.n8n.cloud/webhook/get-competitors');
+      
+      if (!response.ok) throw new Error('Failed to fetch competitors');
       
       const data = await response.json();
       
-      // Sort competitors alphabetically
-      const sortedCompetitors = (data.competitors || []).sort((a: Competitor, b: Competitor) => 
-        a.name.localeCompare(b.name)
-      );
-      
-      setCompetitors(sortedCompetitors);
+      if (data.success && Array.isArray(data.competitors)) {
+        // Format competitors and add "Add New" option
+        const competitorOptions: Competitor[] = [
+          ...data.competitors.map((comp: any) => ({
+            value: comp.value || comp.name || comp.id,
+            label: comp.label || comp.name || comp.id
+          })),
+          { value: '__new__', label: '➕ Add New Competitor...' }
+        ];
+        setCompetitors(competitorOptions);
+      } else {
+        setCompetitors([{ value: '__new__', label: '➕ Add New Competitor...' }]);
+      }
     } catch (error) {
-      console.error('Error fetching competitors:', error);
+      console.error('Failed to fetch competitors:', error);
+      setCompetitors([{ value: '__new__', label: '➕ Add New Competitor...' }]);
       setErrors(prev => ({ ...prev, competitors: 'Failed to load competitors' }));
     } finally {
       setIsLoadingCompetitors(false);
@@ -132,13 +140,27 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
     setSubmitMessage(null);
 
     try {
+      // Determine final competitor name
+      const finalCompetitorName = formData.competitorSelect === '__new__' 
+        ? formData.newCompetitorName.trim()
+        : formData.competitorSelect;
+
+      console.log('Submitting battlecard to n8n:', {
+        competitor: finalCompetitorName,
+        verticals: formData.verticals,
+        hasFile: !!formData.file,
+        contentLength: formData.content.length
+      });
+
+      // Create FormData to match n8n multipart expectation
       const submitFormData = new FormData();
       
-      // Add form fields
+      // Add form fields that match the n8n workflow
       submitFormData.append('competitorSelect', formData.competitorSelect);
       if (formData.competitorSelect === '__new__') {
-        submitFormData.append('newCompetitorName', formData.newCompetitorName.trim());
+        submitFormData.append('newCompetitorName', formData.newCompetitorName);
       }
+      submitFormData.append('competitor', finalCompetitorName);
       submitFormData.append('verticals', JSON.stringify(formData.verticals));
       submitFormData.append('sourceType', formData.sourceType);
       submitFormData.append('content', formData.content);
@@ -148,17 +170,21 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
         submitFormData.append('file', formData.file);
       }
 
-      const response = await fetch('/webhook/upload-battlecard', {
+      // Use the correct n8n webhook URL
+      const response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
         method: 'POST',
-        body: submitFormData,
+        body: submitFormData, // Send as FormData, not JSON
       });
+
+      console.log('n8n response status:', response.status, response.statusText);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
         throw new Error(errorData.error || `Upload failed with status ${response.status}`);
       }
 
-      await response.json(); // Process response but don't store unused result
+      const result = await response.json();
+      console.log('n8n response:', result);
       
       setSubmitMessage({ type: 'success', text: 'Battlecard uploaded successfully!' });
       
@@ -179,6 +205,11 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
       // Call success callback
       if (onSuccess) {
         onSuccess('Battlecard uploaded successfully!');
+      }
+
+      // If new competitor was added, refresh the competitors list
+      if (formData.competitorSelect === '__new__') {
+        fetchCompetitors();
       }
 
     } catch (error) {
@@ -225,16 +256,36 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
+    
+    if (file) {
+      // Validate file type
+      const validTypes = ['.pdf', '.docx', '.txt', '.md'];
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      
+      if (!validTypes.includes(fileExtension)) {
+        setErrors(prev => ({ ...prev, file: 'Invalid file type. Please select PDF, DOCX, TXT, or MD files.' }));
+        return;
+      }
+
+      // Validate file size (3MB max for Vercel)
+      const maxSize = 3 * 1024 * 1024; // 3MB
+      if (file.size > maxSize) {
+        setErrors(prev => ({ ...prev, file: 'File size too large. Please select a file smaller than 3MB.' }));
+        return;
+      }
+
+      setErrors(prev => ({ ...prev, file: '', content: '' }));
+    }
+    
     setFormData(prev => ({ ...prev, file }));
-    setErrors(prev => ({ ...prev, content: '' }));
   };
 
   const getSelectedCompetitorName = () => {
     if (formData.competitorSelect === '__new__') {
       return formData.newCompetitorName || 'Add New Competitor...';
     }
-    const selected = competitors.find(c => c.id === formData.competitorSelect);
-    return selected?.name || 'Select Competitor...';
+    const selected = competitors.find(c => c.value === formData.competitorSelect);
+    return selected?.label || 'Select Competitor...';
   };
 
   return (
@@ -284,22 +335,14 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
                 <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-10 max-h-60 overflow-y-auto">
                   {competitors.map((competitor) => (
                     <button
-                      key={competitor.id}
+                      key={competitor.value}
                       type="button"
-                      onClick={() => handleCompetitorSelect(competitor.id)}
+                      onClick={() => handleCompetitorSelect(competitor.value)}
                       className="w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors first:rounded-t-lg"
                     >
-                      {competitor.name}
+                      {competitor.label}
                     </button>
                   ))}
-                  <button
-                    type="button"
-                    onClick={() => handleCompetitorSelect('__new__')}
-                    className="w-full px-4 py-3 text-left text-teal-400 hover:bg-gray-700 transition-colors border-t border-gray-600 rounded-b-lg flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add New Competitor...
-                  </button>
                 </div>
               )}
             </div>
@@ -321,10 +364,11 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
                 type="text"
                 value={formData.newCompetitorName}
                 onChange={(e) => setFormData(prev => ({ ...prev, newCompetitorName: e.target.value }))}
+                required={formData.competitorSelect === '__new__'}
+                placeholder="Enter competitor name"
                 className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 transition-colors ${
                   errors.newCompetitor ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
                 }`}
-                placeholder="Enter competitor name"
               />
               {errors.newCompetitor && (
                 <p className="text-red-400 text-sm flex items-center gap-1">
@@ -403,29 +447,36 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
             <label className="block text-sm font-medium text-gray-300">
               File Upload (Optional)
             </label>
-            <div className="flex items-center gap-4">
+            <div className="relative">
               <input
                 ref={fileInputRef}
                 type="file"
                 onChange={handleFileChange}
-                accept=".pdf,.docx,.txt,.doc"
+                accept=".pdf,.docx,.txt,.md"
                 className="hidden"
               />
-              <button
-                type="button"
+              <label
+                htmlFor="file-upload"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                className="flex items-center justify-center w-full px-4 py-3 bg-gray-800 
+                         border-2 border-dashed border-gray-600 rounded-lg text-gray-400 
+                         hover:border-teal-500 hover:text-gray-300 cursor-pointer 
+                         transition-all duration-200"
               >
-                <Upload className="w-4 h-4" />
-                Choose File
-              </button>
-              {formData.file && (
-                <span className="text-sm text-gray-400">
-                  {formData.file.name} ({Math.round(formData.file.size / 1024)} KB)
-                </span>
-              )}
+                {formData.file ? (
+                  <span className="text-teal-400">{formData.file.name}</span>
+                ) : (
+                  <span>Click to upload or drag and drop</span>
+                )}
+              </label>
             </div>
-            <p className="text-xs text-gray-500">Supported formats: PDF, DOCX, TXT</p>
+            <p className="text-xs text-gray-500">Supported formats: PDF, DOCX, TXT, MD</p>
+            {errors.file && (
+              <p className="text-red-400 text-sm flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {errors.file}
+              </p>
+            )}
           </div>
 
           {/* Content */}
