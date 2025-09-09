@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
             contentValidation.details
           );
         }
-      } catch () {
+      } catch (_error: any) {
         return createErrorResponse(
           'FILE_VALIDATION_ERROR',
           'Unable to validate file content',

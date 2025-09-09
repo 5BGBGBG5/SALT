@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     let requestBody: CompanyAnalysisRequest;
     try {
       requestBody = await request.json();
-    } catch () {
+    } catch (_error: any) {
       return createErrorResponse(
         'VALIDATION_ERROR',
         'Invalid JSON in request body',
