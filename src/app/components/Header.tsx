@@ -35,7 +35,9 @@ export default function Header() {
     { href: '/reports/post-engagement', label: 'Post Engagement Report' },
     { href: '/reports/aieo', label: 'AiEO Report' },
     { href: '/reports/competition-heatmap', label: 'Competition Heat Map' },
+    { href: '/reports/battlecards', label: 'Battlecards' },
     { href: '/reports/competitor-content', label: 'Competitor Content Report' },
+    { href: '/dashboard/', label: 'Competitive Intelligence Dashboard' },
   ];
 
   return (
@@ -79,7 +81,7 @@ export default function Header() {
                 <motion.button
                   onClick={() => setIsReportsOpen(!isReportsOpen)}
                   className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative ${
-                    pathname.startsWith('/reports') 
+                    pathname.startsWith('/reports') || pathname.startsWith('/dashboard')
                       ? 'text-accent-primary bg-accent-primary/10' 
                       : 'text-text-secondary hover:text-accent-primary hover:bg-accent-primary/5'
                   }`}
@@ -90,7 +92,7 @@ export default function Header() {
                   <ChevronDown className={`ml-2 w-4 h-4 transition-transform duration-300 ${isReportsOpen ? 'rotate-180' : ''}`} />
                   
                   {/* Animated underline */}
-                  {pathname.startsWith('/reports') && (
+                  {(pathname.startsWith('/reports') || pathname.startsWith('/dashboard')) && (
                     <motion.div
                       className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent-primary to-accent-success"
                       layoutId="activeTab"
