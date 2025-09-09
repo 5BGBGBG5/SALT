@@ -109,42 +109,31 @@ export default function SearchInput() {
       formData.append('sourceType', 'battlecard');
       
       if (uploadForm.file) {
-        // Check file size before processing
-        const maxSize = 5 * 1024 * 1024; // 5MB limit for base64 encoding
+        // Check file size before processing - increased limit since we're not base64 encoding
+        const maxSize = 8 * 1024 * 1024; // 8MB limit for direct file upload
         if (uploadForm.file.size > maxSize) {
-          setUploadError('File size must be less than 5MB for upload. Larger files are not supported yet.');
+          setUploadError('File size must be less than 8MB for upload.');
           return;
         }
 
-        console.log('Processing file:', uploadForm.file.name, 'Type:', uploadForm.file.type);
+        console.log('Processing file:', uploadForm.file.name, 'Type:', uploadForm.file.type, 'Size:', uploadForm.file.size);
 
-        // For file upload - send the actual file
+        // Send the file directly without base64 encoding to avoid payload size issues
         formData.append('file', uploadForm.file);
-        formData.append('fileName', uploadForm.file.name);
-        formData.append('fileType', uploadForm.file.type);
         
-        // Read file as text for PDFs (if possible) or as base64
-        try {
-          if (uploadForm.file.type === 'text/plain' || uploadForm.file.type === 'text/markdown') {
+        // For text files, also read the content for immediate processing
+        if (uploadForm.file.type === 'text/plain' || uploadForm.file.type === 'text/markdown') {
+          try {
             const textContent = await uploadForm.file.text();
             formData.append('content', textContent);
-            console.log('Read file as text, length:', textContent.length);
-          } else {
-            // For binary files like PDF, read as base64 but with size limit
-            const reader = new FileReader();
-            const fileContent = await new Promise<string>((resolve, reject) => {
-              reader.onload = (e) => resolve(e.target?.result as string);
-              reader.onerror = reject;
-              reader.readAsDataURL(uploadForm.file!);
-            });
-            formData.append('fileContent', fileContent);
-            console.log('Read file as base64, length:', fileContent.length);
+            console.log('Also read text file content, length:', textContent.length);
+          } catch (error) {
+            console.warn('Could not read text file content:', error);
+            // Continue with just the file - n8n can process it
           }
-        } catch (error) {
-          console.error('File reading error:', error);
-          setUploadError('Failed to read file content: ' + (error instanceof Error ? error.message : 'Unknown error'));
-          return;
         }
+        
+        console.log('Sending file directly to avoid base64 payload size issues');
       } else {
         // For text content
         formData.append('content', uploadForm.content.trim());
@@ -393,10 +382,10 @@ export default function SearchInput() {
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) {
-                      // Check file size (5MB limit for base64 encoding)
-                      const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+                      // Check file size (8MB limit for direct upload)
+                      const maxSize = 8 * 1024 * 1024; // 8MB in bytes
                       if (file.size > maxSize) {
-                        setUploadError('File size must be less than 5MB for upload');
+                        setUploadError('File size must be less than 8MB for upload');
                         return;
                       }
                       

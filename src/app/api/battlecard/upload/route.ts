@@ -40,106 +40,55 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // Prepare payload for n8n webhook
-    interface N8nPayload {
-      competitor: string;
-      verticals: string[];
-      sourceType: string;
-      content: string;
-      file?: {
-        name: string;
-        content: string;
-        size: number;
-        type: string;
-      } | null;
+    
+    // Always use FormData approach to avoid payload size issues
+    console.log('Using direct FormData approach for n8n (no base64 encoding)');
+    
+    const n8nFormData = new FormData();
+    n8nFormData.append('competitor', competitor);
+    
+    // Handle verticals parsing
+    let parsedVerticals: string[] = [];
+    if (verticals) {
+      try {
+        // Try to parse as JSON first (old format)
+        parsedVerticals = JSON.parse(verticals);
+      } catch {
+        // If not JSON, treat as comma-separated string
+        parsedVerticals = verticals.split(',').map(v => v.trim()).filter(Boolean);
+      }
     }
+    n8nFormData.append('verticals', JSON.stringify(parsedVerticals));
+    n8nFormData.append('sourceType', sourceType || 'battlecard');
     
-    let payload: N8nPayload;
+    if (file) {
+      console.log('Appending file directly to FormData:', file.name, file.size, 'bytes');
+      n8nFormData.append('file', file);
+    } 
     
-    if (fileContent) {
-      // New approach with base64 content (from SearchInput)
-      let parsedVerticals: string[] = [];
-      if (verticals) {
-        try {
-          // Try to parse as JSON first (old format)
-          parsedVerticals = JSON.parse(verticals);
-        } catch {
-          // If not JSON, treat as comma-separated string
-          parsedVerticals = verticals.split(',').map(v => v.trim()).filter(Boolean);
-        }
-      }
-      
-      payload = {
-        competitor,
-        verticals: parsedVerticals,
-        sourceType: sourceType || 'battlecard',
-        content: content || '',
-        file: file ? {
-          name: fileName,
-          content: fileContent, // Base64 encoded
-          size: file.size,
-          type: fileType
-        } : null
-      };
-    } else {
-      // Simple approach (from CommandPalette) - forward FormData to n8n
-      console.log('Using FormData approach for n8n');
-      const n8nFormData = new FormData();
-      n8nFormData.append('competitor', competitor);
-      n8nFormData.append('verticals', verticals || '[]');
-      n8nFormData.append('sourceType', sourceType || 'battlecard');
-      
-      if (file) {
-        n8nFormData.append('file', file);
-      } else if (content) {
-        n8nFormData.append('content', content);
-      }
-
-      // Send FormData directly to n8n
-      const response = await fetch(`${N8N_WEBHOOK_URL}/upload-battlecard`, {
-        method: 'POST',
-        body: n8nFormData,
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('n8n webhook error:', errorText);
-        throw new Error(`n8n webhook failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-      
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Battlecard uploaded successfully',
-        sourceId: result.sourceId,
-        chunks: result.chunks
-      });
+    if (content) {
+      console.log('Appending content:', content.length, 'characters');
+      n8nFormData.append('content', content);
     }
 
-    console.log('Sending to n8n:', {
-      competitor: payload.competitor,
-      verticals: payload.verticals,
-      hasFile: !!payload.file,
-      fileName: payload.file?.name
-    });
+    console.log('Sending FormData directly to n8n webhook');
 
-    // Send to n8n webhook as JSON
+    // Send FormData directly to n8n
     const response = await fetch(`${N8N_WEBHOOK_URL}/upload-battlecard`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+      body: n8nFormData,
     });
+
+    console.log('n8n response status:', response.status, response.statusText);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('n8n webhook error:', errorText);
-      throw new Error(`n8n webhook failed: ${response.status}`);
+      console.error('n8n webhook error:', response.status, errorText);
+      throw new Error(`n8n webhook failed: ${response.status} - ${errorText}`);
     }
 
     const result = await response.json();
+    console.log('n8n response:', result);
     
     return NextResponse.json({ 
       success: true, 
@@ -147,6 +96,7 @@ export async function POST(request: NextRequest) {
       sourceId: result.sourceId,
       chunks: result.chunks
     });
+
   } catch (error) {
     console.error('Battlecard upload error:', error);
     return NextResponse.json(
