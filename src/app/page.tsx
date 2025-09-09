@@ -3,6 +3,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import SearchInput from './components/SearchInput';
+import UploadDropzone from './components/UploadDropzone';
+import BigUpload from './components/BigUpload';
 import PoweredBySALT from './components/PoweredBySALT';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -73,11 +75,50 @@ export default function HomePage() {
             <SearchInput />
           </motion.div>
 
+          {/* File Upload Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.8 }}
+            className="mb-8"
+          >
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold text-white mb-2">File Upload</h2>
+              <p className="text-gray-400 text-sm mb-6">
+                Upload files directly to Supabase Storage, bypassing Vercel's body limits
+              </p>
+            </div>
+            
+            {/* Simple uploader for small/medium files */}
+            <div className="mb-8">
+              <UploadDropzone 
+                userId="demo-user-id"
+                onUploadComplete={(url, path) => {
+                  console.log('Upload completed:', { url, path });
+                }}
+              />
+            </div>
+            
+            {/* TODO: Uncomment below to use TUS uploader for large files instead */}
+            {/*
+            <div className="mb-8">
+              <BigUpload
+                supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
+                supabaseAnonKey={process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}
+                userId="demo-user-id"
+                onUploadComplete={(objectName) => {
+                  console.log('TUS upload completed:', objectName);
+                }}
+              />
+            </div>
+            */}
+          </motion.div>
+
           {/* Powered by SALT */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.5, delay: 0.8 }}
+            transition={{ duration: 0.5, delay: 1.0 }}
           >
             <PoweredBySALT />
           </motion.div>
