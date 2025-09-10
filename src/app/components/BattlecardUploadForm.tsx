@@ -24,6 +24,10 @@ interface FormData {
   file: File | null;
 }
 
+interface SubmitData extends Omit<FormData, 'file'> {
+  competitor: string;
+}
+
 interface BattlecardUploadFormProps {
   onClose?: () => void;
   onSuccess?: (message: string) => void;
@@ -162,7 +166,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     });
 
     // Prepare the submission data
-    const submitData: { [key: string]: any } = {
+    const submitData: SubmitData = {
       competitorSelect: formData.competitorSelect,
       newCompetitorName: formData.newCompetitorName,
       competitor: finalCompetitorName,
