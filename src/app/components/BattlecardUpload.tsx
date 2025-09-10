@@ -178,14 +178,34 @@ export default function BattlecardUpload() {
           content: formData.content
         };
 
-        console.log(`Sending JSON request to: ${webhookUrl}, Method: POST, Headers: { 'Content-Type': 'application/json' }, Body:`, payload);
-        response = await fetch(webhookUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload)
-        });
+        console.log('=== SUBMISSION DEBUG (JSON) ===');
+        console.log('Final payload object:', payload);
+        const stringifiedPayload = JSON.stringify(payload);
+        console.log('Stringified payload:', stringifiedPayload);
+        console.log('Payload byte length:', new TextEncoder().encode(stringifiedPayload).length);
+
+        // Temporary debug: Send hardcoded payload if competitor is '__DEBUG_TEST__'
+        if (formData.competitorSelect === '__DEBUG_TEST__') {
+          const debugPayload = { test: 'data', from: 'debug_test' };
+          const debugStringified = JSON.stringify(debugPayload);
+          console.log('Sending DEBUG JSON payload:', debugPayload);
+          console.log('Debug Stringified payload:', debugStringified);
+          console.log('Debug Payload byte length:', new TextEncoder().encode(debugStringified).length);
+          response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: debugStringified
+          });
+        } else {
+          console.log(`Sending JSON request to: ${webhookUrl}, Method: POST, Headers: { 'Content-Type': 'application/json' }, Body:`, payload);
+          response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: stringifiedPayload
+          });
+        }
       }
 
       console.log('Response status:', response.status, response.statusText);
