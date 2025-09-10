@@ -154,7 +154,7 @@ export default function BattlecardUpload() {
         }
 
         // Send with NO Content-Type header (let browser set it with boundary for multipart/form-data)
-        response = await fetch('https://inecta.app.n8n.cloud/webhook/c3e419ad-120b-4813-9ca3-9e9684175b94', {
+        response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
           method: 'POST',
           body: submitFormData,
           // DO NOT set Content-Type header for FormData!
@@ -171,7 +171,7 @@ export default function BattlecardUpload() {
           content: formData.content
         };
 
-        response = await fetch('https://inecta.app.n8n.cloud/webhook/c3e419ad-120b-4813-9ca3-9e9684175b94', {
+        response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
