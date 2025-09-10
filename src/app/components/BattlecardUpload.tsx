@@ -107,12 +107,10 @@ export default function BattlecardUpload() {
       return false;
     }
 
-    // Content is required
-    if (!formData.content.trim()) {
-      setAlerts({ type: 'error', message: 'Please enter battlecard content.' });
-      return false;
-    }
-
+    // Remove the content requirement or make it conditional
+    // Option 1: Remove entirely
+    // Option 2: Only require if no file (but this component doesn't handle files)
+    
     return true;
   };
 
