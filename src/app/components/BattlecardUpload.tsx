@@ -78,30 +78,36 @@ export default function BattlecardUpload() {
   };
 
   const validateForm = (): boolean => {
+    console.log('Validating form...');
     // Competitor selection is required
     if (!formData.competitorSelect) {
       setAlerts({ type: 'error', message: 'Please select a competitor.' });
+      console.log('Validation failed: Competitor not selected.');
       return false;
     }
 
     // If "Add New" selected, new competitor name is required
     if (formData.competitorSelect === '__new__' && !formData.newCompetitorName.trim()) {
       setAlerts({ type: 'error', message: 'Please enter a new competitor name.' });
+      console.log('Validation failed: New competitor name is empty.');
       return false;
     }
 
     // Either content or file is required
     if (!formData.content.trim() && !formData.file) {
       setAlerts({ type: 'error', message: 'Please provide either content text or upload a file.' });
+      console.log('Validation failed: Neither content nor file provided.');
       return false;
     }
     
+    console.log('Form validation successful.');
     return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Form Data before submission:', formData);
     if (!validateForm()) return;
 
     setIsSubmitting(true);
@@ -127,6 +133,7 @@ export default function BattlecardUpload() {
       });
 
       let response: Response;
+      const webhookUrl = 'https://inecta.app.n8n.cloud/webhook/upload-battlecard';
 
       if (formData.file) {
         // If there's a file, use FormData
@@ -144,7 +151,7 @@ export default function BattlecardUpload() {
         submitFormData.append('file', formData.file, formData.file.name);
         
         // Log FormData contents for debugging
-        console.log('FormData contents:');
+        console.log('FormData entries before fetch:');
         for (const [key, value] of submitFormData.entries()) {
           if (value instanceof File) {
             console.log(`${key}: [File] ${value.name} (${value.size} bytes)`);
@@ -153,11 +160,11 @@ export default function BattlecardUpload() {
           }
         }
 
+        console.log(`Sending FormData request to: ${webhookUrl}, Method: POST`);
         // Send with NO Content-Type header (let browser set it with boundary for multipart/form-data)
-        response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
+        response = await fetch(webhookUrl, {
           method: 'POST',
           body: submitFormData,
-          // DO NOT set Content-Type header for FormData!
         });
         
       } else {
@@ -171,7 +178,8 @@ export default function BattlecardUpload() {
           content: formData.content
         };
 
-        response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
+        console.log(`Sending JSON request to: ${webhookUrl}, Method: POST, Headers: { 'Content-Type': 'application/json' }, Body:`, payload);
+        response = await fetch(webhookUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -184,8 +192,8 @@ export default function BattlecardUpload() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Error response:', errorText);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        console.error('Error response body:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}. Details: ${errorText}`);
       }
 
       // Success flow
@@ -212,9 +220,15 @@ export default function BattlecardUpload() {
 
     } catch (error) {
       console.error('Error submitting battlecard:', error);
+      let errorMessage = 'Failed to upload battlecard. Please check the console and try again.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
       setAlerts({
         type: 'error',
-        message: 'Failed to upload battlecard. Please try again.'
+        message: errorMessage
       });
     } finally {
       setIsSubmitting(false);
