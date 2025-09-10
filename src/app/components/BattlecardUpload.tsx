@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Upload, Loader2, CheckCircle, AlertCircle, FileText } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 
 // TypeScript interfaces
 interface Competitor {
@@ -29,11 +29,7 @@ interface BattlecardPayload {
 
 export default function BattlecardUpload() {
   // State management
-  const [competitors, setCompetitors] = useState<Competitor[]>([]);
-  const [isLoadingCompetitors, setIsLoadingCompetitors] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showNewCompetitorInput, setShowNewCompetitorInput] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
     competitorSelect: '',
@@ -50,50 +46,6 @@ export default function BattlecardUpload() {
 
   // Add file input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Fetch competitors on component mount
-  useEffect(() => {
-    fetchCompetitors();
-  }, []);
-
-  const fetchCompetitors = async () => {
-    setIsLoadingCompetitors(true);
-    try {
-      const response = await fetch('https://inecta.app.n8n.cloud/webhook/Get-Competitor');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // Transform the response data to match our interface
-      const competitorList: Competitor[] = Array.isArray(data) 
-        ? data.map(item => ({
-            value: typeof item === 'string' ? item : item.value || item.name || item.label,
-            label: typeof item === 'string' ? item : item.label || item.name || item.value
-          }))
-        : [];
-      
-      setCompetitors(competitorList);
-    } catch (error) {
-      console.error('Error fetching competitors:', error);
-      // Fallback: just show "Add New" option
-      setCompetitors([]);
-      setAlerts({
-        type: 'error',
-        message: 'Failed to load competitors. You can still add a new competitor.'
-      });
-    } finally {
-      setIsLoadingCompetitors(false);
-    }
-  };
-
-  const handleCompetitorSelect = (value: string) => {
-    setFormData(prev => ({ ...prev, competitorSelect: value }));
-    setShowNewCompetitorInput(value === '__new__');
-    setIsDropdownOpen(false);
-  };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -193,7 +145,7 @@ export default function BattlecardUpload() {
         
         // Log FormData contents for debugging
         console.log('FormData contents:');
-        for (let [key, value] of submitFormData.entries()) {
+        for (const [key, value] of submitFormData.entries()) {
           if (value instanceof File) {
             console.log(`${key}: [File] ${value.name} (${value.size} bytes)`);
           } else {
@@ -250,17 +202,13 @@ export default function BattlecardUpload() {
         content: '',
         file: null
       });
-      setShowNewCompetitorInput(false);
       
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
 
-      // If new competitor was added, refresh the competitors list
-      if (formData.competitorSelect === '__new__') {
-        fetchCompetitors();
-      }
+      // New competitor was added successfully
 
     } catch (error) {
       console.error('Error submitting battlecard:', error);
