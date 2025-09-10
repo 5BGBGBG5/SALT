@@ -74,6 +74,15 @@ export default function HomePage() {
       submissionData.append('file', file);
     }
 
+    console.log('FormData entries before fetch in page.tsx:');
+    for (const [key, value] of submissionData.entries()) {
+      if (value instanceof File) {
+        console.log(`${key}: [File] ${value.name} (${value.size} bytes)`);
+      } else {
+        console.log(`${key}: ${value}`);
+      }
+    }
+
     try {
       // The fetch request should NOT have a Content-Type header when sending FormData
       const response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
