@@ -28,6 +28,12 @@ export default function HomePage() {
     });
   }, []);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    console.log('Selected file:', file);
+    // Add further file handling logic here if needed
+  };
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen flex items-center justify-center p-6 relative overflow-hidden">
@@ -107,6 +113,15 @@ export default function HomePage() {
                 Upload files directly to Supabase Storage, bypassing Vercel&apos;s body limits
               </p>
             </div>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleFileChange}
+              accept=".pdf,.docx,.txt,.md"
+              className="hidden"
+              id="file-upload"
+            />
             
             {/* Simple uploader for small/medium files - only render on client */}
             {isClient && UploadDropzone && (
