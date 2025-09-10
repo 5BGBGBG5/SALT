@@ -1,18 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, X, ChevronDown, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Upload, X, ChevronDown, Plus, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface Competitor {
   value: string;
   label: string;
-}
-
-interface CompetitorApiResponse {
-  value?: string;
-  name?: string;
-  id?: string;
-  label?: string;
 }
 
 interface FormData {
@@ -93,7 +86,7 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
       if (data.success && Array.isArray(data.competitors)) {
         // Format competitors and add "Add New" option
         const competitorOptions: Competitor[] = [
-          ...data.competitors.map((comp: CompetitorApiResponse) => ({
+          ...data.competitors.map((comp: any) => ({
             value: comp.value || comp.name || comp.id,
             label: comp.label || comp.name || comp.id
           })),
@@ -136,99 +129,121 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+// Replace your handleSubmit function with this version
 
-    setIsSubmitting(true);
-    setSubmitMessage(null);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!validateForm()) {
+    return;
+  }
 
-    try {
-      // Determine final competitor name
-      const finalCompetitorName = formData.competitorSelect === '__new__' 
-        ? formData.newCompetitorName.trim()
-        : formData.competitorSelect;
+  setIsSubmitting(true);
+  setSubmitMessage(null);
 
-      console.log('Submitting battlecard to n8n:', {
-        competitor: finalCompetitorName,
-        verticals: formData.verticals,
-        hasFile: !!formData.file,
-        contentLength: formData.content.length
-      });
+  try {
+    // Determine final competitor name
+    const finalCompetitorName = formData.competitorSelect === '__new__' 
+      ? formData.newCompetitorName.trim()
+      : formData.competitorSelect;
 
-      // Create FormData to match n8n multipart expectation
+    console.log('Submitting battlecard to n8n:', {
+      competitor: finalCompetitorName,
+      verticals: formData.verticals,
+      hasFile: !!formData.file,
+      contentLength: formData.content.length
+    });
+
+    // Prepare the submission data
+    let submitData: any = {
+      competitorSelect: formData.competitorSelect,
+      newCompetitorName: formData.newCompetitorName,
+      competitor: finalCompetitorName,
+      verticals: formData.verticals, // Send as array, not JSON string
+      sourceType: formData.sourceType,
+      content: formData.content
+    };
+
+    let response: Response;
+
+    if (formData.file) {
+      // If there's a file, use FormData
       const submitFormData = new FormData();
       
-      // Add form fields that match the n8n workflow
-      submitFormData.append('competitorSelect', formData.competitorSelect);
-      if (formData.competitorSelect === '__new__') {
-        submitFormData.append('newCompetitorName', formData.newCompetitorName);
-      }
-      submitFormData.append('competitor', finalCompetitorName);
-      submitFormData.append('verticals', JSON.stringify(formData.verticals));
-      submitFormData.append('sourceType', formData.sourceType);
-      submitFormData.append('content', formData.content);
+      // Add all form fields
+      Object.entries(submitData).forEach(([key, value]) => {
+        if (key === 'verticals') {
+          submitFormData.append(key, JSON.stringify(value));
+        } else {
+          submitFormData.append(key, String(value));
+        }
+      });
       
-      // Add file if present
-      if (formData.file) {
-        submitFormData.append('file', formData.file);
-      }
+      // Add file
+      submitFormData.append('file', formData.file);
 
-      // Use the correct n8n webhook URL
-      const response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
+      response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
         method: 'POST',
-        body: submitFormData, // Send as FormData, not JSON
+        body: submitFormData,
       });
-
-      console.log('n8n response status:', response.status, response.statusText);
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
-        throw new Error(errorData.error || `Upload failed with status ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('n8n response:', result);
-      
-      setSubmitMessage({ type: 'success', text: 'Battlecard uploaded successfully!' });
-      
-      // Reset form
-      setFormData({
-        competitorSelect: '',
-        newCompetitorName: '',
-        verticals: [],
-        sourceType: 'battlecard',
-        content: '',
-        file: null
+    } else {
+      // No file, send as JSON (simpler for n8n to handle)
+      response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData),
       });
-      
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-
-      // Call success callback
-      if (onSuccess) {
-        onSuccess('Battlecard uploaded successfully!');
-      }
-
-      // If new competitor was added, refresh the competitors list
-      if (formData.competitorSelect === '__new__') {
-        fetchCompetitors();
-      }
-
-    } catch (error) {
-      console.error('Upload error:', error);
-      setSubmitMessage({ 
-        type: 'error', 
-        text: error instanceof Error ? error.message : 'Failed to upload battlecard' 
-      });
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+
+    console.log('n8n response status:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('n8n error response:', errorText);
+      throw new Error(`Upload failed with status ${response.status}: ${errorText}`);
+    }
+
+    const result = await response.json().catch(() => ({ success: true }));
+    console.log('n8n response:', result);
+    
+    setSubmitMessage({ type: 'success', text: 'Battlecard uploaded successfully!' });
+    
+    // Reset form
+    setFormData({
+      competitorSelect: '',
+      newCompetitorName: '',
+      verticals: [],
+      sourceType: 'battlecard',
+      content: '',
+      file: null
+    });
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+
+    // Call success callback
+    if (onSuccess) {
+      onSuccess('Battlecard uploaded successfully!');
+    }
+
+    // If new competitor was added, refresh the competitors list
+    if (formData.competitorSelect === '__new__') {
+      fetchCompetitors();
+    }
+
+  } catch (error) {
+    console.error('Upload error:', error);
+    setSubmitMessage({ 
+      type: 'error', 
+      text: error instanceof Error ? error.message : 'Failed to upload battlecard' 
+    });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   const handleCompetitorSelect = (value: string) => {
     setFormData(prev => ({ 
