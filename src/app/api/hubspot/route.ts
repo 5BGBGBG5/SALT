@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     let requestBody: HubSpotQueryRequest;
     try {
       requestBody = await request.json();
-    } catch (_error) { // eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+    } catch (_error) { // eslint-disable-line @typescript-eslint/no-unused-vars
       return createErrorResponse(
         'VALIDATION_ERROR',
         'Invalid JSON in request body',

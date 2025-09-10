@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
             contentValidation.details
           );
         }
-      } catch (_error) { // eslint-disable-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
+      } catch (_error) { // eslint-disable-line @typescript-eslint/no-unused-vars
         return createErrorResponse(
           'FILE_VALIDATION_ERROR',
           'Unable to validate file content',
