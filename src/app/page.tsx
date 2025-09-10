@@ -20,6 +20,18 @@ export default function HomePage() {
   const [UploadDropzone, setUploadDropzone] = useState<React.ComponentType<UploadDropzoneProps> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // State for form fields
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [selectedCompetitor, setSelectedCompetitor] = useState('');
+  const [newCompetitorName, setNewCompetitorName] = useState('');
+  const [showNewCompetitor, setShowNewCompetitor] = useState(false);
+  const [verticals, setVerticals] = useState('');
+  const [sourceType, setSourceType] = useState('battlecard');
+  const [content, setContent] = useState('');
+  const [file, setFile] = useState<File | null>(null);
+
   useEffect(() => {
     setIsClient(true);
     // Dynamically import UploadDropzone only on client side
@@ -29,9 +41,74 @@ export default function HomePage() {
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    console.log('Selected file:', file);
-    // Add further file handling logic here if needed
+    const selectedFile = e.target.files?.[0] || null;
+    setFile(selectedFile);
+    console.log('Selected file:', selectedFile);
+  };
+
+  // Placeholder for fetching competitors (will be replaced or expanded later)
+  const fetchCompetitors = async () => {
+    console.log('Fetching competitors...');
+    // In a real application, this would fetch data from an API
+    // For now, it's just a placeholder to avoid errors.
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    const finalCompetitor = selectedCompetitor === '__new__' ? newCompetitorName : selectedCompetitor;
+
+    // Use FormData to handle both file and text data
+    const submissionData = new FormData();
+    submissionData.append('competitorSelect', selectedCompetitor);
+    submissionData.append('newCompetitorName', showNewCompetitor ? newCompetitorName : '');
+    submissionData.append('competitor', finalCompetitor);
+    submissionData.append('verticals', verticals); // Send as a comma-separated string
+    submissionData.append('sourceType', sourceType);
+    submissionData.append('content', content);
+
+    if (file) {
+      submissionData.append('file', file);
+    }
+
+    try {
+      // The fetch request should NOT have a Content-Type header when sending FormData
+      const response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
+        method: 'POST',
+        body: submissionData,
+      });
+
+      if (response.ok) {
+        setSuccessMessage(`Battlecard for ${finalCompetitor} uploaded successfully!`);
+
+        // Reset form state
+        setSelectedCompetitor('');
+        setNewCompetitorName('');
+        setVerticals('');
+        setContent('');
+        setFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        setShowNewCompetitor(false);
+
+        // Refresh the list of competitors if a new one was added
+        if (selectedCompetitor === '__new__') {
+          fetchCompetitors();
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Upload failed. The server responded with an error.');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to upload battlecard. Please check the console and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -157,7 +234,42 @@ export default function HomePage() {
             transition={{ duration: 0.5, delay: 0.9 }}
             className="mb-8"
           >
-            <BattlecardUpload />
+            {/* Existing BattlecardUpload component will be replaced or modified to use new state */}
+            {/* For now, just a placeholder to show the form elements */}
+            <form onSubmit={handleSubmit} className="p-6 space-y-6">
+              <h2 className="text-2xl font-semibold text-white mb-4">Upload Battlecard</h2>
+              {/* Example Form Fields (replace with actual UI components) */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300">Competitor</label>
+                <input type="text" value={selectedCompetitor} onChange={(e) => setSelectedCompetitor(e.target.value)} className="w-full px-4 py-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white" />
+              </div>
+              {showNewCompetitor && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">New Competitor Name</label>
+                  <input type="text" value={newCompetitorName} onChange={(e) => setNewCompetitorName(e.target.value)} className="w-full px-4 py-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white" />
+                </div>
+              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-300">Verticals (comma-separated)</label>
+                <input type="text" value={verticals} onChange={(e) => setVerticals(e.target.value)} className="w-full px-4 py-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300">Source Type</label>
+                <input type="text" value={sourceType} onChange={(e) => setSourceType(e.target.value)} className="w-full px-4 py-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300">Content</label>
+                <textarea value={content} onChange={(e) => setContent(e.target.value)} className="w-full px-4 py-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white" rows={4}></textarea>
+              </div>
+              <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" id="file-upload" />
+              <label htmlFor="file-upload" className="cursor-pointer bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Upload File</label>
+              {file && <p className="text-sm text-gray-400">Selected file: {file.name}</p>}
+              <button type="submit" disabled={loading} className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded disabled:opacity-50">
+                {loading ? 'Uploading...' : 'Upload Battlecard'}
+              </button>
+              {errorMessage && <p className="text-red-500 mt-2">Error: {errorMessage}</p>}
+              {successMessage && <p className="text-green-500 mt-2">Success: {successMessage}</p>}
+            </form>
           </motion.div>
 
           {/* Powered by SALT */}
