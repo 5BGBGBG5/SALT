@@ -22,6 +22,7 @@ interface FormData {
   sourceType: string;
   content: string;
   file: File | null;
+  url: string;
 }
 
 interface SubmitData extends Omit<FormData, 'file'> {
@@ -49,7 +50,8 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
     verticals: [],
     sourceType: 'battlecard',
     content: '',
-    file: null
+    file: null,
+    url: ''
   });
 
   // UI state
@@ -136,6 +138,20 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
       newErrors.sourceType = 'Please select a source type';
     }
 
+    // URL validation when source type is 'website'
+    if (formData.sourceType === 'website') {
+      if (!formData.url.trim()) {
+        newErrors.url = 'Please enter a website URL';
+      } else {
+        // Basic URL validation
+        try {
+          new URL(formData.url);
+        } catch {
+          newErrors.url = 'Please enter a valid URL (e.g., https://example.com)';
+        }
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -172,7 +188,8 @@ const handleSubmit = async (e: React.FormEvent) => {
       competitor: finalCompetitorName,
       verticals: formData.verticals, // Send as array, not JSON string
       sourceType: formData.sourceType,
-      content: formData.content
+      content: formData.content,
+      url: formData.url
     };
 
     let response: Response;
@@ -228,7 +245,8 @@ const handleSubmit = async (e: React.FormEvent) => {
       verticals: [],
       sourceType: 'battlecard',
       content: '',
-      file: null
+      file: null,
+      url: ''
     });
     
     if (fileInputRef.current) {
@@ -474,6 +492,34 @@ const handleSubmit = async (e: React.FormEvent) => {
               </p>
             )}
           </div>
+
+          {/* URL Input - only show when sourceType is 'website' */}
+          {formData.sourceType === 'website' && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-300">
+                Website URL *
+              </label>
+              <input
+                type="url"
+                value={formData.url}
+                onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
+                placeholder="https://competitor-website.com/product-page"
+                className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white transition-colors ${
+                  errors.url ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
+                }`}
+                required={formData.sourceType === 'website'}
+              />
+              {errors.url && (
+                <p className="text-red-400 text-sm flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.url}
+                </p>
+              )}
+              <p className="text-xs text-gray-500">
+                Enter the URL to scrape content from the competitor's website
+              </p>
+            </div>
+          )}
 
           {/* File Upload */}
           <div className="space-y-2">
