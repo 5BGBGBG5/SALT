@@ -344,10 +344,15 @@ const handleSubmit = async (e: React.FormEvent) => {
       <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            <FileText className="w-6 h-6 text-teal-400" />
-            Upload Battlecard
-          </h2>
+          <div>
+            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+              <FileText className="w-6 h-6 text-teal-400" />
+              Upload Battlecard
+            </h2>
+            <p className="text-sm text-gray-400 mt-1">
+              Please upload 1 at a time, Website, doc or text.
+            </p>
+          </div>
           {onClose && (
             <button
               onClick={onClose}
