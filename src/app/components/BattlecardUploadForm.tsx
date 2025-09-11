@@ -516,7 +516,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                 </p>
               )}
               <p className="text-xs text-gray-500">
-                Enter the URL to scrape content from the competitor's website
+                Enter the URL to scrape content from the competitor&apos;s website
               </p>
             </div>
           )}
