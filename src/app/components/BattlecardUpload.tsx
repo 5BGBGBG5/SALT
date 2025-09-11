@@ -10,6 +10,13 @@ interface Competitor {
   label: string;
 }
 
+interface CompetitorApiResponse {
+  value?: string;
+  name?: string;
+  id?: string;
+  label?: string;
+}
+
 interface FormData {
   competitorSelect: string;
   newCompetitorName: string;
@@ -87,7 +94,7 @@ export default function BattlecardUpload() {
       if (!response.ok) throw new Error('Failed to fetch competitors');
       
       const data = await response.json();
-      const competitorOptions = data.competitors.map((comp: any) => ({
+      const competitorOptions = data.competitors.map((comp: CompetitorApiResponse) => ({
         value: comp.value || comp.name || comp.id,
         label: comp.label || comp.name || comp.value || comp.id
       }));

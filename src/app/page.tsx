@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import SearchInput from './components/SearchInput';
-import BattlecardUpload from './components/BattlecardUpload';
 // Dynamic imports for Supabase-dependent components
 // import UploadDropzone from './components/UploadDropzone';
 // import BigUpload from './components/BigUpload'; // Uncomment when needed
