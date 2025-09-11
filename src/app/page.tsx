@@ -30,6 +30,7 @@ export default function HomePage() {
   const [sourceType, setSourceType] = useState('battlecard');
   const [content, setContent] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [url, setUrl] = useState('');
 
   useEffect(() => {
     setIsClient(true);
@@ -68,6 +69,7 @@ export default function HomePage() {
     submissionData.append('verticals', verticals); // Send as a comma-separated string
     submissionData.append('sourceType', sourceType);
     submissionData.append('content', content);
+    submissionData.append('url', url);
 
     if (file) {
       submissionData.append('file', file);
@@ -98,6 +100,7 @@ export default function HomePage() {
         setVerticals('');
         setContent('');
         setFile(null);
+        setUrl('');
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -263,8 +266,29 @@ export default function HomePage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-300">Source Type</label>
-                <input type="text" value={sourceType} onChange={(e) => setSourceType(e.target.value)} className="w-full px-4 py-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white" />
+                <select 
+                  value={sourceType} 
+                  onChange={(e) => setSourceType(e.target.value)} 
+                  className="w-full px-4 py-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white"
+                >
+                  <option value="battlecard">Battlecard</option>
+                  <option value="website">Website</option>
+                  <option value="document">Document</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
+              {sourceType === 'website' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-300">Website URL</label>
+                  <input 
+                    type="url" 
+                    value={url} 
+                    onChange={(e) => setUrl(e.target.value)} 
+                    placeholder="https://example.com/competitor-page"
+                    className="w-full px-4 py-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white" 
+                  />
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-300">Content</label>
                 <textarea value={content} onChange={(e) => setContent(e.target.value)} className="w-full px-4 py-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white" rows={4}></textarea>
