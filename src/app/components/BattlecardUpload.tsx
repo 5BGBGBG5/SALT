@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, CheckCircle, AlertCircle, FileText } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText, Loader2 } from 'lucide-react';
 
 // TypeScript interfaces
 interface Competitor {
@@ -16,6 +16,7 @@ interface FormData {
   verticals: string;
   content: string;
   file: File | null; // Add file support
+  url: string;
 }
 
 interface BattlecardPayload {
@@ -25,7 +26,17 @@ interface BattlecardPayload {
   verticals: string[];
   sourceType: 'battlecard';
   content: string;
+  url?: string; // Add url to payload
 }
+
+const isValidUrl = (url: string): boolean => {
+  try {
+    const parsedUrl = new URL(url);
+    return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
 
 export default function BattlecardUpload() {
   // State management
@@ -36,7 +47,8 @@ export default function BattlecardUpload() {
     newCompetitorName: '',
     verticals: '',
     content: '',
-    file: null // Add file to initial state
+    file: null, // Add file to initial state
+    url: '',
   });
 
   const [alerts, setAlerts] = useState<{
@@ -93,10 +105,17 @@ export default function BattlecardUpload() {
       return false;
     }
 
-    // Either content or file is required
-    if (!formData.content.trim() && !formData.file) {
-      setAlerts({ type: 'error', message: 'Please provide either content text or upload a file.' });
-      console.log('Validation failed: Neither content nor file provided.');
+    // Either content, file, or URL is required
+    if (!formData.content.trim() && !formData.file && !formData.url.trim()) {
+      setAlerts({ type: 'error', message: 'Please provide content via text, file upload, or URL.' });
+      console.log('Validation failed: Neither content, file, nor URL provided.');
+      return false;
+    }
+
+    // URL format validation
+    if (formData.url.trim() && !isValidUrl(formData.url)) {
+      setAlerts({ type: 'error', message: 'Please enter a valid URL starting with http:// or https://' });
+      console.log('Validation failed: Invalid URL format.');
       return false;
     }
     
@@ -129,13 +148,17 @@ export default function BattlecardUpload() {
         competitor: finalCompetitorName,
         hasFile: !!formData.file,
         hasContent: !!formData.content,
-        fileName: formData.file?.name
+        hasUrl: !!formData.url,
+        fileName: formData.file?.name,
+        url: formData.url
       });
 
       let response: Response;
       const webhookUrl = 'https://inecta.app.n8n.cloud/webhook/upload-battlecard';
 
+      // Determine submission type and prepare payload
       if (formData.file) {
+        console.log('Submission method: File Upload');
         // If there's a file, use FormData
         const submitFormData = new FormData();
         
@@ -146,6 +169,7 @@ export default function BattlecardUpload() {
         submitFormData.append('verticals', JSON.stringify(verticalsArray));
         submitFormData.append('sourceType', 'battlecard');
         submitFormData.append('content', formData.content || ''); // Send empty string if no content
+        submitFormData.append('url', formData.url || ''); // Add URL to FormData
         
         // Add the file
         submitFormData.append('file', formData.file, formData.file.name);
@@ -167,7 +191,32 @@ export default function BattlecardUpload() {
           body: submitFormData,
         });
         
+      } else if (formData.url.trim()) {
+        console.log('Submission method: URL Scraping');
+        const payload: BattlecardPayload = {
+          competitorSelect: formData.competitorSelect,
+          newCompetitorName: formData.newCompetitorName,
+          competitor: finalCompetitorName,
+          verticals: verticalsArray,
+          sourceType: 'battlecard',
+          content: formData.content,
+          url: formData.url, // Add URL to JSON payload
+        };
+
+        console.log('=== SUBMISSION DEBUG (JSON) ===');
+        console.log('Final payload object:', payload);
+        const stringifiedPayload = JSON.stringify(payload);
+        console.log('Stringified payload:', stringifiedPayload);
+        console.log('Payload byte length:', new TextEncoder().encode(stringifiedPayload).length);
+
+        console.log(`Sending JSON request to: ${webhookUrl}, Method: POST, Headers: { 'Content-Type': 'application/json' }, Body:`, payload);
+        response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: stringifiedPayload
+        });
       } else {
+        console.log('Submission method: Text Content Only');
         // No file, send as JSON
         const payload: BattlecardPayload = {
           competitorSelect: formData.competitorSelect,
@@ -228,7 +277,8 @@ export default function BattlecardUpload() {
         newCompetitorName: '',
         verticals: '',
         content: '',
-        file: null
+        file: null,
+        url: '',
       });
       
       // Reset file input
@@ -310,10 +360,10 @@ export default function BattlecardUpload() {
           {/* Competitor Selection - unchanged */}
           {/* ... keep existing competitor selection code ... */}
 
-          {/* File Upload - NEW */}
+          {/* File Upload Section */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              File Upload (Optional)
+              Upload File (Optional)
             </label>
             <div className="relative">
               <input
@@ -345,25 +395,73 @@ export default function BattlecardUpload() {
             </p>
           </div>
 
-          {/* Content - UPDATED */}
+          {/* OR Section */}
+          <div className="flex items-center my-6">
+            <div className="flex-grow border-t border-gray-700"></div>
+            <span className="flex-shrink mx-4 text-gray-500 text-sm">OR</span>
+            <div className="flex-grow border-t border-gray-700"></div>
+          </div>
+
+          {/* URL Input Section */}
+          <div>
+            <label htmlFor="url-input" className="block text-sm font-medium text-gray-300 mb-2">
+              Enter URL (Optional)
+            </label>
+            <input
+              type="url"
+              id="url-input"
+              value={formData.url}
+              onChange={(e) => handleInputChange('url', e.target.value)}
+              placeholder="https://competitor-website.com/product-page"
+              className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Scrape content directly from a webpage.
+            </p>
+          </div>
+
+          {/* OR Section */}
+          <div className="flex items-center my-6">
+            <div className="flex-grow border-t border-gray-700"></div>
+            <span className="flex-shrink mx-4 text-gray-500 text-sm">OR</span>
+            <div className="flex-grow border-t border-gray-700"></div>
+          </div>
+
+          {/* Content Section */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Battlecard Content {!formData.file && '*'}
+              Battlecard Content {!formData.file && !formData.url && '*'}
             </label>
             <textarea
               value={formData.content}
               onChange={(e) => handleInputChange('content', e.target.value)}
-              placeholder="Enter competitive intelligence content... (optional if file is uploaded)"
+              placeholder="Enter competitive intelligence content... (optional if file or URL is provided)"
               rows={8}
               className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 resize-none"
             />
             <p className="text-xs text-gray-500 mt-1">
-              {formData.file ? 'Optional when file is uploaded' : 'Required if no file is uploaded'}
+              {formData.file || formData.url ? 'Optional when file or URL is provided' : 'Required if no file or URL is provided'}
             </p>
           </div>
 
           {/* Submit Button - unchanged */}
-          {/* ... keep existing submit button code ... */}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full px-6 py-3 bg-teal-600 hover:bg-teal-700 disabled:bg-gray-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2 mt-6"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                Upload Battlecard
+              </>
+            )}
+          </button>
         </form>
       </div>
     </motion.div>
