@@ -268,7 +268,10 @@ export default function HomePage() {
                 <label className="block text-sm font-medium text-gray-300">Source Type</label>
                 <select 
                   value={sourceType} 
-                  onChange={(e) => setSourceType(e.target.value)} 
+                  onChange={(e) => {
+                    console.log('Source Type changed from', sourceType, 'to', e.target.value);
+                    setSourceType(e.target.value);
+                  }} 
                   className="w-full px-4 py-2 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white"
                 >
                   <option value="battlecard">Battlecard</option>
@@ -276,6 +279,7 @@ export default function HomePage() {
                   <option value="document">Document</option>
                   <option value="other">Other</option>
                 </select>
+                <p className="text-xs text-gray-500 mt-1">Current value: {sourceType}</p>
               </div>
               {sourceType === 'website' && (
                 <div>
