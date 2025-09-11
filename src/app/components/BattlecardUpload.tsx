@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, CheckCircle, AlertCircle, FileText, Loader2 } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText, Loader2, ChevronDown } from 'lucide-react';
 
 // TypeScript interfaces
 interface Competitor {
@@ -41,6 +41,9 @@ const isValidUrl = (url: string): boolean => {
 export default function BattlecardUpload() {
   // State management
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [competitors, setCompetitors] = useState<Competitor[]>([]);
+  const [isLoadingCompetitors, setIsLoadingCompetitors] = useState(true);
+  const [isCompetitorDropdownOpen, setIsCompetitorDropdownOpen] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
     competitorSelect: '',
@@ -58,6 +61,56 @@ export default function BattlecardUpload() {
 
   // Add file input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const competitorDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fetch competitors on component mount
+  useEffect(() => {
+    fetchCompetitors();
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (competitorDropdownRef.current && !competitorDropdownRef.current.contains(event.target as Node)) {
+        setIsCompetitorDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchCompetitors = async () => {
+    try {
+      setIsLoadingCompetitors(true);
+      const response = await fetch('/api/webhook/get-competitors');
+      if (!response.ok) throw new Error('Failed to fetch competitors');
+      
+      const data = await response.json();
+      const competitorOptions = data.competitors.map((comp: any) => ({
+        value: comp.value || comp.name || comp.id,
+        label: comp.label || comp.name || comp.value || comp.id
+      }));
+      
+      setCompetitors([
+        ...competitorOptions,
+        { value: '__new__', label: '+ Add New Competitor' }
+      ]);
+    } catch (error) {
+      console.error('Error fetching competitors:', error);
+      setCompetitors([{ value: '__new__', label: '+ Add New Competitor' }]);
+    } finally {
+      setIsLoadingCompetitors(false);
+    }
+  };
+
+  const getSelectedCompetitorName = (): string => {
+    if (!formData.competitorSelect) return 'Select a competitor...';
+    if (formData.competitorSelect === '__new__') return formData.newCompetitorName || '+ Add New Competitor';
+    
+    const selected = competitors.find(comp => comp.value === formData.competitorSelect);
+    return selected?.label || formData.competitorSelect;
+  };
 
   const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -357,8 +410,86 @@ export default function BattlecardUpload() {
         </AnimatePresence>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Competitor Selection - unchanged */}
-          {/* ... keep existing competitor selection code ... */}
+          {/* Competitor Selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-300">
+              Competitor *
+            </label>
+            <div className="relative" ref={competitorDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsCompetitorDropdownOpen(!isCompetitorDropdownOpen)}
+                disabled={isLoadingCompetitors}
+                className={`w-full px-4 py-3 text-left bg-gray-700 border border-gray-600 rounded-lg transition-colors flex items-center justify-between hover:border-gray-500 focus:border-teal-500 ${
+                  isLoadingCompetitors ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                }`}
+              >
+                <span className={formData.competitorSelect ? 'text-white' : 'text-gray-400'}>
+                  {isLoadingCompetitors ? 'Loading competitors...' : getSelectedCompetitorName()}
+                </span>
+                <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${
+                  isCompetitorDropdownOpen ? 'rotate-180' : ''
+                }`} />
+              </button>
+
+              {isCompetitorDropdownOpen && !isLoadingCompetitors && (
+                <div className="absolute z-10 w-full mt-1 bg-gray-700 border border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                  {competitors.map((competitor) => (
+                    <button
+                      key={competitor.value}
+                      type="button"
+                      onClick={() => {
+                        handleInputChange('competitorSelect', competitor.value);
+                        setIsCompetitorDropdownOpen(false);
+                        if (competitor.value !== '__new__') {
+                          handleInputChange('newCompetitorName', '');
+                        }
+                      }}
+                      className={`w-full px-4 py-3 text-left hover:bg-gray-600 transition-colors ${
+                        formData.competitorSelect === competitor.value ? 'bg-teal-600 text-white' : 'text-gray-300'
+                      } ${competitor.value === '__new__' ? 'border-t border-gray-600 text-teal-400' : ''}`}
+                    >
+                      {competitor.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* New Competitor Name Input */}
+          {formData.competitorSelect === '__new__' && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-300">
+                New Competitor Name *
+              </label>
+              <input
+                type="text"
+                value={formData.newCompetitorName}
+                onChange={(e) => handleInputChange('newCompetitorName', e.target.value)}
+                placeholder="Enter competitor name"
+                className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                required
+              />
+            </div>
+          )}
+
+          {/* Verticals Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-300">
+              Verticals (Optional)
+            </label>
+            <input
+              type="text"
+              value={formData.verticals}
+              onChange={(e) => handleInputChange('verticals', e.target.value)}
+              placeholder="e.g., Healthcare, Finance, Technology (comma-separated)"
+              className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+            />
+            <p className="text-xs text-gray-500">
+              Enter relevant industry verticals separated by commas
+            </p>
+          </div>
 
           {/* File Upload Section */}
           <div>
