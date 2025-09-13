@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, X, ChevronDown, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Upload, X, ChevronDown, FileText, AlertCircle, CheckCircle, Loader2, Globe, Type } from 'lucide-react';
 
 interface Competitor {
   value: string;
@@ -34,11 +34,25 @@ interface BattlecardUploadFormProps {
   onSuccess?: (message: string) => void;
 }
 
-const SOURCE_TYPES = [
-  { value: 'battlecard', label: 'Battlecard' },
-  { value: 'website', label: 'Website' },
-  { value: 'document', label: 'Document' },
-  { value: 'other', label: 'Other' }
+const INPUT_MODES = [
+  { 
+    value: 'website', 
+    label: 'Webpage', 
+    description: 'Enter a URL to scrape content',
+    icon: Globe
+  },
+  { 
+    value: 'document', 
+    label: 'Document', 
+    description: 'Upload a file (PDF, DOCX, TXT, MD)',
+    icon: FileText
+  },
+  { 
+    value: 'direct', 
+    label: 'Text', 
+    description: 'Paste or type content directly',
+    icon: Type
+  }
 ];
 
 export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardUploadFormProps) {
@@ -48,7 +62,7 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
     competitorSelect: '',
     newCompetitorName: '',
     verticals: [],
-    sourceType: 'battlecard',
+    sourceType: 'website',
     content: '',
     file: null,
     url: ''
@@ -128,17 +142,7 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
       newErrors.newCompetitor = 'Please enter the new competitor name';
     }
 
-    // Content or file validation
-    if (!formData.content.trim() && !formData.file) {
-      newErrors.content = 'Please provide either content text or upload a file';
-    }
-
-    // Source type validation
-    if (!formData.sourceType) {
-      newErrors.sourceType = 'Please select a source type';
-    }
-
-    // URL validation when source type is 'website'
+    // Input mode validation - ensure the correct field is filled based on selected mode
     if (formData.sourceType === 'website') {
       if (!formData.url.trim()) {
         newErrors.url = 'Please enter a website URL';
@@ -149,6 +153,14 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
         } catch {
           newErrors.url = 'Please enter a valid URL (e.g., https://example.com)';
         }
+      }
+    } else if (formData.sourceType === 'document') {
+      if (!formData.file) {
+        newErrors.file = 'Please upload a document file';
+      }
+    } else if (formData.sourceType === 'direct') {
+      if (!formData.content.trim()) {
+        newErrors.content = 'Please enter content text';
       }
     }
 
@@ -181,20 +193,25 @@ const handleSubmit = async (e: React.FormEvent) => {
       contentLength: formData.content.length
     });
 
-    // Prepare the submission data
-    const submitData: SubmitData = {
+    // Prepare the submission data based on input mode
+    const baseSubmitData = {
       competitorSelect: formData.competitorSelect,
       newCompetitorName: formData.newCompetitorName,
       competitor: finalCompetitorName,
-      verticals: formData.verticals, // Send as array, not JSON string
-      sourceType: formData.sourceType,
-      content: formData.content,
-      url: formData.url
+      verticals: formData.verticals,
+      sourceType: formData.sourceType
+    };
+
+    // Add only relevant data based on input mode
+    const submitData: SubmitData = {
+      ...baseSubmitData,
+      content: formData.sourceType === 'direct' ? formData.content : '',
+      url: formData.sourceType === 'website' ? formData.url : ''
     };
 
     let response: Response;
 
-    if (formData.file) {
+    if (formData.sourceType === 'document' && formData.file) {
       // If there's a file, use FormData
       const submitFormData = new FormData();
       
@@ -243,7 +260,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       competitorSelect: '',
       newCompetitorName: '',
       verticals: [],
-      sourceType: 'battlecard',
+      sourceType: 'website',
       content: '',
       file: null,
       url: ''
@@ -472,30 +489,50 @@ const handleSubmit = async (e: React.FormEvent) => {
             </div>
           </div>
 
-          {/* Source Type */}
-          <div className="space-y-2">
+          {/* Input Mode Selection */}
+          <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-300">
-              Source Type *
+              Choose Input Method *
             </label>
-            <select
-              value={formData.sourceType}
-              onChange={(e) => setFormData(prev => ({ ...prev, sourceType: e.target.value }))}
-              className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white transition-colors ${
-                errors.sourceType ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
-              }`}
-            >
-              {SOURCE_TYPES.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-            {errors.sourceType && (
-              <p className="text-red-400 text-sm flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.sourceType}
-              </p>
-            )}
+            <div className="grid grid-cols-3 gap-2">
+              {INPUT_MODES.map((mode) => {
+                const Icon = mode.icon;
+                const isActive = formData.sourceType === mode.value;
+                return (
+                  <button
+                    key={mode.value}
+                    type="button"
+                    onClick={() => {
+                      setFormData(prev => ({ 
+                        ...prev, 
+                        sourceType: mode.value,
+                        // Clear other input fields when switching modes
+                        url: mode.value === 'website' ? prev.url : '',
+                        file: mode.value === 'document' ? prev.file : null,
+                        content: mode.value === 'direct' ? prev.content : ''
+                      }));
+                      // Clear file input if switching away from document mode
+                      if (mode.value !== 'document' && fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                    className={`p-4 rounded-lg border-2 transition-all text-left ${
+                      isActive
+                        ? 'border-teal-500 bg-teal-500/10 text-teal-400'
+                        : 'border-gray-600 bg-gray-800 text-gray-400 hover:border-gray-500'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon className="w-5 h-5" />
+                      <span className="font-medium">{mode.label}</span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {mode.description}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* URL Input - only show when sourceType is 'website' */}
@@ -526,64 +563,74 @@ const handleSubmit = async (e: React.FormEvent) => {
             </div>
           )}
 
-          {/* File Upload */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
-              File Upload (Optional)
-            </label>
-            <div className="relative">
-              <input
-                ref={fileInputRef}
-                type="file"
-                onChange={handleFileChange}
-                accept=".pdf,.docx,.txt,.md"
-                className="hidden"
-              />
-              <label
-                htmlFor="file-upload"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center w-full px-4 py-3 bg-gray-800 
-                         border-2 border-dashed border-gray-600 rounded-lg text-gray-400 
-                         hover:border-teal-500 hover:text-gray-300 cursor-pointer 
-                         transition-all duration-200"
-              >
-                {formData.file ? (
-                  <span className="text-teal-400">{formData.file.name}</span>
-                ) : (
-                  <span>Click to upload or drag and drop</span>
-                )}
+          {/* File Upload - only show when sourceType is 'document' */}
+          {formData.sourceType === 'document' && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-300">
+                Document Upload *
               </label>
+              <div className="relative">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  onChange={handleFileChange}
+                  accept=".pdf,.docx,.txt,.md"
+                  className="hidden"
+                />
+                <label
+                  htmlFor="file-upload"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`flex items-center justify-center w-full px-4 py-3 bg-gray-800 
+                           border-2 border-dashed rounded-lg cursor-pointer 
+                           transition-all duration-200 ${
+                    errors.file 
+                      ? 'border-red-500 text-red-400' 
+                      : 'border-gray-600 text-gray-400 hover:border-teal-500 hover:text-gray-300'
+                  }`}
+                >
+                  {formData.file ? (
+                    <span className="text-teal-400">{formData.file.name}</span>
+                  ) : (
+                    <span>Click to upload or drag and drop</span>
+                  )}
+                </label>
+              </div>
+              <p className="text-xs text-gray-500">Supported formats: PDF, DOCX, TXT, MD (max 3MB)</p>
+              {errors.file && (
+                <p className="text-red-400 text-sm flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.file}
+                </p>
+              )}
             </div>
-            <p className="text-xs text-gray-500">Supported formats: PDF, DOCX, TXT, MD</p>
-            {errors.file && (
-              <p className="text-red-400 text-sm flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.file}
-              </p>
-            )}
-          </div>
+          )}
 
-          {/* Content */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
-              Content {!formData.file && '*'}
-            </label>
-            <textarea
-              value={formData.content}
-              onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-              rows={8}
-              className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 resize-none transition-colors ${
-                errors.content ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
-              }`}
-              placeholder="Paste or type the competitive intelligence content here..."
-            />
-            {errors.content && (
-              <p className="text-red-400 text-sm flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.content}
+          {/* Content - only show when sourceType is 'direct' */}
+          {formData.sourceType === 'direct' && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-300">
+                Content *
+              </label>
+              <textarea
+                value={formData.content}
+                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                rows={8}
+                className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 resize-none transition-colors ${
+                  errors.content ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
+                }`}
+                placeholder="Paste or type the competitive intelligence content here..."
+              />
+              {errors.content && (
+                <p className="text-red-400 text-sm flex items-center gap-1">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.content}
+                </p>
+              )}
+              <p className="text-xs text-gray-500">
+                Enter your competitive intelligence content directly
               </p>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Submit Message */}
           {submitMessage && (
