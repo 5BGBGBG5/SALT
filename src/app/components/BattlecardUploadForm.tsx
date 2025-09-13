@@ -123,19 +123,17 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
             index === self.findIndex((c: Competitor) => c.value === comp.value)
           );
         
-        console.log('Formatted competitors before adding "Add New":', competitorOptions);
+        console.log('Formatted competitors from API (includes Add New from backend):', competitorOptions);
         
-        // Add "Add New" option only once in setCompetitors
-        const finalCompetitors = [...competitorOptions, { value: '__new__', label: '➕ Add New Competitor...' }];
-        console.log('Final competitors array:', finalCompetitors);
-        setCompetitors(finalCompetitors);
+        // Set competitors directly from API response (API already includes "Add New" option)
+        setCompetitors(competitorOptions);
       } else {
-        console.log('No competitors data, setting only "Add New" option');
-        setCompetitors([{ value: '__new__', label: '➕ Add New Competitor...' }]);
+        console.log('No competitors data received from API');
+        setCompetitors([]);
       }
     } catch (error) {
       console.error('Failed to fetch competitors:', error);
-      setCompetitors([{ value: '__new__', label: '➕ Add New Competitor...' }]);
+      setCompetitors([]);
       setErrors(prev => ({ ...prev, competitors: 'Failed to load competitors' }));
     } finally {
       setIsLoadingCompetitors(false);
