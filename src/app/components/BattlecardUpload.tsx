@@ -429,9 +429,9 @@ export default function BattlecardUpload() {
               <button
                 type="button"
                 onClick={() => setIsCompetitorDropdownOpen(!isCompetitorDropdownOpen)}
-                disabled={isLoadingCompetitors}
+                disabled={isLoadingCompetitors || isSubmitting}
                 className={`w-full px-4 py-3 text-left bg-gray-700 border border-gray-600 rounded-lg transition-colors flex items-center justify-between hover:border-gray-500 focus:border-teal-500 ${
-                  isLoadingCompetitors ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                  (isLoadingCompetitors || isSubmitting) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
                 }`}
               >
                 <span className={formData.competitorSelect ? 'text-white' : 'text-gray-400'}>
@@ -478,7 +478,10 @@ export default function BattlecardUpload() {
                 value={formData.newCompetitorName}
                 onChange={(e) => handleInputChange('newCompetitorName', e.target.value)}
                 placeholder="Enter competitor name"
-                className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                disabled={isSubmitting}
+                className={`w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
+                  isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
                 required
               />
             </div>
@@ -515,14 +518,18 @@ export default function BattlecardUpload() {
                 type="file"
                 onChange={handleFileChange}
                 accept=".pdf,.docx,.txt,.md"
+                disabled={isSubmitting}
                 className="hidden"
               />
               <div
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center justify-center w-full px-4 py-3 bg-gray-700 
+                onClick={() => !isSubmitting && fileInputRef.current?.click()}
+                className={`flex items-center justify-center w-full px-4 py-3 bg-gray-700 
                          border-2 border-dashed border-gray-600 rounded-lg text-gray-400 
-                         hover:border-teal-500 hover:text-gray-300 cursor-pointer 
-                         transition-all duration-200"
+                         transition-all duration-200 ${
+                  isSubmitting 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'hover:border-teal-500 hover:text-gray-300 cursor-pointer'
+                }`}
               >
                 {formData.file ? (
                   <span className="text-teal-400 flex items-center gap-2">
@@ -557,7 +564,10 @@ export default function BattlecardUpload() {
               value={formData.url}
               onChange={(e) => handleInputChange('url', e.target.value)}
               placeholder="https://competitor-website.com/product-page"
-              className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+              disabled={isSubmitting}
+              className={`w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             />
             <p className="text-xs text-gray-500 mt-1">
               Scrape content directly from a webpage.
@@ -581,7 +591,10 @@ export default function BattlecardUpload() {
               onChange={(e) => handleInputChange('content', e.target.value)}
               placeholder="Enter competitive intelligence content... (optional if file or URL is provided)"
               rows={8}
-              className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 resize-none"
+              disabled={isSubmitting}
+              className={`w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 resize-none ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             />
             <p className="text-xs text-gray-500 mt-1">
               {formData.file || formData.url ? 'Optional when file or URL is provided' : 'Required if no file or URL is provided'}
