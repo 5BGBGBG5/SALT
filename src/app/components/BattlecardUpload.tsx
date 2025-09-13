@@ -186,6 +186,9 @@ export default function BattlecardUpload() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevent multiple submissions
+    if (isSubmitting) return;
+    
     console.log('Form Data before submission:', formData);
     if (!validateForm()) return;
 
@@ -491,7 +494,10 @@ export default function BattlecardUpload() {
               value={formData.verticals}
               onChange={(e) => handleInputChange('verticals', e.target.value)}
               placeholder="e.g., Healthcare, Finance, Technology (comma-separated)"
-              className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+              disabled={isSubmitting}
+              className={`w-full px-4 py-3 bg-gray-700 text-white rounded-lg border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 ${
+                isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             />
             <p className="text-xs text-gray-500">
               Enter relevant industry verticals separated by commas

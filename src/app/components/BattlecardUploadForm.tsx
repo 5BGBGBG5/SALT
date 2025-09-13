@@ -181,6 +181,9 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   
+  // Prevent multiple submissions
+  if (isSubmitting) return;
+  
   if (!validateForm()) {
     return;
   }
@@ -399,10 +402,10 @@ const handleSubmit = async (e: React.FormEvent) => {
               <button
                 type="button"
                 onClick={() => setIsCompetitorDropdownOpen(!isCompetitorDropdownOpen)}
-                disabled={isLoadingCompetitors}
+                disabled={isLoadingCompetitors || isSubmitting}
                 className={`w-full px-4 py-3 text-left bg-gray-800 border rounded-lg transition-colors flex items-center justify-between ${
                   errors.competitor ? 'border-red-500' : 'border-gray-600 hover:border-gray-500 focus:border-teal-500'
-                } ${isLoadingCompetitors ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                } ${(isLoadingCompetitors || isSubmitting) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 <span className={formData.competitorSelect ? 'text-white' : 'text-gray-400'}>
                   {isLoadingCompetitors ? 'Loading competitors...' : getSelectedCompetitorName()}
@@ -449,10 +452,11 @@ const handleSubmit = async (e: React.FormEvent) => {
                 value={formData.newCompetitorName}
                 onChange={(e) => setFormData(prev => ({ ...prev, newCompetitorName: e.target.value }))}
                 required={formData.competitorSelect === '__new__'}
+                disabled={isSubmitting}
                 placeholder="Enter competitor name"
                 className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 transition-colors ${
                   errors.newCompetitor ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
-                }`}
+                } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
               />
               {errors.newCompetitor && (
                 <p className="text-red-400 text-sm flex items-center gap-1">
@@ -493,7 +497,10 @@ const handleSubmit = async (e: React.FormEvent) => {
                 value={verticalInput}
                 onChange={(e) => setVerticalInput(e.target.value)}
                 onKeyDown={handleVerticalAdd}
-                className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-teal-500 transition-colors"
+                disabled={isSubmitting}
+                className={`w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-teal-500 transition-colors ${
+                  isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
                 placeholder="Type vertical and press Enter (e.g., Seafood, Dairy, Bakery)"
               />
               <p className="text-xs text-gray-500">Press Enter or comma to add each vertical</p>
@@ -513,6 +520,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   <button
                     key={mode.value}
                     type="button"
+                    disabled={isSubmitting}
                     onClick={() => {
                       setFormData(prev => ({ 
                         ...prev, 
@@ -531,7 +539,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                       isActive
                         ? 'border-teal-500 bg-teal-500/10 text-teal-400'
                         : 'border-gray-600 bg-gray-800 text-gray-400 hover:border-gray-500'
-                    }`}
+                    } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <Icon className="w-5 h-5" />
@@ -557,9 +565,10 @@ const handleSubmit = async (e: React.FormEvent) => {
                 value={formData.url}
                 onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
                 placeholder="https://competitor-website.com/product-page"
+                disabled={isSubmitting}
                 className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white transition-colors ${
                   errors.url ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
-                }`}
+                } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                 required={formData.sourceType === 'website'}
               />
               {errors.url && (
@@ -587,17 +596,17 @@ const handleSubmit = async (e: React.FormEvent) => {
                   id="file-upload"
                   onChange={handleFileChange}
                   accept=".pdf,.docx,.txt,.md"
+                  disabled={isSubmitting}
                   className="hidden"
                 />
                 <label
                   htmlFor="file-upload"
                   className={`flex items-center justify-center w-full px-4 py-3 bg-gray-800 
-                           border-2 border-dashed rounded-lg cursor-pointer 
-                           transition-all duration-200 ${
+                           border-2 border-dashed rounded-lg transition-all duration-200 ${
                     errors.file 
                       ? 'border-red-500 text-red-400' 
                       : 'border-gray-600 text-gray-400 hover:border-teal-500 hover:text-gray-300'
-                  }`}
+                  } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   {formData.file ? (
                     <span className="text-teal-400">{formData.file.name}</span>
@@ -626,9 +635,10 @@ const handleSubmit = async (e: React.FormEvent) => {
                 value={formData.content}
                 onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
                 rows={8}
+                disabled={isSubmitting}
                 className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 resize-none transition-colors ${
                   errors.content ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
-                }`}
+                } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                 placeholder="Paste or type the competitive intelligence content here..."
               />
               {errors.content && (
