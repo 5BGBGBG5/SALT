@@ -111,15 +111,13 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
       const data = await response.json();
       
       if (data.success && Array.isArray(data.competitors)) {
-        // Format competitors and add "Add New" option
-        const competitorOptions: Competitor[] = [
-          ...data.competitors.map((comp: CompetitorApiResponse) => ({
-            value: comp.value || comp.name || comp.id,
-            label: comp.label || comp.name || comp.id
-          })),
-          { value: '__new__', label: '➕ Add New Competitor...' }
-        ];
-        setCompetitors(competitorOptions);
+        // Format competitors
+        const competitorOptions: Competitor[] = data.competitors.map((comp: CompetitorApiResponse) => ({
+          value: comp.value || comp.name || comp.id,
+          label: comp.label || comp.name || comp.id
+        }));
+        // Add "Add New" option only once in setCompetitors
+        setCompetitors([...competitorOptions, { value: '__new__', label: '➕ Add New Competitor...' }]);
       } else {
         setCompetitors([{ value: '__new__', label: '➕ Add New Competitor...' }]);
       }
@@ -573,13 +571,13 @@ const handleSubmit = async (e: React.FormEvent) => {
                 <input
                   ref={fileInputRef}
                   type="file"
+                  id="file-upload"
                   onChange={handleFileChange}
                   accept=".pdf,.docx,.txt,.md"
                   className="hidden"
                 />
                 <label
                   htmlFor="file-upload"
-                  onClick={() => fileInputRef.current?.click()}
                   className={`flex items-center justify-center w-full px-4 py-3 bg-gray-800 
                            border-2 border-dashed rounded-lg cursor-pointer 
                            transition-all duration-200 ${
