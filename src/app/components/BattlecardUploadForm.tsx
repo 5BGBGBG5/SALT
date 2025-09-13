@@ -109,16 +109,28 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
       if (!response.ok) throw new Error('Failed to fetch competitors');
       
       const data = await response.json();
+      console.log('Raw competitor data:', data);
       
       if (data.success && Array.isArray(data.competitors)) {
-        // Format competitors
-        const competitorOptions: Competitor[] = data.competitors.map((comp: CompetitorApiResponse) => ({
-          value: comp.value || comp.name || comp.id,
-          label: comp.label || comp.name || comp.id
-        }));
+        // Format competitors and remove any duplicates
+        const competitorOptions: Competitor[] = data.competitors
+          .map((comp: CompetitorApiResponse) => ({
+            value: comp.value || comp.name || comp.id,
+            label: comp.label || comp.name || comp.id
+          }))
+          // Remove duplicates based on value
+          .filter((comp: Competitor, index: number, self: Competitor[]) => 
+            index === self.findIndex((c: Competitor) => c.value === comp.value)
+          );
+        
+        console.log('Formatted competitors before adding "Add New":', competitorOptions);
+        
         // Add "Add New" option only once in setCompetitors
-        setCompetitors([...competitorOptions, { value: '__new__', label: '➕ Add New Competitor...' }]);
+        const finalCompetitors = [...competitorOptions, { value: '__new__', label: '➕ Add New Competitor...' }];
+        console.log('Final competitors array:', finalCompetitors);
+        setCompetitors(finalCompetitors);
       } else {
+        console.log('No competitors data, setting only "Add New" option');
         setCompetitors([{ value: '__new__', label: '➕ Add New Competitor...' }]);
       }
     } catch (error) {
@@ -404,16 +416,19 @@ const handleSubmit = async (e: React.FormEvent) => {
 
               {isCompetitorDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-10 max-h-60 overflow-y-auto">
-                  {competitors.map((competitor) => (
-                    <button
-                      key={competitor.value}
-                      type="button"
-                      onClick={() => handleCompetitorSelect(competitor.value)}
-                      className="w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors first:rounded-t-lg"
-                    >
-                      {competitor.label}
-                    </button>
-                  ))}
+                  {competitors.map((competitor, index) => {
+                    console.log(`Rendering competitor ${index}:`, competitor);
+                    return (
+                      <button
+                        key={competitor.value}
+                        type="button"
+                        onClick={() => handleCompetitorSelect(competitor.value)}
+                        className="w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors first:rounded-t-lg"
+                      >
+                        {competitor.label}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
