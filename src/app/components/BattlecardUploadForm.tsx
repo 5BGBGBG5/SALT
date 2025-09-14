@@ -92,6 +92,11 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
     console.log('🔄 formData.verticals changed:', formData.verticals);
   }, [formData.verticals]);
 
+  // Debug: Track vertical input changes
+  useEffect(() => {
+    console.log('📝 verticalInput state changed:', verticalInput);
+  }, [verticalInput]);
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -527,8 +532,14 @@ const handleSubmit = async (e: React.FormEvent) => {
               <input
                 type="text"
                 value={verticalInput}
-                onChange={(e) => setVerticalInput(e.target.value)}
-                onKeyDown={handleVerticalAdd}
+                onChange={(e) => {
+                  console.log('📝 Vertical input changed:', e.target.value);
+                  setVerticalInput(e.target.value);
+                }}
+                onKeyDown={(e) => {
+                  console.log('⌨️ Key pressed in vertical input:', e.key, 'Current input:', verticalInput);
+                  handleVerticalAdd(e);
+                }}
                 disabled={isSubmitting}
                 className={`w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-teal-500 transition-colors ${
                   isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
