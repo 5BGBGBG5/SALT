@@ -87,15 +87,6 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
     fetchCompetitors();
   }, []);
 
-  // Debug: Track verticals changes
-  useEffect(() => {
-    console.log('🔄 formData.verticals changed:', formData.verticals);
-  }, [formData.verticals]);
-
-  // Debug: Track vertical input changes
-  useEffect(() => {
-    console.log('📝 verticalInput state changed:', verticalInput);
-  }, [verticalInput]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -207,17 +198,6 @@ const handleSubmit = async (e: React.FormEvent) => {
       ? formData.newCompetitorName.trim()
       : formData.competitorSelect;
 
-    console.log('🚀 FORM SUBMISSION DEBUG - Starting submission');
-    console.log('🏷️ formData.verticals at submission start:', formData.verticals);
-    console.log('📊 Full formData:', formData);
-    
-    console.log('Submitting battlecard to n8n:', {
-      competitor: finalCompetitorName,
-      verticals: formData.verticals,
-      hasFile: !!formData.file,
-      contentLength: formData.content.length
-    });
-
     // Prepare the submission data based on input mode
     const baseSubmitData = {
       competitorSelect: formData.competitorSelect,
@@ -226,7 +206,6 @@ const handleSubmit = async (e: React.FormEvent) => {
       verticals: formData.verticals,
       sourceType: formData.sourceType
     };
-    console.log('📦 baseSubmitData.verticals:', baseSubmitData.verticals);
 
     // Add only relevant data based on input mode
     const submitData: SubmitData = {
@@ -234,8 +213,6 @@ const handleSubmit = async (e: React.FormEvent) => {
       content: formData.sourceType === 'direct' ? formData.content : '',
       url: formData.sourceType === 'website' ? formData.url : ''
     };
-    console.log('📤 Final submitData.verticals:', submitData.verticals);
-    console.log('📤 Full submitData:', submitData);
 
     let response: Response;
 
@@ -243,14 +220,10 @@ const handleSubmit = async (e: React.FormEvent) => {
       // If there's a file, use FormData
       const submitFormData = new FormData();
       
-      console.log('📁 FILE UPLOAD PATH - Creating FormData');
-      
       // Add all form fields
       Object.entries(submitData).forEach(([key, value]) => {
         if (key === 'verticals') {
-          const verticalsJson = JSON.stringify(value);
-          console.log('🏷️ Adding verticals to FormData as JSON:', verticalsJson);
-          submitFormData.append(key, verticalsJson);
+          submitFormData.append(key, JSON.stringify(value));
         } else {
           submitFormData.append(key, String(value));
         }
@@ -259,22 +232,12 @@ const handleSubmit = async (e: React.FormEvent) => {
       // Add file
       submitFormData.append('file', formData.file);
 
-      // Debug FormData contents
-      console.log('📋 FormData entries being sent:');
-      for (const [key, value] of submitFormData.entries()) {
-        console.log(`  ${key}:`, value);
-      }
-
       response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
         method: 'POST',
         body: submitFormData,
       });
     } else {
       // No file, send as JSON (simpler for n8n to handle)
-      console.log('📄 JSON PATH - Sending as JSON');
-      console.log('🏷️ verticals in JSON payload:', submitData.verticals);
-      console.log('📤 Full JSON payload:', JSON.stringify(submitData, null, 2));
-      
       response = await fetch('https://inecta.app.n8n.cloud/webhook/upload-battlecard', {
         method: 'POST',
         headers: {
@@ -347,13 +310,10 @@ const handleSubmit = async (e: React.FormEvent) => {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault();
       const vertical = verticalInput.trim();
-      console.log('🏷️ Adding vertical:', vertical, 'Current verticals:', formData.verticals);
       if (vertical && !formData.verticals.includes(vertical)) {
-        const newVerticals = [...formData.verticals, vertical];
-        console.log('🏷️ New verticals array:', newVerticals);
         setFormData(prev => ({
           ...prev,
-          verticals: newVerticals
+          verticals: [...prev.verticals, vertical]
         }));
       }
       setVerticalInput('');
@@ -361,12 +321,9 @@ const handleSubmit = async (e: React.FormEvent) => {
   };
 
   const removeVertical = (index: number) => {
-    console.log('🗑️ Removing vertical at index:', index, 'Current verticals:', formData.verticals);
-    const newVerticals = formData.verticals.filter((_, i) => i !== index);
-    console.log('🗑️ New verticals after removal:', newVerticals);
     setFormData(prev => ({
       ...prev,
-      verticals: newVerticals
+      verticals: prev.verticals.filter((_, i) => i !== index)
     }));
   };
 
@@ -532,14 +489,8 @@ const handleSubmit = async (e: React.FormEvent) => {
               <input
                 type="text"
                 value={verticalInput}
-                onChange={(e) => {
-                  console.log('📝 Vertical input changed:', e.target.value);
-                  setVerticalInput(e.target.value);
-                }}
-                onKeyDown={(e) => {
-                  console.log('⌨️ Key pressed in vertical input:', e.key, 'Current input:', verticalInput);
-                  handleVerticalAdd(e);
-                }}
+                onChange={(e) => setVerticalInput(e.target.value)}
+                onKeyDown={handleVerticalAdd}
                 disabled={isSubmitting}
                 className={`w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-teal-500 transition-colors ${
                   isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
