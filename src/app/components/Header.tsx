@@ -37,7 +37,7 @@ export default function Header() {
     { href: '/reports/competition-heatmap', label: 'Competition Heat Map' },
     { href: '/reports/battlecards', label: 'Battlecards' },
     { href: '/reports/competitor-content', label: 'Competitor Content Report' },
-    { href: '/dashboard/', label: 'Competitive Intelligence Dashboard' },
+    { href: '/reports/dashboard', label: 'Competitive Intelligence Dashboard' },
   ];
 
   return (
