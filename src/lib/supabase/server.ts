@@ -42,7 +42,8 @@ export async function searchKnowledgeBase(
   const {
     threshold = 0.7,
     limit = 10,
-    competitor
+    competitor,
+    verticals
   } = options;
 
   if (!options.competitor) {
@@ -57,7 +58,8 @@ export async function searchKnowledgeBase(
       query_embedding: embedding,
       similarity_threshold: threshold,
       match_count: limit,
-      competitor_name: competitor
+      competitor_name: competitor,
+      p_verticals: verticals || []
     });
 
     if (error) {
