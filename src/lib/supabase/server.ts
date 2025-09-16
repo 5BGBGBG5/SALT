@@ -40,7 +40,7 @@ export async function searchKnowledgeBase(
   } = {}
 ): Promise<SearchResult[]> {
   const {
-    threshold = 0.2,
+    threshold = 0.2, // Use a lenient threshold for better results
     limit = 10,
     competitor,
     verticals
@@ -54,7 +54,8 @@ export async function searchKnowledgeBase(
   const supabase = createServerSupabaseClient();
 
   try {
-    // This is the single, correct call. No other filters are chained after it.
+    // This is the single, correct call to the database function.
+    // All filtering happens inside the RPC.
     const { data, error } = await supabase.rpc('match_kb_chunks', {
       query_embedding: embedding,
       similarity_threshold: threshold,
@@ -69,7 +70,7 @@ export async function searchKnowledgeBase(
     }
     
     // Log the results for debugging
-    console.log('Search results with scores:', (data || []).map((r: SearchResult) => ({ similarity: r.similarity, content: r.content.substring(0, 50) + '...' })));
+    console.log('Search results with scores:', (data || []).map((r: SearchResult) => ({ similarity: r.similarity, content: r.content.substring(0, 70) + '...' })));
 
     return data || [];
   } catch (error) {
