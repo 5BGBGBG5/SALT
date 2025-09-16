@@ -40,13 +40,13 @@ export async function searchKnowledgeBase(
   } = {}
 ): Promise<SearchResult[]> {
   const {
-    threshold = 0.5,
+    threshold = 0.5, // A reasonable default threshold
     limit = 10,
     competitor,
     verticals
   } = options;
 
-  if (!options.competitor) {
+  if (!competitor) {
     console.warn('searchKnowledgeBase called without a competitor name.');
     return [];
   }
@@ -54,18 +54,22 @@ export async function searchKnowledgeBase(
   const supabase = createServerSupabaseClient();
 
   try {
+    // This is the single, correct call. No other filters are chained after it.
     const { data, error } = await supabase.rpc('match_kb_chunks', {
       query_embedding: embedding,
       similarity_threshold: threshold,
       match_count: limit,
       p_competitor_name: competitor,
-      p_verticals: verticals || []
+      p_verticals: verticals || [] // Pass verticals correctly
     });
 
     if (error) {
       console.error('Supabase RPC error:', error);
       throw new Error(`Database search failed: ${error.message}`);
     }
+    
+    // Log the results for debugging
+    console.log('Search results with scores:', (data || []).map((r: SearchResult) => ({ similarity: r.similarity, content: r.content.substring(0, 50) + '...' })));
 
     return data || [];
   } catch (error) {
