@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       competitor,
       verticals,
       limit = 10,
-      threshold = 0.7
+      threshold = 0.5
     } = requestBody;
 
     // Validate query
@@ -180,6 +180,8 @@ export async function POST(request: NextRequest) {
         competitor,
         verticals
       });
+
+      console.log('Search results with scores:', results.map(r => ({ similarity: r.similarity, content: r.content.substring(0, 50) + '...' })));
 
       console.log(JSON.stringify({
         level: 'info',
