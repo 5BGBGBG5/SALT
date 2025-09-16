@@ -40,7 +40,7 @@ export async function searchKnowledgeBase(
   } = {}
 ): Promise<SearchResult[]> {
   const {
-    threshold = 0.7,
+    threshold = 0.5,
     limit = 10,
     competitor,
     verticals
@@ -58,7 +58,7 @@ export async function searchKnowledgeBase(
       query_embedding: embedding,
       similarity_threshold: threshold,
       match_count: limit,
-      competitor_name: competitor,
+      p_competitor_name: competitor,
       p_verticals: verticals || []
     });
 
