@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       competitor,
       verticals,
       limit = 10,
-      threshold = 0.5
+      threshold = 0.1
     } = requestBody;
 
     // Validate query
