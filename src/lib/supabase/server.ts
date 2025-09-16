@@ -40,7 +40,7 @@ export async function searchKnowledgeBase(
   } = {}
 ): Promise<SearchResult[]> {
   const {
-    threshold = 0.5, // A reasonable default threshold
+    threshold = 0.2,
     limit = 10,
     competitor,
     verticals
