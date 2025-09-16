@@ -42,8 +42,7 @@ export async function searchKnowledgeBase(
   const {
     threshold = 0.7,
     limit = 10,
-    competitor,
-    verticals
+    competitor
   } = options;
 
   if (!options.competitor) {
@@ -54,18 +53,12 @@ export async function searchKnowledgeBase(
   const supabase = createServerSupabaseClient();
 
   try {
-    let query = supabase.rpc('match_kb_chunks', {
+    const { data, error } = await supabase.rpc('match_kb_chunks', {
       query_embedding: embedding,
       similarity_threshold: threshold,
       match_count: limit,
       competitor_name: competitor
     });
-
-    if (verticals && verticals.length > 0) {
-      query = query.overlaps('verticals', verticals);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       console.error('Supabase RPC error:', error);
