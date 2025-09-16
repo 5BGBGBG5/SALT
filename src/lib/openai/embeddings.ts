@@ -45,6 +45,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
+  console.log(`OpenAI Key Loaded: ${!!apiKey}, Length: ${apiKey?.length}, Starts with: ${apiKey?.substring(0, 4)}`);
+  
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY environment variable is not set');
   }
@@ -69,8 +71,8 @@ export async function generateEmbedding(text: string): Promise<number[]> {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`OpenAI API error: ${response.status} - ${errorData.error?.message || response.statusText}`);
+        const errorData = await response.json().catch(() => ({ error: { message: 'Failed to parse error JSON' } }));
+        throw new Error(`OpenAI API error: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
       const data: OpenAIEmbeddingResponse = await response.json();
@@ -101,12 +103,20 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 
     } catch (error) {
       lastError = error as Error;
-
+      let errorDetails = lastError.message;
+      if (error instanceof Response) {
+        try {
+          const errorBody = await error.json();
+          errorDetails = JSON.stringify(errorBody);
+        } catch {
+          errorDetails = await error.text();
+        }
+      }
       console.log(JSON.stringify({
         level: 'warn',
         timestamp: new Date().toISOString(),
         message: `Embedding generation attempt ${attempt + 1}/${maxRetries} failed`,
-        error: lastError.message
+        error: errorDetails
       }));
 
       // Wait before retrying (exponential backoff)
