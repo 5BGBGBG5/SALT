@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { FileText, Tag, Calendar, ExternalLink, Building2, BarChart3 } from 'lucide-react';
+import { FileText, Tag, Calendar, ExternalLink, Building2, BarChart3, Search, Zap } from 'lucide-react';
 
 // TypeScript interface matching the kb_sources table structure
 interface Source {
@@ -18,12 +18,35 @@ interface Source {
   updated_at: string;
 }
 
+// TypeScript interface for search results
+interface SearchResult {
+  content: string;
+  similarity: number;
+  source: {
+    title: string;
+  };
+}
+
+// TypeScript interface for API search result
+interface ApiSearchResult {
+  content: string;
+  similarity: number;
+  metadata?: {
+    title?: string;
+  };
+}
+
 export default function CompetitorDetailPage() {
   const params = useParams();
   const [sources, setSources] = useState<Source[]>([]);
   const [competitorName, setCompetitorName] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Search state variables
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
 
   // Decode the competitor name from URL params
   useEffect(() => {
@@ -60,6 +83,55 @@ export default function CompetitorDetailPage() {
 
     fetchCompetitorData();
   }, [competitorName]);
+
+  // Search handler function
+  const handleSearch = async () => {
+    if (!searchQuery.trim() || !competitorName) {
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      
+      const response = await fetch('/api/search/competitive', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: searchQuery.trim(),
+          competitor: competitorName,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Search failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.results) {
+        // Transform the API results to match our SearchResult interface
+        const transformedResults = data.results.map((result: ApiSearchResult) => ({
+          content: result.content,
+          similarity: result.similarity,
+          source: {
+            title: result.metadata?.title || 'Unknown Source'
+          }
+        }));
+        
+        setSearchResults(transformedResults);
+      } else {
+        console.error('Search API returned unsuccessful response:', data);
+        setSearchResults([]);
+      }
+    } catch (err) {
+      console.error('Error performing search:', err);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   // Helper function to format date
   const formatDate = (dateString: string) => {
@@ -109,6 +181,106 @@ export default function CompetitorDetailPage() {
             Intelligence sources and competitive analysis
           </p>
         </div>
+
+        {/* Search Section */}
+        <div className="glass-card p-6 mb-8">
+          <div className="flex items-center space-x-3 mb-4">
+            <Search className="w-6 h-6 text-cyan-400" />
+            <h2 className="text-xl font-semibold text-white">
+              Ask Questions About {competitorName}
+            </h2>
+          </div>
+          <p className="text-gray-400 text-sm mb-4">
+            Use natural language to search through all intelligence sources for this competitor.
+          </p>
+          
+          <div className="flex space-x-3">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="e.g., What are their pricing strategies? What verticals do they target?"
+              className="flex-1 px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-cyan-500 transition-colors"
+              disabled={isSearching}
+            />
+            <button
+              onClick={handleSearch}
+              disabled={isSearching || !searchQuery.trim() || !competitorName}
+              className="px-6 py-3 bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center space-x-2"
+            >
+              {isSearching ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span>Searching...</span>
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" />
+                  <span>Search</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Search Results Section */}
+        {(isSearching || searchResults.length > 0 || (searchQuery && !isSearching)) && (
+          <div className="mb-8">
+            <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
+              <Search className="w-5 h-5 mr-2 text-cyan-400" />
+              Search Results
+              {searchResults.length > 0 && (
+                <span className="ml-2 text-sm text-gray-400">({searchResults.length} results)</span>
+              )}
+            </h3>
+
+            {isSearching && (
+              <div className="glass-card p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
+                <p className="text-gray-400">Searching through intelligence sources...</p>
+              </div>
+            )}
+
+            {!isSearching && searchResults.length === 0 && searchQuery && (
+              <div className="glass-card p-8 text-center">
+                <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-gray-300 mb-2">
+                  No Relevant Results Found
+                </h4>
+                <p className="text-gray-400">
+                  Try rephrasing your question or using different keywords.
+                </p>
+              </div>
+            )}
+
+            {searchResults.length > 0 && (
+              <div className="space-y-4">
+                {searchResults.map((result, index) => (
+                  <div key={index} className="glass-card p-6 hover:scale-[1.01] transition-all duration-300">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <FileText className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                        <h4 className="text-lg font-semibold text-white">
+                          {result.source.title}
+                        </h4>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs font-medium">
+                          Relevance: {(result.similarity * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="text-gray-300 leading-relaxed">
+                      {result.content}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Loading State */}
         {isLoading && (
