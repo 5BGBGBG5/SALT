@@ -46,19 +46,20 @@ export async function searchKnowledgeBase(
     verticals
   } = options;
 
+  if (!options.competitor) {
+    console.warn('searchKnowledgeBase called without a competitor name.');
+    return [];
+  }
+
   const supabase = createServerSupabaseClient();
 
   try {
     let query = supabase.rpc('match_kb_chunks', {
       query_embedding: embedding,
       similarity_threshold: threshold,
-      match_count: limit
+      match_count: limit,
+      competitor_name: competitor
     });
-
-    // Apply filters if provided
-    if (competitor) {
-      query = query.eq('competitor', competitor);
-    }
 
     if (verticals && verticals.length > 0) {
       query = query.overlaps('verticals', verticals);
