@@ -150,42 +150,33 @@ export default function CompetitorDetailPage() {
         }
 
         // Handle streaming response
-        const reader = answerResponse.body?.getReader();
-        const decoder = new TextDecoder();
+        if (answerResponse.body) {
+          const reader = answerResponse.body.getReader();
+          const decoder = new TextDecoder();
+          let done = false;
 
-        if (reader) {
-          let accumulatedAnswer = '';
-          
-          while (true) {
-            const { done, value } = await reader.read();
-            
-            if (done) break;
-            
-            const chunk = decoder.decode(value, { stream: true });
-            
-            // Parse SSE format if needed
-            const lines = chunk.split('\n');
+          while (!done) {
+            const { value, done: doneReading } = await reader.read();
+            done = doneReading;
+            const chunkValue = decoder.decode(value);
+
+            // Process each line in the chunk
+            const lines = chunkValue.split('\n\n');
             for (const line of lines) {
               if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') continue;
-                
-                try {
-                  const parsed = JSON.parse(data);
-                  const content = parsed.choices?.[0]?.delta?.content || '';
-                  if (content) {
-                    accumulatedAnswer += content;
-                    setGeneratedAnswer(accumulatedAnswer);
-                  }
-                } catch (_e) {
-                  // If not JSON, treat as plain text
-                  accumulatedAnswer += data;
-                  setGeneratedAnswer(accumulatedAnswer);
+                const jsonStr = line.replace('data: ', '');
+                if (jsonStr === '[DONE]') {
+                  break;
                 }
-              } else if (line.trim()) {
-                // Plain text chunk
-                accumulatedAnswer += line;
-                setGeneratedAnswer(accumulatedAnswer);
+                try {
+                  const parsed = JSON.parse(jsonStr);
+                  const content = parsed.choices[0]?.delta?.content;
+                  if (content) {
+                    setGeneratedAnswer((prev) => prev + content);
+                  }
+                } catch (e) {
+                  console.error("Error parsing stream JSON", e);
+                }
               }
             }
           }
