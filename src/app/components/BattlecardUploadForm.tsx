@@ -78,13 +78,17 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
   const [isCompetitorDropdownOpen, setIsCompetitorDropdownOpen] = useState(false);
   const [verticalInput, setVerticalInput] = useState('');
   
+  // Verticals autocomplete state
+  const [allVerticals, setAllVerticals] = useState<string[]>([]);
+  
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const competitorDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch competitors on component mount
+  // Fetch competitors and verticals on component mount
   useEffect(() => {
     fetchCompetitors();
+    fetchVerticals();
   }, []);
 
 
@@ -138,6 +142,31 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
       setErrors(prev => ({ ...prev, competitors: 'Failed to load competitors' }));
     } finally {
       setIsLoadingCompetitors(false);
+    }
+  };
+
+  const fetchVerticals = async () => {
+    try {
+      console.log('🔄 Fetching verticals from API...');
+      
+      const response = await fetch('/api/verticals/list');
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch verticals');
+      }
+      
+      const data = await response.json();
+      console.log('✅ Verticals fetched successfully:', data.verticals);
+      
+      if (Array.isArray(data.verticals)) {
+        setAllVerticals(data.verticals);
+      } else {
+        console.warn('Invalid verticals data format:', data);
+        setAllVerticals([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch verticals:', error);
+      setAllVerticals([]);
     }
   };
 
@@ -492,12 +521,20 @@ const handleSubmit = async (e: React.FormEvent) => {
                 onChange={(e) => setVerticalInput(e.target.value)}
                 onKeyDown={handleVerticalAdd}
                 disabled={isSubmitting}
+                list="verticals-datalist"
                 className={`w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-teal-500 transition-colors ${
                   isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
                 placeholder="Type vertical and press Enter (e.g., Seafood, Dairy, Bakery)"
               />
-              <p className="text-xs text-gray-500">Press Enter or comma to add each vertical</p>
+              <datalist id="verticals-datalist">
+                {allVerticals.map((vertical) => (
+                  <option key={vertical} value={vertical} />
+                ))}
+              </datalist>
+              <p className="text-xs text-gray-500">
+                Press Enter or comma to add each vertical. {allVerticals.length > 0 && `${allVerticals.length} existing verticals available for autocomplete.`}
+              </p>
             </div>
           </div>
 
