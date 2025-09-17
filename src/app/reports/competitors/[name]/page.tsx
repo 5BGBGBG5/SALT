@@ -130,7 +130,7 @@ export default function CompetitorDetailPage() {
         
         // Step 2: Combine contexts and generate AI answer
         const combinedContext = transformedResults
-          .map(result => result.content)
+          .map((result: SearchResult) => result.content)
           .join('\n\n');
         
         // Make second fetch call to generate answer
@@ -177,7 +177,7 @@ export default function CompetitorDetailPage() {
                     accumulatedAnswer += content;
                     setGeneratedAnswer(accumulatedAnswer);
                   }
-                } catch (e) {
+                } catch (_e) {
                   // If not JSON, treat as plain text
                   accumulatedAnswer += data;
                   setGeneratedAnswer(accumulatedAnswer);
