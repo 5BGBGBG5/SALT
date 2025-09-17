@@ -45,7 +45,8 @@ export default function CompetitorDetailPage() {
   
   // Search state variables
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [bestResult, setBestResult] = useState<SearchResult | null>(null);
+  const [retrievedContexts, setRetrievedContexts] = useState<SearchResult[]>([]);
+  const [generatedAnswer, setGeneratedAnswer] = useState<string>('');
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
   // Decode the competitor name from URL params
@@ -92,8 +93,10 @@ export default function CompetitorDetailPage() {
 
     try {
       setIsSearching(true);
-      setBestResult(null); // Clear previous result
+      setRetrievedContexts([]); // Clear previous results
+      setGeneratedAnswer(''); // Clear previous answer
       
+      // Step 1: Retrieve top 3 relevant chunks
       const response = await fetch('/api/search/competitive', {
         method: 'POST',
         headers: {
@@ -102,6 +105,7 @@ export default function CompetitorDetailPage() {
         body: JSON.stringify({
           query: searchQuery.trim(),
           competitor: competitorName,
+          limit: 3, // Get top 3 most relevant chunks
         }),
       });
 
@@ -111,7 +115,7 @@ export default function CompetitorDetailPage() {
 
       const data = await response.json();
       
-      if (data.success && data.results) {
+      if (data.success && data.results && data.results.length > 0) {
         // Transform the API results to match our SearchResult interface
         const transformedResults = data.results.map((result: ApiSearchResult) => ({
           content: result.content,
@@ -121,15 +125,80 @@ export default function CompetitorDetailPage() {
           }
         }));
         
-        // Set only the best (first) result
-        setBestResult(transformedResults && transformedResults.length > 0 ? transformedResults[0] : null);
+        // Store all retrieved contexts
+        setRetrievedContexts(transformedResults);
+        
+        // Step 2: Combine contexts and generate AI answer
+        const combinedContext = transformedResults
+          .map(result => result.content)
+          .join('\n\n');
+        
+        // Make second fetch call to generate answer
+        const answerResponse = await fetch('/api/search/answer', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            query: searchQuery.trim(),
+            context: combinedContext,
+          }),
+        });
+
+        if (!answerResponse.ok) {
+          throw new Error(`Answer generation failed: ${answerResponse.status}`);
+        }
+
+        // Handle streaming response
+        const reader = answerResponse.body?.getReader();
+        const decoder = new TextDecoder();
+
+        if (reader) {
+          let accumulatedAnswer = '';
+          
+          while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) break;
+            
+            const chunk = decoder.decode(value, { stream: true });
+            
+            // Parse SSE format if needed
+            const lines = chunk.split('\n');
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+                
+                try {
+                  const parsed = JSON.parse(data);
+                  const content = parsed.choices?.[0]?.delta?.content || '';
+                  if (content) {
+                    accumulatedAnswer += content;
+                    setGeneratedAnswer(accumulatedAnswer);
+                  }
+                } catch (e) {
+                  // If not JSON, treat as plain text
+                  accumulatedAnswer += data;
+                  setGeneratedAnswer(accumulatedAnswer);
+                }
+              } else if (line.trim()) {
+                // Plain text chunk
+                accumulatedAnswer += line;
+                setGeneratedAnswer(accumulatedAnswer);
+              }
+            }
+          }
+        }
       } else {
         console.error('Search API returned unsuccessful response:', data);
-        setBestResult(null);
+        setRetrievedContexts([]);
+        setGeneratedAnswer('');
       }
     } catch (err) {
-      console.error('Error performing search:', err);
-      setBestResult(null);
+      console.error('Error performing search or answer generation:', err);
+      setRetrievedContexts([]);
+      setGeneratedAnswer('Sorry, I encountered an error while searching. Please try again.');
     } finally {
       setIsSearching(false);
     }
@@ -226,22 +295,27 @@ export default function CompetitorDetailPage() {
           </div>
         </div>
 
-        {/* Search Results Section */}
-        {(isSearching || bestResult || (searchQuery && !isSearching)) && (
+        {/* AI-Generated Answer Section */}
+        {(isSearching || generatedAnswer || retrievedContexts.length > 0 || (searchQuery && !isSearching)) && (
           <div className="mb-8">
             <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
               <Search className="w-5 h-5 mr-2 text-cyan-400" />
-              Best Answer
+              AI-Generated Answer
             </h3>
 
             {isSearching && (
               <div className="glass-card p-8 text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400 mx-auto mb-4"></div>
-                <p className="text-gray-400">Searching through intelligence sources...</p>
+                <p className="text-gray-400">
+                  {retrievedContexts.length > 0 
+                    ? "Generating comprehensive answer..." 
+                    : "Searching through intelligence sources..."
+                  }
+                </p>
               </div>
             )}
 
-            {!isSearching && !bestResult && searchQuery && (
+            {!isSearching && !generatedAnswer && !retrievedContexts.length && searchQuery && (
               <div className="glass-card p-8 text-center">
                 <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h4 className="text-lg font-semibold text-gray-300 mb-2">
@@ -253,34 +327,60 @@ export default function CompetitorDetailPage() {
               </div>
             )}
 
-            {bestResult && (
-              <div className="glass-card p-8 hover:scale-[1.01] transition-all duration-300 border-l-4 border-cyan-400">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-cyan-500/20 rounded-lg">
-                      <Zap className="w-6 h-6 text-cyan-400" />
-                    </div>
-                    <div>
-                      <h4 className="text-xl font-bold text-white mb-1">
-                        Best Answer
-                      </h4>
-                      <p className="text-sm text-gray-400">
-                        From: {bestResult.source.title}
-                      </p>
+            {generatedAnswer && (
+              <div className="space-y-6">
+                {/* Generated Answer Card */}
+                <div className="glass-card p-8 hover:scale-[1.01] transition-all duration-300 border-l-4 border-cyan-400">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-cyan-500/20 rounded-lg">
+                        <Zap className="w-6 h-6 text-cyan-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-xl font-bold text-white mb-1">
+                          Comprehensive Answer
+                        </h4>
+                        <p className="text-sm text-gray-400">
+                          Synthesized from {retrievedContexts.length} source{retrievedContexts.length !== 1 ? 's' : ''}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full text-sm font-medium">
-                      {(bestResult.similarity * 100).toFixed(1)}% Relevance
-                    </span>
+                  
+                  <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50">
+                    <div className="text-gray-200 leading-relaxed text-lg whitespace-pre-wrap">
+                      {generatedAnswer}
+                      {isSearching && <span className="animate-pulse">|</span>}
+                    </div>
                   </div>
                 </div>
-                
-                <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50">
-                  <div className="text-gray-200 leading-relaxed text-lg">
-                    {bestResult.content}
+
+                {/* Sources Section */}
+                {retrievedContexts.length > 0 && (
+                  <div className="glass-card p-6">
+                    <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
+                      <FileText className="w-5 h-5 mr-2 text-gray-400" />
+                      Sources Used ({retrievedContexts.length})
+                    </h4>
+                    <div className="grid gap-3">
+                      {retrievedContexts.map((context, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                          <div className="flex items-center space-x-3">
+                            <span className="flex-shrink-0 w-6 h-6 bg-cyan-500/20 text-cyan-400 rounded-full flex items-center justify-center text-sm font-medium">
+                              {index + 1}
+                            </span>
+                            <span className="text-gray-300 font-medium">
+                              {context.source.title}
+                            </span>
+                          </div>
+                          <span className="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs font-medium">
+                            {(context.similarity * 100).toFixed(1)}% match
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </div>
