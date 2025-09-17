@@ -45,7 +45,7 @@ export default function CompetitorDetailPage() {
   
   // Search state variables
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [bestResult, setBestResult] = useState<SearchResult | null>(null);
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
   // Decode the competitor name from URL params
@@ -92,6 +92,7 @@ export default function CompetitorDetailPage() {
 
     try {
       setIsSearching(true);
+      setBestResult(null); // Clear previous result
       
       const response = await fetch('/api/search/competitive', {
         method: 'POST',
@@ -120,14 +121,15 @@ export default function CompetitorDetailPage() {
           }
         }));
         
-        setSearchResults(transformedResults);
+        // Set only the best (first) result
+        setBestResult(transformedResults && transformedResults.length > 0 ? transformedResults[0] : null);
       } else {
         console.error('Search API returned unsuccessful response:', data);
-        setSearchResults([]);
+        setBestResult(null);
       }
     } catch (err) {
       console.error('Error performing search:', err);
-      setSearchResults([]);
+      setBestResult(null);
     } finally {
       setIsSearching(false);
     }
@@ -225,14 +227,11 @@ export default function CompetitorDetailPage() {
         </div>
 
         {/* Search Results Section */}
-        {(isSearching || searchResults.length > 0 || (searchQuery && !isSearching)) && (
+        {(isSearching || bestResult || (searchQuery && !isSearching)) && (
           <div className="mb-8">
             <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
               <Search className="w-5 h-5 mr-2 text-cyan-400" />
-              Search Results
-              {searchResults.length > 0 && (
-                <span className="ml-2 text-sm text-gray-400">({searchResults.length} results)</span>
-              )}
+              Best Answer
             </h3>
 
             {isSearching && (
@@ -242,11 +241,11 @@ export default function CompetitorDetailPage() {
               </div>
             )}
 
-            {!isSearching && searchResults.length === 0 && searchQuery && (
+            {!isSearching && !bestResult && searchQuery && (
               <div className="glass-card p-8 text-center">
                 <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h4 className="text-lg font-semibold text-gray-300 mb-2">
-                  No Relevant Results Found
+                  No Relevant Information Found
                 </h4>
                 <p className="text-gray-400">
                   Try rephrasing your question or using different keywords.
@@ -254,29 +253,34 @@ export default function CompetitorDetailPage() {
               </div>
             )}
 
-            {searchResults.length > 0 && (
-              <div className="space-y-4">
-                {searchResults.map((result, index) => (
-                  <div key={index} className="glass-card p-6 hover:scale-[1.01] transition-all duration-300">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        <FileText className="w-5 h-5 text-cyan-400 flex-shrink-0" />
-                        <h4 className="text-lg font-semibold text-white">
-                          {result.source.title}
-                        </h4>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs font-medium">
-                          Relevance: {(result.similarity * 100).toFixed(1)}%
-                        </span>
-                      </div>
+            {bestResult && (
+              <div className="glass-card p-8 hover:scale-[1.01] transition-all duration-300 border-l-4 border-cyan-400">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-cyan-500/20 rounded-lg">
+                      <Zap className="w-6 h-6 text-cyan-400" />
                     </div>
-                    
-                    <div className="text-gray-300 leading-relaxed">
-                      {result.content}
+                    <div>
+                      <h4 className="text-xl font-bold text-white mb-1">
+                        Best Answer
+                      </h4>
+                      <p className="text-sm text-gray-400">
+                        From: {bestResult.source.title}
+                      </p>
                     </div>
                   </div>
-                ))}
+                  <div className="flex items-center space-x-2">
+                    <span className="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded-full text-sm font-medium">
+                      {(bestResult.similarity * 100).toFixed(1)}% Relevance
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50">
+                  <div className="text-gray-200 leading-relaxed text-lg">
+                    {bestResult.content}
+                  </div>
+                </div>
               </div>
             )}
           </div>
