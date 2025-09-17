@@ -69,9 +69,12 @@ export async function POST(request: Request) {
     // Return the streaming response directly to the client
     return new Response(response.body, {
       headers: {
-        'Content-Type': 'text/plain; charset=utf-8',
+        'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
 
@@ -83,4 +86,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
 

@@ -154,28 +154,39 @@ export default function CompetitorDetailPage() {
           const reader = answerResponse.body.getReader();
           const decoder = new TextDecoder();
           let done = false;
+          let buffer = '';
 
           while (!done) {
             const { value, done: doneReading } = await reader.read();
             done = doneReading;
-            const chunkValue = decoder.decode(value);
+            
+            if (value) {
+              const chunkValue = decoder.decode(value, { stream: true });
+              buffer += chunkValue;
 
-            // Process each line in the chunk
-            const lines = chunkValue.split('\n\n');
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const jsonStr = line.replace('data: ', '');
-                if (jsonStr === '[DONE]') {
-                  break;
-                }
-                try {
-                  const parsed = JSON.parse(jsonStr);
-                  const content = parsed.choices[0]?.delta?.content;
-                  if (content) {
-                    setGeneratedAnswer((prev) => prev + content);
+              // Process complete lines
+              const lines = buffer.split('\n');
+              // Keep the last potentially incomplete line in buffer
+              buffer = lines.pop() || '';
+
+              for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                  const jsonStr = line.slice(6).trim();
+                  if (jsonStr === '[DONE]') {
+                    done = true;
+                    break;
                   }
-                } catch (e) {
-                  console.error("Error parsing stream JSON", e);
+                  if (jsonStr) {
+                    try {
+                      const parsed = JSON.parse(jsonStr);
+                      const content = parsed.choices?.[0]?.delta?.content;
+                      if (content) {
+                        setGeneratedAnswer((prev) => prev + content);
+                      }
+                    } catch (e) {
+                      console.error("Error parsing stream JSON:", e, "Raw data:", jsonStr);
+                    }
+                  }
                 }
               }
             }
