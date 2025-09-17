@@ -357,32 +357,6 @@ export default function CompetitorDetailPage() {
                   </div>
                 </div>
 
-                {/* Sources Section */}
-                {retrievedContexts.length > 0 && (
-                  <div className="glass-card p-6">
-                    <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
-                      <FileText className="w-5 h-5 mr-2 text-gray-400" />
-                      Sources Used ({retrievedContexts.length})
-                    </h4>
-                    <div className="grid gap-3">
-                      {retrievedContexts.map((context, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
-                          <div className="flex items-center space-x-3">
-                            <span className="flex-shrink-0 w-6 h-6 bg-cyan-500/20 text-cyan-400 rounded-full flex items-center justify-center text-sm font-medium">
-                              {index + 1}
-                            </span>
-                            <span className="text-gray-300 font-medium">
-                              {context.source.title}
-                            </span>
-                          </div>
-                          <span className="px-2 py-1 bg-green-500/20 text-green-400 border border-green-500/30 rounded text-xs font-medium">
-                            {(context.similarity * 100).toFixed(1)}% match
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
