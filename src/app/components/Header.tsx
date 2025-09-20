@@ -75,7 +75,32 @@ export default function Header() {
         {/* Center: Navigation Menu with animated underlines */}
         <div className="flex-1 flex justify-center">
           {user && (
-            <nav className="flex items-center">
+            <nav className="flex items-center space-x-2">
+              {/* Upload Link */}
+              <Link
+                href="/upload"
+                className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative ${
+                  pathname === '/upload'
+                    ? 'text-accent-primary bg-accent-primary/10' 
+                    : 'text-text-secondary hover:text-accent-primary hover:bg-accent-primary/5'
+                }`}
+              >
+                <motion.span
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Upload
+                </motion.span>
+                
+                {/* Animated underline */}
+                {pathname === '/upload' && (
+                  <motion.div
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent-primary to-accent-success"
+                    layoutId="activeTab"
+                  />
+                )}
+              </Link>
+
               {/* Reports Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <motion.button
