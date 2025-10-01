@@ -38,6 +38,7 @@ export default function Header() {
     { href: '/reports/battlecards', label: 'Battlecards' },
     { href: '/reports/competitor-content', label: 'Competitor Content Report' },
     { href: '/reports/dashboard', label: 'Competitive Intelligence Dashboard' },
+    { href: '/reports/bdr-calls-transcript', label: 'BDR Calls Transcript' },
   ];
 
   return (
