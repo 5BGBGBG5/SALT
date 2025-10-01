@@ -1,26 +1,29 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-// Types for the discovery-bot-db database
+// Types for the discovery-bot-db database (matching actual schema)
 export interface HSEngagement {
-  hubspot_engagement_id: string;
+  hubspot_engagement_id: number;
   engagement_type: string;
   engagement_started_at: string;
-  hubspot_owner_id: string;
-  contact_id: string;
-  company_id: string;
+  hubspot_owner_id: number;
+  contact_id: number;
+  company_id: number;
   call_transcript: string | null;
   call_recording_url: string | null;
+  call_disposition: string | null; // This is the actual field name in your DB
   call_length: number | null;
   call_duration_ms: number | null;
   talk_time_ratio: number | null;
   objections_identified: string[] | null;
   discovery_question_count: number | null;
-  outcome: string | null;
-  analyzed_at: string | null;
+  created_at: string;
+  last_synced_at: string | null;
+  // Add computed field for compatibility
+  outcome?: string | null;
 }
 
 export interface HSOwner {
-  hubspot_owner_id: string;
+  hubspot_owner_id: number;
   owner_name: string;
 }
 
@@ -123,21 +126,39 @@ export async function fetchHSOwners(): Promise<HSOwner[]> {
   }));
 }
 
-// Outcome color mapping
+// Outcome color mapping (updated for common HubSpot call dispositions)
 export const OUTCOME_COLORS = {
+  // Common HubSpot dispositions
+  'f240bbac-87c9-4f6e-bf80-2142a9a54a6c': 'bg-green-500', // Connected
+  'a4c4c377-d246-4b32-a13b-75a56a4cd0ff': 'bg-red-500',   // Not interested
+  '73a0d17f-1163-4015-bdd5-ec830791da20': 'bg-gray-500',  // Left voicemail
+  'b2cf5968-551e-4856-9783-52b3da59a7d0': 'bg-gray-700',  // No answer
+  '9688e8c9-9ac4-4f4f-9e31-30d3ba78b8b6': 'bg-yellow-500', // Busy
+  // Fallback text-based dispositions
+  connected: 'bg-green-500',
   voicemail: 'bg-gray-500',
   follow_up_scheduled: 'bg-green-500',
   not_interested: 'bg-red-500',
   gatekeeper: 'bg-yellow-500',
   wrong_contact: 'bg-orange-500',
   no_answer: 'bg-gray-700',
+  busy: 'bg-yellow-500',
 } as const;
 
 export const OUTCOME_LABELS = {
+  // Common HubSpot dispositions
+  'f240bbac-87c9-4f6e-bf80-2142a9a54a6c': 'Connected',
+  'a4c4c377-d246-4b32-a13b-75a56a4cd0ff': 'Not Interested',
+  '73a0d17f-1163-4015-bdd5-ec830791da20': 'Left Voicemail',
+  'b2cf5968-551e-4856-9783-52b3da59a7d0': 'No Answer',
+  '9688e8c9-9ac4-4f4f-9e31-30d3ba78b8b6': 'Busy',
+  // Fallback text-based dispositions
+  connected: 'Connected',
   voicemail: 'Voicemail',
   follow_up_scheduled: 'Meeting Booked',
   not_interested: 'Not Interested',
   gatekeeper: 'Gatekeeper',
   wrong_contact: 'Wrong Contact',
   no_answer: 'No Answer',
+  busy: 'Busy',
 } as const;
