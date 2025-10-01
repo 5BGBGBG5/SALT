@@ -16,8 +16,7 @@ import {
   AlertCircle,
   BarChart3,
   Clock,
-  MessageSquare,
-  AlertTriangle
+  MessageSquare
 } from 'lucide-react';
 import MetricCard from '../../components/MetricCard';
 import { 
@@ -37,11 +36,6 @@ interface Filters {
   timePeriod: string;
 }
 
-interface OutcomeCount {
-  outcome: string;
-  count: number;
-  percentage: number;
-}
 
 const TIME_PERIODS = [
   { value: 'all', label: 'All Time' },
@@ -101,7 +95,7 @@ export default function BDRCallsTranscriptPage() {
 
     // Filter by owner
     if (filters.ownerId !== 'all') {
-      filtered = filtered.filter(eng => eng.hubspot_owner_id === filters.ownerId);
+      filtered = filtered.filter(eng => eng.hubspot_owner_id === parseInt(filters.ownerId));
     }
 
     // Filter by time period
@@ -265,7 +259,7 @@ export default function BDRCallsTranscriptPage() {
               <span>
                 {filters.ownerId === 'all' 
                   ? 'All Owners' 
-                  : owners.find(o => o.hubspot_owner_id === filters.ownerId)?.owner_name || 'Unknown Owner'
+                  : owners.find(o => o.hubspot_owner_id === parseInt(filters.ownerId))?.owner_name || 'Unknown Owner'
                 }
               </span>
               <ChevronDown className={`w-4 h-4 transition-transform ${isOwnerDropdownOpen ? 'rotate-180' : ''}`} />
@@ -290,9 +284,9 @@ export default function BDRCallsTranscriptPage() {
                   {owners.map(owner => (
                     <button
                       key={owner.hubspot_owner_id}
-                      onClick={() => handleOwnerChange(owner.hubspot_owner_id)}
+                      onClick={() => handleOwnerChange(owner.hubspot_owner_id.toString())}
                       className={`block w-full text-left px-4 py-2 hover:bg-teal-500/10 transition-colors ${
-                        filters.ownerId === owner.hubspot_owner_id ? 'text-teal-400 bg-teal-500/10' : 'text-gray-300'
+                        filters.ownerId === owner.hubspot_owner_id.toString() ? 'text-teal-400 bg-teal-500/10' : 'text-gray-300'
                       }`}
                     >
                       {owner.owner_name}

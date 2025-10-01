@@ -149,7 +149,7 @@ export default function UploadPage() {
         throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
       }
 
-      const result = await response.json();
+      await response.json();
       
       // Update status to success
       setFiles(prev => prev.map(f => 
@@ -191,7 +191,7 @@ export default function UploadPage() {
       }
       
       setMessage({ type: 'success', text: `Successfully uploaded ${pendingFiles.length} file(s) to the knowledge base.` });
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Some uploads failed. Please check individual file statuses.' });
     } finally {
       setIsUploading(false);
