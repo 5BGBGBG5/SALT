@@ -173,13 +173,13 @@ export default function BDRCallsTranscriptPage() {
   };
 
   // Get outcome badge color
-  const getOutcomeBadgeColor = (outcome: string | null): string => {
+  const getOutcomeBadgeColor = (outcome: string | null | undefined): string => {
     if (!outcome) return 'bg-gray-500';
     return OUTCOME_COLORS[outcome as keyof typeof OUTCOME_COLORS] || 'bg-gray-500';
   };
 
   // Get outcome label
-  const getOutcomeLabel = (outcome: string | null): string => {
+  const getOutcomeLabel = (outcome: string | null | undefined): string => {
     if (!outcome) return 'Unknown';
     return OUTCOME_LABELS[outcome as keyof typeof OUTCOME_LABELS] || outcome;
   };
