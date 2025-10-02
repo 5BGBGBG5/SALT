@@ -133,7 +133,7 @@ export const OUTCOME_LABELS = {
   '9688e8c9-9ac4-4f4f-9e31-30d3ba78b8b6': 'Busy',
   // Database outcome values with user-friendly labels
   voicemail: 'Voicemail',
-  follow_up_scheduled: 'Meeting Booked', // User-friendly name
+  follow_up_scheduled: 'Follow-up Scheduled',
   wrong_contact: 'Wrong Contact',
   no_answer: 'No Answer',
   not_interested: 'Not Interested',

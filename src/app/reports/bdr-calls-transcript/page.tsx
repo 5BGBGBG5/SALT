@@ -113,15 +113,15 @@ export default function BDRCallsTranscriptPage() {
   // Calculate KPIs
   const kpis = useMemo(() => {
     const totalCalls = filteredEngagements.length;
-    // Count follow_up_scheduled outcomes as "meetings booked"
-    const meetingsBooked = filteredEngagements.filter(eng => {
+    // Count follow_up_scheduled outcomes as "follow-ups scheduled"
+    const followUpsScheduled = filteredEngagements.filter(eng => {
       return eng.outcome === 'follow_up_scheduled';
     }).length;
-    const conversionRate = totalCalls > 0 ? (meetingsBooked / totalCalls) * 100 : 0;
+    const conversionRate = totalCalls > 0 ? (followUpsScheduled / totalCalls) * 100 : 0;
 
     return {
       totalCalls,
-      meetingsBooked,
+      meetingsBooked: followUpsScheduled, // Keep same property name for compatibility
       conversionRate
     };
   }, [filteredEngagements]);
@@ -347,7 +347,7 @@ export default function BDRCallsTranscriptPage() {
           format="number"
         />
         <MetricCard
-          title="Meetings Booked"
+          title="Follow-ups Scheduled"
           value={kpis.meetingsBooked}
           icon={<Calendar className="w-8 h-8" />}
           format="number"
