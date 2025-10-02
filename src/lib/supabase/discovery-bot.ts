@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createDiscoveryBotSupabaseClient, createDiscoveryBotServerClient as createDiscoveryBotServerSupabaseClient } from '../supabase-discoverybot';
 
 // Types for the discovery-bot-db database (matching actual schema)
 export interface HSEngagement {
@@ -27,41 +28,13 @@ export interface HSOwner {
   owner_name: string;
 }
 
+// Use the dedicated discovery-bot client functions
 export function createDiscoveryBotClient(): SupabaseClient {
-  // For now, we'll use the same Supabase instance but with different table access
-  // In production, you would use different environment variables for the discovery-bot-db
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
-  }
-
-  if (!supabaseKey) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable is not set');
-  }
-
-  return createClient(supabaseUrl, supabaseKey);
+  return createDiscoveryBotSupabaseClient();
 }
 
 export function createDiscoveryBotServerClient(): SupabaseClient {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
-
-  if (!supabaseUrl) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
-  }
-
-  if (!supabaseServiceKey) {
-    throw new Error('SUPABASE_SERVICE_KEY environment variable is not set');
-  }
-
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false
-    }
-  });
+  return createDiscoveryBotServerSupabaseClient();
 }
 
 // Utility functions for data fetching
