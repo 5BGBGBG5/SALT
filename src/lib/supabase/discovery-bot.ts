@@ -5,22 +5,21 @@ import { createDiscoveryBotSupabaseClient, createDiscoveryBotServerClient as cre
 export interface HSEngagement {
   hubspot_engagement_id: number;
   engagement_type: string;
-  engagement_started_at: string;
+  engagement_started_at: string | null; // This field is NULL, use created_at instead
   hubspot_owner_id: number;
   contact_id: number;
   company_id: number;
   call_transcript: string | null;
   call_recording_url: string | null;
-  call_disposition: string | null; // This is the actual field name in your DB
-  call_length: number | null;
+  call_disposition: string | null;
+  call_length: number | null; // This field has values in seconds
   call_duration_ms: number | null;
   talk_time_ratio: number | null;
-  objections_identified: string[] | null;
+  objections_identified: string[] | null; // PostgreSQL array type
   discovery_question_count: number | null;
-  created_at: string;
+  outcome: string | null; // This field has actual values: voicemail, gatekeeper, etc.
+  created_at: string; // Use this for dates instead of engagement_started_at
   last_synced_at: string | null;
-  // Add computed field for compatibility
-  outcome?: string | null;
 }
 
 export interface HSOwner {
@@ -50,7 +49,7 @@ export async function fetchHSEngagements(
   let query = supabase
     .from('hs_engagements')
     .select('*')
-    .order('engagement_started_at', { ascending: false });
+    .order('created_at', { ascending: false }); // Use created_at instead of engagement_started_at
 
   // Apply filters
   if (filters.ownerId) {
@@ -58,11 +57,11 @@ export async function fetchHSEngagements(
   }
 
   if (filters.startDate) {
-    query = query.gte('engagement_started_at', filters.startDate);
+    query = query.gte('created_at', filters.startDate);
   }
 
   if (filters.endDate) {
-    query = query.lte('engagement_started_at', filters.endDate);
+    query = query.lte('created_at', filters.endDate);
   }
 
   const { data, error } = await query;
@@ -93,9 +92,16 @@ export async function fetchHSOwners(): Promise<HSOwner[]> {
   // Create unique owners list
   const uniqueOwnerIds = Array.from(new Set(data?.map(item => item.hubspot_owner_id).filter(Boolean)));
   
+  // Map known owner IDs to names
+  const ownerNameMap: Record<number, string> = {
+    37110443: 'Dan',
+    80680469: 'Jessica',
+    9632324: 'Owner 9632324' // Unknown name
+  };
+
   return uniqueOwnerIds.map(id => ({
     hubspot_owner_id: id,
-    owner_name: `Owner ${id}` // In production, you'd fetch actual names
+    owner_name: ownerNameMap[id] || `Owner ${id}`
   }));
 }
 

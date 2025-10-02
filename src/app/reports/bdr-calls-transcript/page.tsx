@@ -70,11 +70,8 @@ export default function BDRCallsTranscriptPage() {
           fetchHSOwners()
         ]);
         
-        // Map call_disposition to outcome for compatibility
-        const mappedEngagements = engagementsData.map(eng => ({
-          ...eng,
-          outcome: eng.call_disposition // Map the actual field to expected field
-        }));
+        // The outcome field already exists and has data, no mapping needed
+        const mappedEngagements = engagementsData;
         
         setEngagements(mappedEngagements);
         setOwners(ownersData);
@@ -105,7 +102,7 @@ export default function BDRCallsTranscriptPage() {
       cutoffDate.setDate(cutoffDate.getDate() - days);
       
       filtered = filtered.filter(eng => {
-        const engagementDate = new Date(eng.engagement_started_at);
+        const engagementDate = new Date(eng.created_at); // Use created_at instead
         return engagementDate >= cutoffDate;
       });
     }
@@ -153,12 +150,10 @@ export default function BDRCallsTranscriptPage() {
       .sort((a, b) => b.count - a.count);
   }, [filteredEngagements]);
 
-  // Format duration
-  const formatDuration = (ms: number | null): string => {
-    if (!ms) return 'N/A';
-    const minutes = Math.floor(ms / 60000);
-    const seconds = Math.floor((ms % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  // Format call length (already in seconds)
+  const formatCallLength = (seconds: number | null): string => {
+    if (!seconds || seconds === 0) return 'N/A';
+    return `${seconds}s`;
   };
 
   // Format date
@@ -180,8 +175,14 @@ export default function BDRCallsTranscriptPage() {
 
   // Get outcome label
   const getOutcomeLabel = (outcome: string | null | undefined): string => {
-    if (!outcome) return 'Unknown';
+    if (!outcome) return 'Not Analyzed';
     return OUTCOME_LABELS[outcome as keyof typeof OUTCOME_LABELS] || outcome;
+  };
+
+  // Format objections array
+  const formatObjections = (objections: string[] | null): string => {
+    if (!objections || objections.length === 0) return '-';
+    return objections.join(', ');
   };
 
   // Handle filter changes
@@ -467,7 +468,7 @@ export default function BDRCallsTranscriptPage() {
                     className="border-b border-gray-800 hover:bg-gray-800/30 transition-colors"
                   >
                     <td className="py-3 px-4 text-gray-300">
-                      {formatDate(engagement.engagement_started_at)}
+                      {formatDate(engagement.created_at)}
                     </td>
                     <td className="py-3 px-4">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white ${getOutcomeBadgeColor(engagement.outcome)}`}>
@@ -477,14 +478,14 @@ export default function BDRCallsTranscriptPage() {
                     <td className="py-3 px-4 text-gray-300">
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4 text-gray-400" />
-                        {formatDuration(engagement.call_duration_ms)}
+                        {formatCallLength(engagement.call_length)}
                       </div>
                     </td>
                     <td className="py-3 px-4 text-gray-300">
                       {engagement.discovery_question_count || 0}
                     </td>
                     <td className="py-3 px-4 text-gray-300">
-                      {engagement.objections_identified?.length || 0}
+                      {formatObjections(engagement.objections_identified)}
                     </td>
                     <td className="py-3 px-4">
                       <button
@@ -530,11 +531,11 @@ export default function BDRCallsTranscriptPage() {
                 <div>
                   <h3 className="text-xl font-semibold text-white mb-2">Call Transcript</h3>
                   <div className="flex items-center gap-4 text-sm text-gray-400">
-                    <span>{formatDate(selectedTranscript.engagement_started_at)}</span>
+                    <span>{formatDate(selectedTranscript.created_at)}</span>
                     <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white ${getOutcomeBadgeColor(selectedTranscript.outcome)}`}>
                       {getOutcomeLabel(selectedTranscript.outcome)}
                     </span>
-                    <span>{formatDuration(selectedTranscript.call_duration_ms)}</span>
+                    <span>{formatCallLength(selectedTranscript.call_length)}</span>
                   </div>
                 </div>
                 <button
@@ -553,7 +554,7 @@ export default function BDRCallsTranscriptPage() {
                 </div>
                 <div className="bg-gray-800/50 p-4 rounded-lg">
                   <div className="text-gray-400 text-sm mb-1">Objections Identified</div>
-                  <div className="text-white font-semibold">{selectedTranscript.objections_identified?.length || 0}</div>
+                  <div className="text-white font-semibold">{formatObjections(selectedTranscript.objections_identified)}</div>
                 </div>
                 <div className="bg-gray-800/50 p-4 rounded-lg">
                   <div className="text-gray-400 text-sm mb-1">Talk Time Ratio</div>
@@ -567,7 +568,7 @@ export default function BDRCallsTranscriptPage() {
               <div className="bg-gray-800/30 p-4 rounded-lg mb-6">
                 <h4 className="text-white font-medium mb-3">Transcript</h4>
                 <div className="text-gray-300 whitespace-pre-wrap text-sm leading-relaxed max-h-96 overflow-y-auto">
-                  {selectedTranscript.call_transcript || 'No transcript available for this call.'}
+                  {selectedTranscript.call_transcript || 'Transcript not available'}
                 </div>
               </div>
 
