@@ -113,13 +113,9 @@ export default function BDRCallsTranscriptPage() {
   // Calculate KPIs
   const kpis = useMemo(() => {
     const totalCalls = filteredEngagements.length;
-    // Look for connected calls or positive outcomes as "meetings booked"
+    // Count follow_up_scheduled outcomes as "meetings booked"
     const meetingsBooked = filteredEngagements.filter(eng => {
-      const disposition = eng.outcome?.toLowerCase() || '';
-      return disposition.includes('connected') || 
-             disposition.includes('follow_up') || 
-             disposition.includes('meeting') ||
-             eng.outcome === 'f240bbac-87c9-4f6e-bf80-2142a9a54a6c'; // HubSpot Connected ID
+      return eng.outcome === 'follow_up_scheduled';
     }).length;
     const conversionRate = totalCalls > 0 ? (meetingsBooked / totalCalls) * 100 : 0;
 

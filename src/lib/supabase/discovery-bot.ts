@@ -131,13 +131,14 @@ export const OUTCOME_LABELS = {
   '73a0d17f-1163-4015-bdd5-ec830791da20': 'Left Voicemail',
   'b2cf5968-551e-4856-9783-52b3da59a7d0': 'No Answer',
   '9688e8c9-9ac4-4f4f-9e31-30d3ba78b8b6': 'Busy',
-  // Fallback text-based dispositions
-  connected: 'Connected',
+  // Database outcome values with user-friendly labels
   voicemail: 'Voicemail',
-  follow_up_scheduled: 'Meeting Booked',
-  not_interested: 'Not Interested',
-  gatekeeper: 'Gatekeeper',
+  follow_up_scheduled: 'Meeting Booked', // User-friendly name
   wrong_contact: 'Wrong Contact',
   no_answer: 'No Answer',
+  not_interested: 'Not Interested',
+  gatekeeper: 'Gatekeeper',
+  // Legacy fallbacks
+  connected: 'Connected',
   busy: 'Busy',
 } as const;
