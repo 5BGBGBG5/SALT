@@ -33,7 +33,6 @@ export default function Header() {
 
   const reportLinks = [
     { href: '/reports/post-engagement', label: 'Post Engagement Report' },
-    { href: '/reports/aieo', label: 'AiEO Report' },
     { href: '/reports/competition-heatmap', label: 'Competition Heat Map' },
     { href: '/reports/battlecards', label: 'Battlecards' },
     { href: '/reports/competitor-content', label: 'Competitor Content Report' },
