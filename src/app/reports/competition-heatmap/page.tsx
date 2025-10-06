@@ -112,31 +112,61 @@ export default function CompetitionHeatMapPage() {
         setLoading(true);
         setError(null);
         
-        // Fetch main data
+        // Fetch main data with debugging
+        console.log('🔍 Fetching data from v_high_intent_prompt_mentions...');
+        const dateFilter = new Date(Date.now() - 12 * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        console.log('📅 Date filter (12 weeks ago):', dateFilter);
+        
         const { data: mainData, error: mainError } = await supabase
           .from('v_high_intent_prompt_mentions')
           .select('*')
-          .gte('execution_date', new Date(Date.now() - 12 * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+          .gte('execution_date', dateFilter);
           
+        console.log('📊 Raw data received:', mainData);
+        console.log('📊 Data count:', mainData?.length || 0);
+        
         if (mainError) {
-          console.error('Supabase error:', mainError);
+          console.error('❌ Supabase error:', mainError);
           setError(`Database error: ${mainError.message}`);
           return;
         }
         
+        // Also try to fetch without date filter to see if there's any data at all
+        const { data: allData, error: allError } = await supabase
+          .from('v_high_intent_prompt_mentions')
+          .select('*')
+          .limit(10);
+          
+        console.log('📊 All data sample (no date filter):', allData);
+        console.log('📊 All data count:', allData?.length || 0);
+        
+        if (allError) {
+          console.error('❌ Error fetching all data:', allError);
+        }
+        
         const processedRows = (mainData ?? []) as PMRow[];
-        setRows(processedRows);
+        console.log('✅ Processed rows:', processedRows.length);
+        
+        // If no data with date filter, use all available data
+        const finalRows = processedRows.length > 0 ? processedRows : (allData ?? []) as PMRow[];
+        console.log('🎯 Final rows to use:', finalRows.length);
+        
+        setRows(finalRows);
         
         // Set default selected week to most recent
-        if (processedRows.length > 0) {
-          const maxWeek = Math.max(...processedRows.map(r => r.execution_week));
+        if (finalRows.length > 0) {
+          const maxWeek = Math.max(...finalRows.map(r => r.execution_week));
+          console.log('📅 Setting selected week to:', maxWeek);
           setSelectedWeek(maxWeek);
+        } else {
+          console.log('⚠️ No data found - setting error message');
+          setError('No data found in the v_high_intent_prompt_mentions view. Please check if the ai_responses table has data.');
         }
 
         // Calculate weekly stats
         const weeklyStatsMap = new Map<string, WeeklyStats>();
         
-        processedRows.forEach(row => {
+        finalRows.forEach(row => {
           const key = `${row.execution_week}-${row.model}`;
           if (!weeklyStatsMap.has(key)) {
             weeklyStatsMap.set(key, {
@@ -163,7 +193,7 @@ export default function CompetitionHeatMapPage() {
           ...stats,
           mention_rate: stats.total_responses > 0 ? (stats.mention_count / stats.total_responses) * 100 : 0,
           avg_ranking: stats.mention_count > 0 ? 
-            processedRows
+            finalRows
               .filter(r => r.execution_week === stats.execution_week && r.model === stats.model_name && r.inecta_mentioned && r.inecta_ranking)
               .reduce((sum, r) => sum + (r.inecta_ranking || 0), 0) / stats.mention_count : 0
         }));
@@ -173,7 +203,7 @@ export default function CompetitionHeatMapPage() {
         // Calculate category stats
         const categoryStatsMap = new Map<string, CategoryStats>();
         
-        processedRows.forEach(row => {
+        finalRows.forEach(row => {
           const key = `${row.prompt_category}-${row.execution_week}`;
           if (!categoryStatsMap.has(key)) {
             categoryStatsMap.set(key, {
@@ -404,7 +434,7 @@ export default function CompetitionHeatMapPage() {
 
       <div className="relative z-10 space-y-8">
         {/* Header */}
-        <motion.div
+        <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -563,7 +593,7 @@ export default function CompetitionHeatMapPage() {
         )}
 
         {/* Heat Map Controls */}
-        <motion.div
+        <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
@@ -636,7 +666,7 @@ export default function CompetitionHeatMapPage() {
           </div>
 
           {/* Category Filters */}
-          <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
             {HI_CATS.map(cat => (
               <button
                 key={cat}
@@ -657,18 +687,18 @@ export default function CompetitionHeatMapPage() {
               </button>
             ))}
             {catFilter.length > 0 && (
-              <button
-                onClick={() => setCatFilter([])}
+          <button
+            onClick={() => setCatFilter([])}
                 className="px-3 py-1 rounded-full text-sm font-medium bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
-              >
+          >
                 Clear Filters
-              </button>
+          </button>
             )}
-          </div>
+        </div>
         </motion.div>
 
         {/* Heat Map */}
-        <motion.div
+        <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
@@ -700,9 +730,9 @@ export default function CompetitionHeatMapPage() {
                       </th>
                     ))}
                     <th className="text-center py-3 px-4 text-gray-300 font-medium min-w-20">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              </tr>
+            </thead>
+            <tbody>
                   {grouped.map(([promptId, group]) => (
                     <tr key={promptId} className="border-b border-gray-800 hover:bg-gray-800/30 transition-colors">
                       <td className="py-3 px-4">
@@ -744,8 +774,8 @@ export default function CompetitionHeatMapPage() {
                                 'No response'}
                             >
                               {content}
-                            </div>
-                          </td>
+                          </div>
+                        </td>
                         );
                       })}
                       <td className="py-3 px-4 text-center">
@@ -756,32 +786,32 @@ export default function CompetitionHeatMapPage() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                      </td>
-                    </tr>
+                  </td>
+                </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
+            </tbody>
+          </table>
+        </div>
           )}
         </motion.div>
 
         {/* Legend */}
-        <motion.div
+        <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.4 }}
           className="glass-card p-4"
         >
           <div className="flex items-center justify-center gap-8 text-sm">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-green-500 rounded"></div>
               <span className="text-gray-300">Inecta Mentioned</span>
-            </div>
-            <div className="flex items-center gap-2">
+          </div>
+          <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-red-500 rounded"></div>
               <span className="text-gray-300">Missed Opportunity</span>
-            </div>
-            <div className="flex items-center gap-2">
+          </div>
+          <div className="flex items-center gap-2">
               <div className="w-4 h-4 bg-gray-600 rounded"></div>
               <span className="text-gray-300">No Response</span>
             </div>
