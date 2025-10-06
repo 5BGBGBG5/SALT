@@ -913,21 +913,22 @@ export default function PostEngagementReportPage() {
       const endIndex = startIndex + itemsPerPage - 1;
 
       try {
-        console.log('Attempting to connect to AiEO Supabase...');
-        console.log('URL:', aieoSupabaseUrl);
-        console.log('Key length:', aieoSupabaseKey ? aieoSupabaseKey.length : 'NOT SET');
+        console.log('[PostEngagement] Connecting to AiEO Supabase…');
+        console.log('[PostEngagement] URL:', aieoSupabaseUrl);
+        console.log('[PostEngagement] Key length:', aieoSupabaseKey ? aieoSupabaseKey.length : 'NOT SET');
+        console.log('[PostEngagement] Table: public.v_post_engagement_v2');
         
         const { data, error, count } = await supabase
-          .from('v_post_engagement')
+          .from('v_post_engagement_v2')
           .select('*', { count: 'exact' })
           .order('engagement_timestamp', { ascending: false })
           .range(startIndex, endIndex);
 
         if (error) {
-          console.error('Supabase error:', error);
-          setError(`Database error: ${error.message} (Code: ${error.code})`);
+          console.error('Supabase error (v_post_engagement_v2):', error);
+          setError(`Database error (v_post_engagement_v2): ${error.message} (Code: ${error.code})`);
         } else {
-          console.log('Raw data from AiEO Supabase (v_post_engagement):', data);
+          console.log('Raw data from AiEO Supabase (v_post_engagement_v2):', data);
           setPostEngagementData((data as PostEngagementData[]) || []);
           setTotalCount(count || 0);
         }
@@ -986,7 +987,12 @@ export default function PostEngagementReportPage() {
           <h2 className="text-3xl font-bold bg-gradient-to-r from-white via-teal-200 to-emerald-200 bg-clip-text text-transparent">
             Post Engagement Report
           </h2>
-          <p className="mt-2 text-gray-300">View all post engagements (likes, comments, shares) with post content, profile information, and company details from the AiEO LinkedIn Data project.</p>
+          <p className="mt-2 text-gray-300">
+            View all post engagements (likes, comments, shares) with post content, profile information, and company details from the AiEO LinkedIn Data project.
+          </p>
+          <div className="mt-1 text-xs text-teal-300/80">
+            Data source: <code>public.v_post_engagement_v2</code>
+          </div>
         </motion.div>
         
         <div className="mt-6">
