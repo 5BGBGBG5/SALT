@@ -22,10 +22,8 @@ import {
   Award, 
   BarChart3,
   Search,
-  Filter,
   X,
-  Eye,
-  ChevronDown
+  Eye
 } from 'lucide-react';
 
 // Use AiEO project credentials for this report since v_high_intent_prompt_mentions exists there
@@ -47,12 +45,12 @@ type PMRow = {
   inecta_mentions: number;
   inecta_sentiment: number;
   inecta_ranking?: number;
-  citations?: any;
-  vendors?: any;
-  features?: any;
-  verticals?: any;
-  risk_flags?: any;
-  alerts?: any;
+  citations?: Record<string, unknown>;
+  vendors?: Record<string, unknown>;
+  features?: Record<string, unknown>;
+  verticals?: Record<string, unknown>;
+  risk_flags?: Record<string, unknown>;
+  alerts?: Record<string, unknown>;
   timestamp: string;
 };
 
@@ -294,7 +292,7 @@ export default function CompetitionHeatMapPage() {
     
     const categories = Array.from(new Set(categoryStats.map(c => c.prompt_category)));
     
-    return categories.map(category => {
+    return categories.map((category) => {
       const currentWeekStats = categoryStats.filter(c => c.prompt_category === category && c.execution_week === selectedWeek);
       const last4WeeksStats = categoryStats.filter(c => 
         c.prompt_category === category && 

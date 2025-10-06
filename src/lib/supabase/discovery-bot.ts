@@ -1,4 +1,4 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { createDiscoveryBotSupabaseClient, createDiscoveryBotServerClient as createDiscoveryBotServerSupabaseClient } from '../supabase-discoverybot';
 
 // Types for the discovery-bot-db database (matching actual schema)
