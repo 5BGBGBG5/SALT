@@ -35,19 +35,25 @@ const supabase = createClient(
 );
 
 type PMRow = {
-  ai_response_id: number;
-  execution_week: number;
+  id: number;
+  execution_id: string;
   execution_date: string;
+  execution_week: number;
   prompt_id: string;
   prompt_category: string;
   prompt_text: string;
-  model: 'openai' | 'gemini' | 'claude' | 'grok';
-  responded: boolean;
-  inecta_mentioned: boolean;
+  model_name: 'openai' | 'gemini' | 'grok';
+  model_responses: string;
+  inecta_mentions: number;
+  inecta_sentiment: number;
   inecta_ranking?: number;
-  inecta_sentiment?: number;
-  vendors_mentioned?: string[];
-  ai_response_text?: string;
+  citations?: any;
+  vendors?: any;
+  features?: any;
+  verticals?: any;
+  risk_flags?: any;
+  alerts?: any;
+  timestamp: string;
 };
 
 type WeeklyStats = {
@@ -77,17 +83,15 @@ type TrendData = {
   week: number;
   openai: number;
   gemini: number;
-  claude: number;
   grok: number;
 };
 
-const MODELS: PMRow['model'][] = ['openai','gemini','claude','grok'];
+const MODELS: PMRow['model_name'][] = ['openai','gemini','grok'];
 const HI_CATS = ['generic','vertical','feature','head_to_head','comparison','variant'];
 
 const MODEL_COLORS = {
   openai: '#10B981',
-  gemini: '#3B82F6', 
-  claude: '#8B5CF6',
+  gemini: '#3B82F6',
   grok: '#F59E0B'
 };
 
@@ -112,15 +116,16 @@ export default function CompetitionHeatMapPage() {
         setLoading(true);
         setError(null);
         
-        // Fetch main data with debugging
-        console.log('🔍 Fetching data from v_high_intent_prompt_mentions...');
+        // Fetch data from ai_responses table with debugging
+        console.log('🔍 Fetching data from ai_responses table...');
         const dateFilter = new Date(Date.now() - 12 * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
         console.log('📅 Date filter (12 weeks ago):', dateFilter);
         
         const { data: mainData, error: mainError } = await supabase
-          .from('v_high_intent_prompt_mentions')
+          .from('ai_responses')
           .select('*')
-          .gte('execution_date', dateFilter);
+          .gte('execution_date', dateFilter)
+          .order('execution_date', { ascending: false });
           
         console.log('📊 Raw data received:', mainData);
         console.log('📊 Data count:', mainData?.length || 0);
@@ -133,9 +138,10 @@ export default function CompetitionHeatMapPage() {
         
         // Also try to fetch without date filter to see if there's any data at all
         const { data: allData, error: allError } = await supabase
-          .from('v_high_intent_prompt_mentions')
+          .from('ai_responses')
           .select('*')
-          .limit(10);
+          .order('execution_date', { ascending: false })
+          .limit(100);
           
         console.log('📊 All data sample (no date filter):', allData);
         console.log('📊 All data count:', allData?.length || 0);
@@ -160,18 +166,18 @@ export default function CompetitionHeatMapPage() {
           setSelectedWeek(maxWeek);
         } else {
           console.log('⚠️ No data found - setting error message');
-          setError('No data found in the v_high_intent_prompt_mentions view. Please check if the ai_responses table has data.');
+          setError('No data found in the ai_responses table. Please check if there are any AI response records in the database.');
         }
 
         // Calculate weekly stats
         const weeklyStatsMap = new Map<string, WeeklyStats>();
         
         finalRows.forEach(row => {
-          const key = `${row.execution_week}-${row.model}`;
+          const key = `${row.execution_week}-${row.model_name}`;
           if (!weeklyStatsMap.has(key)) {
             weeklyStatsMap.set(key, {
               execution_week: row.execution_week,
-              model_name: row.model,
+              model_name: row.model_name,
               total_responses: 0,
               mention_count: 0,
               mention_rate: 0,
@@ -180,11 +186,10 @@ export default function CompetitionHeatMapPage() {
           }
           
           const stats = weeklyStatsMap.get(key)!;
-          if (row.responded) {
-            stats.total_responses++;
-            if (row.inecta_mentioned) {
-              stats.mention_count++;
-            }
+          // Every row in ai_responses represents a response, so count all
+          stats.total_responses++;
+          if (row.inecta_mentions > 0) {
+            stats.mention_count++;
           }
         });
 
@@ -194,7 +199,7 @@ export default function CompetitionHeatMapPage() {
           mention_rate: stats.total_responses > 0 ? (stats.mention_count / stats.total_responses) * 100 : 0,
           avg_ranking: stats.mention_count > 0 ? 
             finalRows
-              .filter(r => r.execution_week === stats.execution_week && r.model === stats.model_name && r.inecta_mentioned && r.inecta_ranking)
+              .filter(r => r.execution_week === stats.execution_week && r.model_name === stats.model_name && r.inecta_mentions > 0 && r.inecta_ranking)
               .reduce((sum, r) => sum + (r.inecta_ranking || 0), 0) / stats.mention_count : 0
         }));
 
@@ -216,11 +221,10 @@ export default function CompetitionHeatMapPage() {
           }
           
           const stats = categoryStatsMap.get(key)!;
-          if (row.responded) {
-            stats.total++;
-            if (row.inecta_mentioned) {
-              stats.mentions++;
-            }
+          // Every row represents a response
+          stats.total++;
+          if (row.inecta_mentions > 0) {
+            stats.mentions++;
           }
         });
 
@@ -245,7 +249,7 @@ export default function CompetitionHeatMapPage() {
     const weeks = Array.from(new Set(weeklyStats.map(s => s.execution_week))).sort();
     
     return weeks.map(week => {
-      const weekData: TrendData = { week, openai: 0, gemini: 0, claude: 0, grok: 0 };
+      const weekData: TrendData = { week, openai: 0, gemini: 0, grok: 0 };
       
       MODELS.forEach(model => {
         const stats = weeklyStats.find(s => s.execution_week === week && s.model_name === model);
@@ -332,7 +336,7 @@ export default function CompetitionHeatMapPage() {
           models: {} as Record<string, PMRow>
         });
       }
-      map.get(r.prompt_id)!.models[r.model] = r;
+      map.get(r.prompt_id)!.models[r.model_name] = r;
     }
     
     // Filter logic
@@ -347,14 +351,14 @@ export default function CompetitionHeatMapPage() {
     if (onlyMisses) {
       entries = entries.filter(([, v]) => MODELS.some(m => {
         const cell = v.models[m];
-        return cell?.responded && !cell?.inecta_mentioned;
+        return cell && cell.inecta_mentions === 0; // Has response but no Inecta mentions
       }));
     }
     
     // Sort: most misses first
     entries.sort((a, b) => {
-      const missA = MODELS.filter(m => a[1].models[m]?.responded && !a[1].models[m]?.inecta_mentioned).length;
-      const missB = MODELS.filter(m => b[1].models[m]?.responded && !b[1].models[m]?.inecta_mentioned).length;
+      const missA = MODELS.filter(m => a[1].models[m] && a[1].models[m].inecta_mentions === 0).length;
+      const missB = MODELS.filter(m => b[1].models[m] && b[1].models[m].inecta_mentions === 0).length;
       return missB - missA;
     });
     
@@ -744,15 +748,15 @@ export default function CompetitionHeatMapPage() {
                             {group.category}
                           </div>
                         </div>
-                      </td>
+                    </td>
                       {MODELS.map(model => {
                         const cell = group.models[model];
                         let bgColor = 'bg-gray-600'; // No response
                         let textColor = 'text-gray-300';
                         let content = '—';
                         
-                        if (cell?.responded) {
-                          if (cell.inecta_mentioned) {
+                        if (cell) {
+                          if (cell.inecta_mentions > 0) {
                             bgColor = 'bg-green-500';
                             textColor = 'text-white';
                             content = cell.inecta_ranking ? `#${cell.inecta_ranking}` : '✓';
@@ -763,12 +767,12 @@ export default function CompetitionHeatMapPage() {
                           }
                         }
                         
-                        return (
+                      return (
                           <td key={model} className="py-3 px-4 text-center">
                             <div 
                               className={`w-12 h-8 rounded flex items-center justify-center text-sm font-medium ${bgColor} ${textColor} mx-auto cursor-pointer hover:opacity-80 transition-opacity`}
-                              title={cell?.responded ? 
-                                (cell.inecta_mentioned ? 
+                              title={cell ? 
+                                (cell.inecta_mentions > 0 ? 
                                   `Mentioned (Rank: ${cell.inecta_ranking || 'N/A'})` : 
                                   'Not mentioned') : 
                                 'No response'}
@@ -869,8 +873,8 @@ export default function CompetitionHeatMapPage() {
                           <div className="flex items-center justify-between mb-2">
                             <div className="font-medium text-white capitalize">{model}</div>
                             <div className="flex items-center gap-2">
-                              {response?.responded ? (
-                                response.inecta_mentioned ? (
+                              {response ? (
+                                response.inecta_mentions > 0 ? (
                                   <span className="px-2 py-1 bg-green-500 text-white text-xs rounded">
                                     Mentioned {response.inecta_ranking ? `(#${response.inecta_ranking})` : ''}
                                   </span>
@@ -886,12 +890,12 @@ export default function CompetitionHeatMapPage() {
                               )}
                             </div>
                           </div>
-                          {response?.ai_response_text && (
+                          {response?.model_responses && (
                             <div className="text-gray-300 text-sm max-h-32 overflow-y-auto">
-                              {response.ai_response_text}
+                              {response.model_responses}
                             </div>
                           )}
-                          {!response?.responded && (
+                          {!response && (
                             <div className="text-gray-500 text-sm italic">
                               No response available
                             </div>
