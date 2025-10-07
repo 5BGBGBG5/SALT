@@ -780,116 +780,157 @@ export default function PostEngagementReportPage() {
   };
 
   const handleExportToExcel = () => {
-    // Get the filtered data that's currently displayed in the table
-    const dataToExport = postEngagementData.filter(row => {
-      // Apply the same filtering logic as in the table
-      if (filters.engagement_type !== 'all' && row.engagement_type !== filters.engagement_type) {
-        return false;
-      }
-
-      // Date range filter
-      if (filters.date_from || filters.date_to) {
-        const engagementDate = row.engagement_timestamp ? new Date(row.engagement_timestamp) : null;
-        if (engagementDate) {
-          if (filters.date_from) {
-            const fromDate = new Date(filters.date_from);
-            if (engagementDate < fromDate) {
-              return false;
-            }
-          }
-          if (filters.date_to) {
-            const toDate = new Date(filters.date_to);
-            toDate.setHours(23, 59, 59, 999);
-            if (engagementDate > toDate) {
-              return false;
-            }
-          }
-        }
-      }
-
-      // Global search filter
-      if (filters.global_search) {
-        const searchTerm = filters.global_search.toLowerCase();
-        const searchableFields = [
-          row.engager_name,
-          row.engager_company_name,
-          row.engager_job_title,
-          row.post_content,
-          row.engager_company_industry,
-          row.engager_company_location,
-          row.engager_headline,
-          row.post_author,
-          row.engagement_type,
-          row.reaction_type
-        ].filter(Boolean).join(' ').toLowerCase();
-        
-        if (!searchableFields.includes(searchTerm)) {
+    try {
+      console.log('[PostEngagement] Starting Excel export...');
+      console.log('[PostEngagement] Total data rows:', postEngagementData.length);
+      
+      // Get the filtered data that's currently displayed in the table
+      const dataToExport = postEngagementData.filter(row => {
+        // Apply the same filtering logic as in the table
+        if (filters.engagement_type !== 'all' && row.engagement_type !== filters.engagement_type) {
           return false;
         }
+
+        // Date range filter
+        if (filters.date_from || filters.date_to) {
+          const engagementDate = row.engagement_timestamp ? new Date(row.engagement_timestamp) : null;
+          if (engagementDate) {
+            if (filters.date_from) {
+              const fromDate = new Date(filters.date_from);
+              if (engagementDate < fromDate) {
+                return false;
+              }
+            }
+            if (filters.date_to) {
+              const toDate = new Date(filters.date_to);
+              toDate.setHours(23, 59, 59, 999);
+              if (engagementDate > toDate) {
+                return false;
+              }
+            }
+          }
+        }
+
+        // Global search filter
+        if (filters.global_search) {
+          const searchTerm = filters.global_search.toLowerCase();
+          const searchableFields = [
+            row.engager_name,
+            row.engager_company_name,
+            row.engager_job_title,
+            row.post_content,
+            row.engager_company_industry,
+            row.engager_company_location,
+            row.engager_headline,
+            row.post_author,
+            row.engagement_type,
+            row.reaction_type
+          ].filter(Boolean).join(' ').toLowerCase();
+          
+          if (!searchableFields.includes(searchTerm)) {
+            return false;
+          }
+        }
+
+        // Individual column filters
+        if (filters.engager_name && !row.engager_name?.toLowerCase().includes(filters.engager_name.toLowerCase())) {
+          return false;
+        }
+        if (filters.engager_company_name && !row.engager_company_name?.toLowerCase().includes(filters.engager_company_name.toLowerCase())) {
+          return false;
+        }
+        if (filters.engager_job_title && !row.engager_job_title?.toLowerCase().includes(filters.engager_job_title.toLowerCase())) {
+          return false;
+        }
+        if (filters.post_content && !row.post_content?.toLowerCase().includes(filters.post_content.toLowerCase())) {
+          return false;
+        }
+        if (filters.engager_company_industry && !row.engager_company_industry?.toLowerCase().includes(filters.engager_company_industry.toLowerCase())) {
+          return false;
+        }
+        if (filters.engager_company_location && !row.engager_company_location?.toLowerCase().includes(filters.engager_company_location.toLowerCase())) {
+          return false;
+        }
+
+        return true;
+      });
+
+      console.log('[PostEngagement] Filtered data rows:', dataToExport.length);
+
+      // Check if there's data to export
+      if (dataToExport.length === 0) {
+        alert('No data to export. Please adjust your filters or ensure data is loaded.');
+        return;
       }
 
-      // Individual column filters
-      if (filters.engager_name && !row.engager_name?.toLowerCase().includes(filters.engager_name.toLowerCase())) {
-        return false;
+      // Prepare data for Excel export
+      const exportData = dataToExport.map(row => ({
+        'Engagement Type': row.engagement_type || '',
+        'Engager Name': row.engager_name || '',
+        'Company Name': row.engager_company_name || '',
+        'Company Industry': row.engager_company_industry || '',
+        'Company Size': row.engager_company_size || '',
+        'Company Location': row.engager_company_location || '',
+        'Company Employees': row.engager_company_employees || '',
+        'Job Title': row.engager_job_title || '',
+        'Engager Headline': row.engager_headline || '',
+        'Engager Location': row.engager_location || '',
+        'LinkedIn Profile': row.linkedin_profile_url || '',
+        'Post Content': row.post_content ? row.post_content.substring(0, 500) + (row.post_content.length > 500 ? '...' : '') : '',
+        'Post Author': row.post_author || '',
+        'Post Type': row.post_type || '',
+        'Like Count': row.like_count || 0,
+        'Comment Count': row.comment_count || 0,
+        'Repost Count': row.repost_count || 0,
+        'Post URL': row.post_url || '',
+        'Post Date': row.post_timestamp ? new Date(row.post_timestamp).toLocaleDateString() : '',
+        'Engagement Date': row.engagement_timestamp ? new Date(row.engagement_timestamp).toLocaleDateString() : '',
+        'Engagement Time': row.engagement_timestamp ? new Date(row.engagement_timestamp).toLocaleTimeString() : '',
+        'Reaction Type': row.reaction_type || ''
+      }));
+
+      console.log('[PostEngagement] Export data prepared:', exportData.length, 'rows');
+
+      // Create workbook and worksheet
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+      // Auto-size columns based on content
+      if (exportData.length > 0) {
+        const colWidths = Object.keys(exportData[0]).map(key => {
+          const maxLength = Math.max(
+            key.length, // Header length
+            ...exportData.map(row => String(row[key as keyof typeof row] || '').length)
+          );
+          return { wch: Math.min(Math.max(maxLength, 10), 50) }; // Min 10, max 50 characters
+        });
+        worksheet['!cols'] = colWidths;
       }
-      if (filters.engager_company_name && !row.engager_company_name?.toLowerCase().includes(filters.engager_company_name.toLowerCase())) {
-        return false;
-      }
-      if (filters.engager_job_title && !row.engager_job_title?.toLowerCase().includes(filters.engager_job_title.toLowerCase())) {
-        return false;
-      }
-      if (filters.post_content && !row.post_content?.toLowerCase().includes(filters.post_content.toLowerCase())) {
-        return false;
-      }
-      if (filters.engager_company_industry && !row.engager_company_industry?.toLowerCase().includes(filters.engager_company_industry.toLowerCase())) {
-        return false;
-      }
-      if (filters.engager_company_location && !row.engager_company_location?.toLowerCase().includes(filters.engager_company_location.toLowerCase())) {
-        return false;
-      }
 
-      return true;
-    });
+      // Add worksheet to workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Post Engagement Data');
 
-    // Prepare data for Excel export
-    const exportData = dataToExport.map(row => ({
-      'Engagement Type': row.engagement_type,
-      'Engager Name': row.engager_name || '',
-      'Company Name': row.engager_company_name || '',
-      'Company Industry': row.engager_company_industry || '',
-      'Company Size': row.engager_company_size || '',
-      'Company Employees': row.engager_company_employees || '',
-      'Job Title': row.engager_job_title || '',
-      'LinkedIn Profile': row.linkedin_profile_url || '',
-      'Post Content': row.post_content || '',
-      'Post Author': row.post_author || '',
-      'Like Count': row.like_count || 0,
-      'Comment Count': row.comment_count || 0,
-      'Repost Count': row.repost_count || 0,
-      'Post URL': row.post_url || '',
-      'Engagement Date': row.engagement_timestamp ? new Date(row.engagement_timestamp).toLocaleDateString() : '',
-      'Reaction Type': row.reaction_type || ''
-    }));
+      // Generate filename with current date and time
+      const now = new Date();
+      const currentDate = now.toISOString().split('T')[0];
+      const currentTime = now.toTimeString().split(' ')[0].replace(/:/g, '-');
+      const filename = `post-engagement-report-${currentDate}-${currentTime}.xlsx`;
 
-    // Create workbook and worksheet
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
+      console.log('[PostEngagement] Saving file:', filename);
 
-    // Auto-size columns
-    const colWidths = Object.keys(exportData[0] || {}).map(key => ({
-      wch: Math.max(key.length, 15)
-    }));
-    worksheet['!cols'] = colWidths;
-
-    // Add worksheet to workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Post Engagement Data');
-
-    // Generate filename with current date
-    const currentDate = new Date().toISOString().split('T')[0];
-    const filename = `post-engagement-report-${currentDate}.xlsx`;
-
-    // Save the file
-    XLSX.writeFile(workbook, filename);
+      // Save the file
+      XLSX.writeFile(workbook, filename);
+      
+      console.log('[PostEngagement] Excel export completed successfully');
+      
+      // Show success message
+      alert(`Excel file exported successfully!\nFilename: ${filename}\nRows exported: ${exportData.length}`);
+      
+    } catch (error) {
+      console.error('[PostEngagement] Excel export error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to export Excel file: ${errorMessage}`);
+    }
   };
 
   useEffect(() => {
