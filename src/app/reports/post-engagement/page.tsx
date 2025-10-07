@@ -102,32 +102,17 @@ const PostEngagementTable = ({
   });
 
   const filteredAndSortedData = useMemo(() => {
-    // Filter the data based on current filter settings
+    console.log('[PostEngagement] Client-side filtering - Input data count:', data.length);
+    
+    // Filter the data based on current filter settings (excluding date filters which are server-side)
     const filtered = data.filter(row => {
       // Engagement type filter
       if (filters.engagement_type !== 'all' && row.engagement_type !== filters.engagement_type) {
         return false;
       }
 
-      // Date range filter
-      if (filters.date_from || filters.date_to) {
-        const engagementDate = row.engagement_timestamp ? new Date(row.engagement_timestamp) : null;
-        if (engagementDate) {
-          if (filters.date_from) {
-            const fromDate = new Date(filters.date_from);
-            if (engagementDate < fromDate) {
-              return false;
-            }
-          }
-          if (filters.date_to) {
-            const toDate = new Date(filters.date_to);
-            toDate.setHours(23, 59, 59, 999); // Include the entire end date
-            if (engagementDate > toDate) {
-              return false;
-            }
-          }
-        }
-      }
+      // Date range filter is now handled server-side in the main query
+      // No client-side date filtering needed
 
       // Global search across all fields
       if (filters.global_search) {
@@ -172,6 +157,8 @@ const PostEngagementTable = ({
 
       return true;
     });
+
+    console.log('[PostEngagement] Client-side filtering - Filtered data count:', filtered.length);
 
     // Sorting - create a copy to avoid mutating the original filtered array
     const sorted = [...filtered].sort((a, b) => {
@@ -863,25 +850,8 @@ export default function PostEngagementReportPage() {
           return false;
         }
 
-        // Date range filter
-        if (filters.date_from || filters.date_to) {
-          const engagementDate = row.engagement_timestamp ? new Date(row.engagement_timestamp) : null;
-          if (engagementDate) {
-            if (filters.date_from) {
-              const fromDate = new Date(filters.date_from);
-              if (engagementDate < fromDate) {
-                return false;
-              }
-            }
-            if (filters.date_to) {
-              const toDate = new Date(filters.date_to);
-              toDate.setHours(23, 59, 59, 999);
-              if (engagementDate > toDate) {
-                return false;
-              }
-            }
-          }
-        }
+        // Date range filter is now handled server-side in the export query
+        // No client-side date filtering needed
 
         // Global search filter
         if (filters.global_search) {
@@ -1060,7 +1030,30 @@ export default function PostEngagementReportPage() {
           setError(`Database error (v_post_engagement_v2): ${error.message} (Code: ${error.code})`);
         } else {
           console.log('Raw data from AiEO Supabase (v_post_engagement_v2):', data);
-          setPostEngagementData((data as PostEngagementData[]) || []);
+          console.log('[PostEngagement] Data count received:', data?.length || 0);
+          console.log('[PostEngagement] Total count from DB:', count || 0);
+          
+          // Check for duplicates in the raw data
+          const dataArray = (data as PostEngagementData[]) || [];
+          const uniqueIds = new Set();
+          const duplicates: any[] = [];
+          
+          dataArray.forEach((row, index) => {
+            const id = row.engagement_id || `${row.post_id}-${row.engager_name}-${row.engagement_timestamp}`;
+            if (uniqueIds.has(id)) {
+              duplicates.push({ index, id, row });
+            } else {
+              uniqueIds.add(id);
+            }
+          });
+          
+          if (duplicates.length > 0) {
+            console.warn('[PostEngagement] DUPLICATES FOUND in raw data:', duplicates);
+          } else {
+            console.log('[PostEngagement] No duplicates found in raw data');
+          }
+          
+          setPostEngagementData(dataArray);
           setTotalCount(count || 0);
         }
       } catch (err) {
