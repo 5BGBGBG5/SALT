@@ -576,8 +576,8 @@ export default function CompetitionHeatMapPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {categoryPerformance.map((cat, index) => (
-                      <tr key={cat.category} className="border-b border-gray-800 hover:bg-gray-800/30 transition-colors">
+            {categoryPerformance.map((cat) => (
+              <tr key={cat.category} className="border-b border-gray-800 hover:bg-gray-800/30 transition-colors">
                         <td className="py-3 px-4 text-white font-medium capitalize">{cat.category}</td>
                         <td className="py-3 px-4 text-gray-300">{cat.currentRate.toFixed(1)}%</td>
                         <td className="py-3 px-4 text-gray-300">{cat.avgRate.toFixed(1)}%</td>

@@ -1036,14 +1036,14 @@ export default function PostEngagementReportPage() {
           // Check for duplicates in the raw data with more detailed analysis
           const dataArray = (data as PostEngagementData[]) || [];
           const uniqueIds = new Set();
-          const duplicates: any[] = [];
+          const duplicates: Array<{ index: number; type: string; id: string; row: Record<string, unknown> }> = [];
           const idCounts = new Map<string, number>();
           
           dataArray.forEach((row, index) => {
             // Create multiple ID strategies to detect different types of duplicates
             const engagementId = row.engagement_id;
             const compositeId = `${row.post_id}-${row.engager_name}-${row.engagement_timestamp}`;
-            const fullRowHash = JSON.stringify(row);
+            // Removed unused fullRowHash variable
             
             console.log(`[PostEngagement] Row ${index}:`, {
               engagement_id: engagementId,
@@ -1084,7 +1084,7 @@ export default function PostEngagementReportPage() {
           });
           
           // Log ID frequency analysis
-          const duplicateIds = Array.from(idCounts.entries()).filter(([_, count]) => count > 1);
+          const duplicateIds = Array.from(idCounts.entries()).filter(([, count]) => count > 1);
           if (duplicateIds.length > 0) {
             console.warn('[PostEngagement] IDs appearing multiple times:', duplicateIds);
           }

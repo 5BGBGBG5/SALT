@@ -1,19 +1,13 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
 import * as XLSX from 'xlsx';
 import { 
   Calendar, 
   Download, 
-  RefreshCw, 
-  TrendingUp, 
-  TrendingDown,
-  BarChart3,
-  Users,
-  Building2,
-  Target
+  RefreshCw
 } from 'lucide-react';
 
 // Force dynamic rendering
@@ -33,34 +27,7 @@ type MonthlyKPI = {
   company_size_breakdown: Record<string, number>;
 };
 
-type RawPostData = {
-  month: string;
-  post_count: number;
-};
-
-type RawEngagementData = {
-  month: string;
-  engagement_type: string;
-  engagement_count: number;
-};
-
-type RawIndustryData = {
-  month: string;
-  industry: string;
-  engagement_count: number;
-};
-
-type RawRoleData = {
-  month: string;
-  role_category: string;
-  engagement_count: number;
-};
-
-type RawCompanySizeData = {
-  month: string;
-  company_size_category: string;
-  engagement_count: number;
-};
+// Removed unused type definitions
 
 const formatMonth = (dateStr: string): string => {
   const date = new Date(dateStr);
@@ -373,7 +340,7 @@ export default function MonthlyKPIPage() {
     to: new Date().toISOString().split('T')[0] 
   });
 
-  const fetchKPIData = async () => {
+  const fetchKPIData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -393,7 +360,7 @@ export default function MonthlyKPIPage() {
 
       // Fetch post counts by month
       console.log('[MonthlyKPI] Fetching post counts...');
-      const { data: postData, error: postError } = await supabase
+      const { error: postError } = await supabase
         .rpc('get_monthly_post_counts', {
           start_date: dateRange.from,
           end_date: dateRange.to
@@ -589,7 +556,7 @@ export default function MonthlyKPIPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dateRange.from, dateRange.to]);
 
   const handleExportToExcel = () => {
     try {
@@ -601,7 +568,7 @@ export default function MonthlyKPIPage() {
       }
 
       // Prepare data for Excel export
-      const exportData: any[] = [];
+      const exportData: Record<string, string | number>[] = [];
 
       // LinkedIn section
       exportData.push({ 'KPI Metric': 'LinkedIn Metrics', ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: '' }), {}) });
@@ -683,7 +650,7 @@ export default function MonthlyKPIPage() {
 
   useEffect(() => {
     fetchKPIData();
-  }, [dateRange.from, dateRange.to]);
+  }, [fetchKPIData]);
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 relative overflow-hidden">
