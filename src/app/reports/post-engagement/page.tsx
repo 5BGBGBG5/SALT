@@ -80,10 +80,11 @@ const PostEngagementTable = ({
   onSort: (key: keyof PostEngagementData) => void;
   filters: FilterConfig;
   onFilterChange: (key: keyof FilterConfig, value: string) => void;
-  onExportToExcel: () => void;
+  onExportToExcel: () => Promise<void>;
 }) => {
   const [showFilters, setShowFilters] = useState(false);
   const [scrollIndicators, setScrollIndicators] = useState({ left: false, right: true });
+  const [isExporting, setIsExporting] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
   const [visibleColumns, setVisibleColumns] = useState({
     type: true,
@@ -384,13 +385,32 @@ const PostEngagementTable = ({
           {/* Export Button */}
           <div className="mt-4 flex justify-end">
             <button
-              onClick={onExportToExcel}
-              className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center gap-2"
+              onClick={async () => {
+                setIsExporting(true);
+                try {
+                  await onExportToExcel();
+                } finally {
+                  setIsExporting(false);
+                }
+              }}
+              disabled={isExporting}
+              className={`px-6 py-2 text-white rounded-md transition-colors flex items-center gap-2 ${
+                isExporting 
+                  ? 'bg-gray-500 cursor-not-allowed' 
+                  : 'bg-green-600 hover:bg-green-700'
+              }`}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Export to Excel
+              {isExporting ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              )}
+              {isExporting ? 'Exporting All Data...' : 'Export All to Excel'}
             </button>
           </div>
         </div>
@@ -779,13 +799,41 @@ export default function PostEngagementReportPage() {
     });
   };
 
-  const handleExportToExcel = () => {
+  const handleExportToExcel = async () => {
     try {
       console.log('[PostEngagement] Starting Excel export...');
-      console.log('[PostEngagement] Total data rows:', postEngagementData.length);
+      console.log('[PostEngagement] Current page data rows:', postEngagementData.length);
       
-      // Get the filtered data that's currently displayed in the table
-      const dataToExport = postEngagementData.filter(row => {
+      // Fetch ALL data for export (not just current page)
+      const aieoSupabaseUrl = process.env.NEXT_PUBLIC_AIEO_SUPABASE_URL;
+      const aieoSupabaseKey = process.env.NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY;
+
+      if (!aieoSupabaseUrl || !aieoSupabaseKey) {
+        alert('AiEO Supabase is not configured. Cannot export data.');
+        return;
+      }
+
+      const supabase = createClient(aieoSupabaseUrl, aieoSupabaseKey);
+      
+      console.log('[PostEngagement] Fetching ALL data for export...');
+      
+      // Fetch all data without pagination
+      const { data: allData, error } = await supabase
+        .from('v_post_engagement_v2')
+        .select('*')
+        .order('engagement_timestamp', { ascending: false });
+
+      if (error) {
+        console.error('[PostEngagement] Error fetching all data for export:', error);
+        alert(`Failed to fetch data for export: ${error.message}`);
+        return;
+      }
+
+      const allPostEngagementData = (allData as PostEngagementData[]) || [];
+      console.log('[PostEngagement] Total data rows fetched for export:', allPostEngagementData.length);
+      
+      // Get the filtered data that matches current filters
+      const dataToExport = allPostEngagementData.filter(row => {
         // Apply the same filtering logic as in the table
         if (filters.engagement_type !== 'all' && row.engagement_type !== filters.engagement_type) {
           return false;
