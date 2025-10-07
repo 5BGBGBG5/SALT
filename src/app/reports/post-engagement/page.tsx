@@ -1033,27 +1033,84 @@ export default function PostEngagementReportPage() {
           console.log('[PostEngagement] Data count received:', data?.length || 0);
           console.log('[PostEngagement] Total count from DB:', count || 0);
           
-          // Check for duplicates in the raw data
+          // Check for duplicates in the raw data with more detailed analysis
           const dataArray = (data as PostEngagementData[]) || [];
           const uniqueIds = new Set();
           const duplicates: any[] = [];
+          const idCounts = new Map<string, number>();
           
           dataArray.forEach((row, index) => {
-            const id = row.engagement_id || `${row.post_id}-${row.engager_name}-${row.engagement_timestamp}`;
-            if (uniqueIds.has(id)) {
-              duplicates.push({ index, id, row });
-            } else {
-              uniqueIds.add(id);
+            // Create multiple ID strategies to detect different types of duplicates
+            const engagementId = row.engagement_id;
+            const compositeId = `${row.post_id}-${row.engager_name}-${row.engagement_timestamp}`;
+            const fullRowHash = JSON.stringify(row);
+            
+            console.log(`[PostEngagement] Row ${index}:`, {
+              engagement_id: engagementId,
+              post_id: row.post_id,
+              engager_name: row.engager_name,
+              engagement_timestamp: row.engagement_timestamp,
+              engagement_type: row.engagement_type
+            });
+            
+            // Check for engagement_id duplicates
+            if (engagementId) {
+              const count = idCounts.get(engagementId) || 0;
+              idCounts.set(engagementId, count + 1);
+              
+              if (uniqueIds.has(engagementId)) {
+                duplicates.push({ 
+                  index, 
+                  type: 'engagement_id', 
+                  id: engagementId, 
+                  row: {
+                    engagement_id: row.engagement_id,
+                    post_id: row.post_id,
+                    engager_name: row.engager_name,
+                    engagement_timestamp: row.engagement_timestamp
+                  }
+                });
+              } else {
+                uniqueIds.add(engagementId);
+              }
+            }
+            
+            // Check for composite ID duplicates
+            const compositeCount = idCounts.get(compositeId) || 0;
+            idCounts.set(compositeId, compositeCount + 1);
+            if (compositeCount > 0) {
+              console.warn(`[PostEngagement] Composite duplicate found:`, compositeId);
             }
           });
           
-          if (duplicates.length > 0) {
-            console.warn('[PostEngagement] DUPLICATES FOUND in raw data:', duplicates);
-          } else {
-            console.log('[PostEngagement] No duplicates found in raw data');
+          // Log ID frequency analysis
+          const duplicateIds = Array.from(idCounts.entries()).filter(([_, count]) => count > 1);
+          if (duplicateIds.length > 0) {
+            console.warn('[PostEngagement] IDs appearing multiple times:', duplicateIds);
           }
           
-          setPostEngagementData(dataArray);
+          if (duplicates.length > 0) {
+            console.warn('[PostEngagement] DUPLICATES FOUND in raw data:', duplicates);
+            console.warn('[PostEngagement] Total unique engagement_ids:', uniqueIds.size);
+            console.warn('[PostEngagement] Total rows received:', dataArray.length);
+          } else {
+            console.log('[PostEngagement] No duplicates found in raw data');
+            console.log('[PostEngagement] Total unique engagement_ids:', uniqueIds.size);
+            console.log('[PostEngagement] Total rows received:', dataArray.length);
+          }
+          
+          // Temporary deduplication based on engagement_id to fix immediate issue
+          const deduplicatedData = dataArray.filter((row, index, array) => {
+            if (!row.engagement_id) return true; // Keep rows without engagement_id
+            return array.findIndex(r => r.engagement_id === row.engagement_id) === index;
+          });
+          
+          if (deduplicatedData.length !== dataArray.length) {
+            console.warn(`[PostEngagement] DEDUPLICATION APPLIED: Removed ${dataArray.length - deduplicatedData.length} duplicate rows`);
+            console.warn(`[PostEngagement] Original count: ${dataArray.length}, Deduplicated count: ${deduplicatedData.length}`);
+          }
+          
+          setPostEngagementData(deduplicatedData);
           setTotalCount(count || 0);
         }
       } catch (err) {

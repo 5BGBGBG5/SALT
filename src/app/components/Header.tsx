@@ -101,6 +101,31 @@ export default function Header() {
                 )}
               </Link>
 
+              {/* Monthly KPI Link */}
+              <Link
+                href="/monthly-kpi"
+                className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative ${
+                  pathname === '/monthly-kpi'
+                    ? 'text-accent-primary bg-accent-primary/10' 
+                    : 'text-text-secondary hover:text-accent-primary hover:bg-accent-primary/5'
+                }`}
+              >
+                <motion.span
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Monthly KPI
+                </motion.span>
+                
+                {/* Animated underline */}
+                {pathname === '/monthly-kpi' && (
+                  <motion.div
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent-primary to-accent-success"
+                    layoutId="activeTab"
+                  />
+                )}
+              </Link>
+
               {/* Reports Dropdown */}
               <div className="relative" ref={dropdownRef}>
                 <motion.button
