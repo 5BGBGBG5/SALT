@@ -782,6 +782,11 @@ export default function PostEngagementReportPage() {
 
   const handleFilterChange = (key: keyof FilterConfig, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
+    
+    // Reset to first page when filters change (especially date filters)
+    if (key === 'date_from' || key === 'date_to') {
+      setCurrentPage(1);
+    }
   };
 
   const clearAllFilters = () => {
@@ -797,6 +802,7 @@ export default function PostEngagementReportPage() {
       date_from: '',
       date_to: ''
     });
+    setCurrentPage(1); // Reset to first page when clearing filters
   };
 
   const handleExportToExcel = async () => {
@@ -817,10 +823,28 @@ export default function PostEngagementReportPage() {
       
       console.log('[PostEngagement] Fetching ALL data for export...');
       
-      // Fetch all data without pagination
-      const { data: allData, error } = await supabase
+      // Build the export query with date filters if provided
+      let exportQuery = supabase
         .from('v_post_engagement_v2')
-        .select('*')
+        .select('*');
+
+      // Apply date filters at database level for export too
+      if (filters.date_from) {
+        console.log('[PostEngagement] Export applying date_from filter:', filters.date_from);
+        exportQuery = exportQuery.gte('engagement_timestamp', filters.date_from);
+      }
+      
+      if (filters.date_to) {
+        // Add time to include the entire end date
+        const endDate = new Date(filters.date_to);
+        endDate.setHours(23, 59, 59, 999);
+        const endDateISO = endDate.toISOString();
+        console.log('[PostEngagement] Export applying date_to filter:', endDateISO);
+        exportQuery = exportQuery.lte('engagement_timestamp', endDateISO);
+      }
+
+      // Fetch all data without pagination
+      const { data: allData, error } = await exportQuery
         .order('engagement_timestamp', { ascending: false });
 
       if (error) {
@@ -1007,9 +1031,27 @@ export default function PostEngagementReportPage() {
         console.log('[PostEngagement] Key length:', aieoSupabaseKey ? aieoSupabaseKey.length : 'NOT SET');
         console.log('[PostEngagement] Table: public.v_post_engagement_v2');
         
-        const { data, error, count } = await supabase
+        // Build the query with date filters if provided
+        let query = supabase
           .from('v_post_engagement_v2')
-          .select('*', { count: 'exact' })
+          .select('*', { count: 'exact' });
+
+        // Apply date filters at database level for better performance
+        if (filters.date_from) {
+          console.log('[PostEngagement] Applying date_from filter:', filters.date_from);
+          query = query.gte('engagement_timestamp', filters.date_from);
+        }
+        
+        if (filters.date_to) {
+          // Add time to include the entire end date
+          const endDate = new Date(filters.date_to);
+          endDate.setHours(23, 59, 59, 999);
+          const endDateISO = endDate.toISOString();
+          console.log('[PostEngagement] Applying date_to filter:', endDateISO);
+          query = query.lte('engagement_timestamp', endDateISO);
+        }
+
+        const { data, error, count } = await query
           .order('engagement_timestamp', { ascending: false })
           .range(startIndex, endIndex);
 
@@ -1031,7 +1073,7 @@ export default function PostEngagementReportPage() {
     };
 
     fetchPostEngagementData();
-  }, [currentPage, itemsPerPage]); // Add currentPage and itemsPerPage to dependencies
+  }, [currentPage, itemsPerPage, filters.date_from, filters.date_to]); // Re-fetch when pagination or date filters change
 
   return (
     <div className="min-h-screen p-4 sm:p-6 lg:p-8 relative overflow-hidden">
