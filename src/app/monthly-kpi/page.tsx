@@ -30,10 +30,12 @@ type MonthlyKPI = {
 // Removed unused type definitions
 
 const formatMonth = (dateStr: string): string => {
-  const date = new Date(dateStr);
+  // Parse year-month directly from string to avoid timezone issues
+  const [year, month] = dateStr.split('-');
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const year = date.getFullYear().toString().slice(-2);
-  return `${monthNames[date.getMonth()]}-${year}`;
+  const yearShort = year.slice(-2);
+  const monthIndex = parseInt(month, 10) - 1; // Convert to 0-based index
+  return `${monthNames[monthIndex]}-${yearShort}`;
 };
 
 const MonthlyKPITable = ({ 
@@ -336,7 +338,7 @@ export default function MonthlyKPIPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState({ 
-    from: '2025-07-01', 
+    from: '2025-06-01', 
     to: new Date().toISOString().split('T')[0] 
   });
 
@@ -390,7 +392,7 @@ export default function MonthlyKPIPage() {
         const postsByMonth = new Map<string, { count: number, interactions: number }>();
         
         (fallbackPostData || []).forEach(post => {
-          const monthKey = new Date(post.post_timestamp).toISOString().slice(0, 7) + '-01';
+          const monthKey = post.post_timestamp.slice(0, 7) + '-01';
           const existing = postsByMonth.get(monthKey) || { count: 0, interactions: 0 };
           existing.count++;
           existing.interactions += (post.like_count || 0) + (post.comment_count || 0) + (post.repost_count || 0);
@@ -447,18 +449,20 @@ export default function MonthlyKPIPage() {
       // Process and aggregate data by month
       const monthlyData = new Map<string, MonthlyKPI>();
 
-      // Initialize months in range
-      const startDate = new Date(dateRange.from);
-      const endDate = new Date(dateRange.to);
-      const currentDate = new Date(startDate);
-
-      while (currentDate <= endDate) {
-        const monthKey = currentDate.toISOString().slice(0, 7) + '-01';
+      // Initialize months in range using integer-based iteration to avoid timezone issues
+      const [startYear, startMonth] = dateRange.from.split('-').map(Number);
+      const [endYear, endMonth] = dateRange.to.split('-').map(Number);
+      
+      let currentYear = startYear;
+      let currentMonth = startMonth;
+      
+      while (currentYear < endYear || (currentYear === endYear && currentMonth <= endMonth)) {
+        const monthKey = `${currentYear}-${String(currentMonth).padStart(2, '0')}-01`;
         const monthLabel = formatMonth(monthKey);
         
         monthlyData.set(monthKey, {
           month: monthLabel,
-          monthDate: new Date(monthKey),
+          monthDate: new Date(monthKey + 'T00:00:00Z'), // Force UTC to avoid timezone shifts
           posts_count: 0,
           post_impressions: null,
           post_interactions: 0,
@@ -470,12 +474,17 @@ export default function MonthlyKPIPage() {
           company_size_breakdown: {}
         });
 
-        currentDate.setMonth(currentDate.getMonth() + 1);
+        // Increment month
+        currentMonth++;
+        if (currentMonth > 12) {
+          currentMonth = 1;
+          currentYear++;
+        }
       }
 
       // Process engagement data
       filteredEngagementData.forEach(engagement => {
-        const monthKey = new Date(engagement.engagement_timestamp).toISOString().slice(0, 7) + '-01';
+        const monthKey = engagement.engagement_timestamp.slice(0, 7) + '-01';
         const monthData = monthlyData.get(monthKey);
         
         if (monthData) {
@@ -536,7 +545,7 @@ export default function MonthlyKPIPage() {
 
       if (!postCountError && postCounts) {
         postCounts.forEach(post => {
-          const monthKey = new Date(post.post_timestamp).toISOString().slice(0, 7) + '-01';
+          const monthKey = post.post_timestamp.slice(0, 7) + '-01';
           const monthData = monthlyData.get(monthKey);
           if (monthData) {
             monthData.posts_count++;
