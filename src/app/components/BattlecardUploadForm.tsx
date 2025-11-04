@@ -1,18 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, X, ChevronDown, FileText, AlertCircle, CheckCircle, Loader2, Globe, Type } from 'lucide-react';
+import { Upload, X, ChevronDown, Plus, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface Competitor {
   value: string;
   label: string;
-}
-
-interface CompetitorApiResponse {
-  value?: string;
-  name?: string;
-  id?: string;
-  label?: string;
 }
 
 interface FormData {
@@ -22,11 +15,6 @@ interface FormData {
   sourceType: string;
   content: string;
   file: File | null;
-  url: string;
-}
-
-interface SubmitData extends Omit<FormData, 'file'> {
-  competitor: string;
 }
 
 interface BattlecardUploadFormProps {
@@ -34,25 +22,11 @@ interface BattlecardUploadFormProps {
   onSuccess?: (message: string) => void;
 }
 
-const INPUT_MODES = [
-  { 
-    value: 'website', 
-    label: 'Webpage', 
-    description: 'Enter a URL to scrape content',
-    icon: Globe
-  },
-  { 
-    value: 'document', 
-    label: 'Document', 
-    description: 'Upload a file (PDF, DOCX, TXT, MD)',
-    icon: FileText
-  },
-  { 
-    value: 'direct', 
-    label: 'Text', 
-    description: 'Paste or type content directly',
-    icon: Type
-  }
+const SOURCE_TYPES = [
+  { value: 'battlecard', label: 'Battlecard' },
+  { value: 'website', label: 'Website' },
+  { value: 'document', label: 'Document' },
+  { value: 'other', label: 'Other' }
 ];
 
 export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardUploadFormProps) {
@@ -62,10 +36,9 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
     competitorSelect: '',
     newCompetitorName: '',
     verticals: [],
-    sourceType: 'website',
+    sourceType: 'battlecard',
     content: '',
-    file: null,
-    url: ''
+    file: null
   });
 
   // UI state
@@ -78,19 +51,14 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
   const [isCompetitorDropdownOpen, setIsCompetitorDropdownOpen] = useState(false);
   const [verticalInput, setVerticalInput] = useState('');
   
-  // Verticals autocomplete state
-  const [allVerticals, setAllVerticals] = useState<string[]>([]);
-  
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const competitorDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch competitors and verticals on component mount
+  // Fetch competitors on component mount
   useEffect(() => {
     fetchCompetitors();
-    fetchVerticals();
   }, []);
-
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -114,59 +82,26 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
       if (!response.ok) throw new Error('Failed to fetch competitors');
       
       const data = await response.json();
-      console.log('Raw competitor data:', data);
       
       if (data.success && Array.isArray(data.competitors)) {
-        // Format competitors and remove any duplicates
-        const competitorOptions: Competitor[] = data.competitors
-          .map((comp: CompetitorApiResponse) => ({
+        // Format competitors and add "Add New" option
+        const competitorOptions: Competitor[] = [
+          ...data.competitors.map((comp: any) => ({
             value: comp.value || comp.name || comp.id,
             label: comp.label || comp.name || comp.id
-          }))
-          // Remove duplicates based on value
-          .filter((comp: Competitor, index: number, self: Competitor[]) => 
-            index === self.findIndex((c: Competitor) => c.value === comp.value)
-          );
-        
-        console.log('Formatted competitors from API (includes Add New from backend):', competitorOptions);
-        
-        // Set competitors directly from API response (API already includes "Add New" option)
+          })),
+          { value: '__new__', label: '➕ Add New Competitor...' }
+        ];
         setCompetitors(competitorOptions);
       } else {
-        console.log('No competitors data received from API');
-        setCompetitors([]);
+        setCompetitors([{ value: '__new__', label: '➕ Add New Competitor...' }]);
       }
     } catch (error) {
       console.error('Failed to fetch competitors:', error);
-      setCompetitors([]);
+      setCompetitors([{ value: '__new__', label: '➕ Add New Competitor...' }]);
       setErrors(prev => ({ ...prev, competitors: 'Failed to load competitors' }));
     } finally {
       setIsLoadingCompetitors(false);
-    }
-  };
-
-  const fetchVerticals = async () => {
-    try {
-      console.log('🔄 Fetching verticals from API...');
-      
-      const response = await fetch('/api/verticals/list');
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch verticals');
-      }
-      
-      const data = await response.json();
-      console.log('✅ Verticals fetched successfully:', data.verticals);
-      
-      if (Array.isArray(data.verticals)) {
-        setAllVerticals(data.verticals);
-      } else {
-        console.warn('Invalid verticals data format:', data);
-        setAllVerticals([]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch verticals:', error);
-      setAllVerticals([]);
     }
   };
 
@@ -180,26 +115,14 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
       newErrors.newCompetitor = 'Please enter the new competitor name';
     }
 
-    // Input mode validation - ensure the correct field is filled based on selected mode
-    if (formData.sourceType === 'website') {
-      if (!formData.url.trim()) {
-        newErrors.url = 'Please enter a website URL';
-      } else {
-        // Basic URL validation
-        try {
-          new URL(formData.url);
-        } catch {
-          newErrors.url = 'Please enter a valid URL (e.g., https://example.com)';
-        }
-      }
-    } else if (formData.sourceType === 'document') {
-      if (!formData.file) {
-        newErrors.file = 'Please upload a document file';
-      }
-    } else if (formData.sourceType === 'direct') {
-      if (!formData.content.trim()) {
-        newErrors.content = 'Please enter content text';
-      }
+    // Content or file validation
+    if (!formData.content.trim() && !formData.file) {
+      newErrors.content = 'Please provide either content text or upload a file';
+    }
+
+    // Source type validation
+    if (!formData.sourceType) {
+      newErrors.sourceType = 'Please select a source type';
     }
 
     setErrors(newErrors);
@@ -210,9 +133,6 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
-  
-  // Prevent multiple submissions
-  if (isSubmitting) return;
   
   if (!validateForm()) {
     return;
@@ -227,25 +147,26 @@ const handleSubmit = async (e: React.FormEvent) => {
       ? formData.newCompetitorName.trim()
       : formData.competitorSelect;
 
-    // Prepare the submission data based on input mode
-    const baseSubmitData = {
+    console.log('Submitting battlecard to n8n:', {
+      competitor: finalCompetitorName,
+      verticals: formData.verticals,
+      hasFile: !!formData.file,
+      contentLength: formData.content.length
+    });
+
+    // Prepare the submission data
+    let submitData: any = {
       competitorSelect: formData.competitorSelect,
       newCompetitorName: formData.newCompetitorName,
       competitor: finalCompetitorName,
-      verticals: formData.verticals,
-      sourceType: formData.sourceType
-    };
-
-    // Add only relevant data based on input mode
-    const submitData: SubmitData = {
-      ...baseSubmitData,
-      content: formData.sourceType === 'direct' ? formData.content : '',
-      url: formData.sourceType === 'website' ? formData.url : ''
+      verticals: formData.verticals, // Send as array, not JSON string
+      sourceType: formData.sourceType,
+      content: formData.content
     };
 
     let response: Response;
 
-    if (formData.sourceType === 'document' && formData.file) {
+    if (formData.file) {
       // If there's a file, use FormData
       const submitFormData = new FormData();
       
@@ -294,10 +215,9 @@ const handleSubmit = async (e: React.FormEvent) => {
       competitorSelect: '',
       newCompetitorName: '',
       verticals: [],
-      sourceType: 'website',
+      sourceType: 'battlecard',
       content: '',
-      file: null,
-      url: ''
+      file: null
     });
     
     if (fileInputRef.current) {
@@ -395,15 +315,10 @@ const handleSubmit = async (e: React.FormEvent) => {
       <div className="bg-gray-900 rounded-2xl border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <div>
-            <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-              <FileText className="w-6 h-6 text-teal-400" />
-              Upload Battlecard
-            </h2>
-            <p className="text-sm text-gray-400 mt-1">
-              Please upload 1 at a time, Website, doc or text.
-            </p>
-          </div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <FileText className="w-6 h-6 text-teal-400" />
+            Upload Battlecard
+          </h2>
           {onClose && (
             <button
               onClick={onClose}
@@ -425,10 +340,10 @@ const handleSubmit = async (e: React.FormEvent) => {
               <button
                 type="button"
                 onClick={() => setIsCompetitorDropdownOpen(!isCompetitorDropdownOpen)}
-                disabled={isLoadingCompetitors || isSubmitting}
+                disabled={isLoadingCompetitors}
                 className={`w-full px-4 py-3 text-left bg-gray-800 border rounded-lg transition-colors flex items-center justify-between ${
                   errors.competitor ? 'border-red-500' : 'border-gray-600 hover:border-gray-500 focus:border-teal-500'
-                } ${(isLoadingCompetitors || isSubmitting) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                } ${isLoadingCompetitors ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
               >
                 <span className={formData.competitorSelect ? 'text-white' : 'text-gray-400'}>
                   {isLoadingCompetitors ? 'Loading competitors...' : getSelectedCompetitorName()}
@@ -440,19 +355,16 @@ const handleSubmit = async (e: React.FormEvent) => {
 
               {isCompetitorDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-10 max-h-60 overflow-y-auto">
-                  {competitors.map((competitor, index) => {
-                    console.log(`Rendering competitor ${index}:`, competitor);
-                    return (
-                      <button
-                        key={competitor.value}
-                        type="button"
-                        onClick={() => handleCompetitorSelect(competitor.value)}
-                        className="w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors first:rounded-t-lg"
-                      >
-                        {competitor.label}
-                      </button>
-                    );
-                  })}
+                  {competitors.map((competitor) => (
+                    <button
+                      key={competitor.value}
+                      type="button"
+                      onClick={() => handleCompetitorSelect(competitor.value)}
+                      className="w-full px-4 py-3 text-left text-white hover:bg-gray-700 transition-colors first:rounded-t-lg"
+                    >
+                      {competitor.label}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -475,11 +387,10 @@ const handleSubmit = async (e: React.FormEvent) => {
                 value={formData.newCompetitorName}
                 onChange={(e) => setFormData(prev => ({ ...prev, newCompetitorName: e.target.value }))}
                 required={formData.competitorSelect === '__new__'}
-                disabled={isSubmitting}
                 placeholder="Enter competitor name"
                 className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 transition-colors ${
                   errors.newCompetitor ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
-                } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                }`}
               />
               {errors.newCompetitor && (
                 <p className="text-red-400 text-sm flex items-center gap-1">
@@ -520,169 +431,97 @@ const handleSubmit = async (e: React.FormEvent) => {
                 value={verticalInput}
                 onChange={(e) => setVerticalInput(e.target.value)}
                 onKeyDown={handleVerticalAdd}
-                disabled={isSubmitting}
-                list="verticals-datalist"
-                className={`w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-teal-500 transition-colors ${
-                  isSubmitting ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-teal-500 transition-colors"
                 placeholder="Type vertical and press Enter (e.g., Seafood, Dairy, Bakery)"
               />
-              <datalist id="verticals-datalist">
-                {allVerticals.map((vertical) => (
-                  <option key={vertical} value={vertical} />
-                ))}
-              </datalist>
-              <p className="text-xs text-gray-500">
-                Press Enter or comma to add each vertical. {allVerticals.length > 0 && `${allVerticals.length} existing verticals available for autocomplete.`}
-              </p>
+              <p className="text-xs text-gray-500">Press Enter or comma to add each vertical</p>
             </div>
           </div>
 
-          {/* Input Mode Selection */}
-          <div className="space-y-4">
+          {/* Source Type */}
+          <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-300">
-              Choose Input Method *
+              Source Type *
             </label>
-            <div className="grid grid-cols-3 gap-2">
-              {INPUT_MODES.map((mode) => {
-                const Icon = mode.icon;
-                const isActive = formData.sourceType === mode.value;
-                return (
-                  <button
-                    key={mode.value}
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={() => {
-                      setFormData(prev => ({ 
-                        ...prev, 
-                        sourceType: mode.value,
-                        // Clear other input fields when switching modes
-                        url: mode.value === 'website' ? prev.url : '',
-                        file: mode.value === 'document' ? prev.file : null,
-                        content: mode.value === 'direct' ? prev.content : ''
-                      }));
-                      // Clear file input if switching away from document mode
-                      if (mode.value !== 'document' && fileInputRef.current) {
-                        fileInputRef.current.value = '';
-                      }
-                    }}
-                    className={`p-4 rounded-lg border-2 transition-all text-left ${
-                      isActive
-                        ? 'border-teal-500 bg-teal-500/10 text-teal-400'
-                        : 'border-gray-600 bg-gray-800 text-gray-400 hover:border-gray-500'
-                    } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <Icon className="w-5 h-5" />
-                      <span className="font-medium">{mode.label}</span>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      {mode.description}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
+            <select
+              value={formData.sourceType}
+              onChange={(e) => setFormData(prev => ({ ...prev, sourceType: e.target.value }))}
+              className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white transition-colors ${
+                errors.sourceType ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
+              }`}
+            >
+              {SOURCE_TYPES.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))}
+            </select>
+            {errors.sourceType && (
+              <p className="text-red-400 text-sm flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {errors.sourceType}
+              </p>
+            )}
           </div>
 
-          {/* URL Input - only show when sourceType is 'website' */}
-          {formData.sourceType === 'website' && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">
-                Website URL *
-              </label>
+          {/* File Upload */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-300">
+              File Upload (Optional)
+            </label>
+            <div className="relative">
               <input
-                type="url"
-                value={formData.url}
-                onChange={(e) => setFormData(prev => ({ ...prev, url: e.target.value }))}
-                placeholder="https://competitor-website.com/product-page"
-                disabled={isSubmitting}
-                className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white transition-colors ${
-                  errors.url ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
-                } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                required={formData.sourceType === 'website'}
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileChange}
+                accept=".pdf,.docx,.txt,.md"
+                className="hidden"
               />
-              {errors.url && (
-                <p className="text-red-400 text-sm flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.url}
-                </p>
-              )}
-              <p className="text-xs text-gray-500">
-                Enter the URL to scrape content from the competitor&apos;s website
-              </p>
-            </div>
-          )}
-
-          {/* File Upload - only show when sourceType is 'document' */}
-          {formData.sourceType === 'document' && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">
-                Document Upload *
+              <label
+                htmlFor="file-upload"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center justify-center w-full px-4 py-3 bg-gray-800 
+                         border-2 border-dashed border-gray-600 rounded-lg text-gray-400 
+                         hover:border-teal-500 hover:text-gray-300 cursor-pointer 
+                         transition-all duration-200"
+              >
+                {formData.file ? (
+                  <span className="text-teal-400">{formData.file.name}</span>
+                ) : (
+                  <span>Click to upload or drag and drop</span>
+                )}
               </label>
-              <div className="relative">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  id="file-upload"
-                  onChange={handleFileChange}
-                  accept=".pdf,.docx,.txt,.md"
-                  disabled={isSubmitting}
-                  className="hidden"
-                />
-                <label
-                  htmlFor="file-upload"
-                  className={`flex items-center justify-center w-full px-4 py-3 bg-gray-800 
-                           border-2 border-dashed rounded-lg transition-all duration-200 ${
-                    errors.file 
-                      ? 'border-red-500 text-red-400' 
-                      : 'border-gray-600 text-gray-400 hover:border-teal-500 hover:text-gray-300'
-                  } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                >
-                  {formData.file ? (
-                    <span className="text-teal-400">{formData.file.name}</span>
-                  ) : (
-                    <span>Click to upload or drag and drop</span>
-                  )}
-                </label>
-              </div>
-              <p className="text-xs text-gray-500">Supported formats: PDF, DOCX, TXT, MD (max 3MB)</p>
-              {errors.file && (
-                <p className="text-red-400 text-sm flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.file}
-                </p>
-              )}
             </div>
-          )}
-
-          {/* Content - only show when sourceType is 'direct' */}
-          {formData.sourceType === 'direct' && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">
-                Content *
-              </label>
-              <textarea
-                value={formData.content}
-                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                rows={8}
-                disabled={isSubmitting}
-                className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 resize-none transition-colors ${
-                  errors.content ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
-                } ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                placeholder="Paste or type the competitive intelligence content here..."
-              />
-              {errors.content && (
-                <p className="text-red-400 text-sm flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.content}
-                </p>
-              )}
-              <p className="text-xs text-gray-500">
-                Enter your competitive intelligence content directly
+            <p className="text-xs text-gray-500">Supported formats: PDF, DOCX, TXT, MD</p>
+            {errors.file && (
+              <p className="text-red-400 text-sm flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {errors.file}
               </p>
-            </div>
-          )}
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-300">
+              Content {!formData.file && '*'}
+            </label>
+            <textarea
+              value={formData.content}
+              onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+              rows={8}
+              className={`w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder-gray-400 resize-none transition-colors ${
+                errors.content ? 'border-red-500' : 'border-gray-600 focus:border-teal-500'
+              }`}
+              placeholder="Paste or type the competitive intelligence content here..."
+            />
+            {errors.content && (
+              <p className="text-red-400 text-sm flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {errors.content}
+              </p>
+            )}
+          </div>
 
           {/* Submit Message */}
           {submitMessage && (
