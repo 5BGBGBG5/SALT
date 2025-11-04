@@ -37,7 +37,7 @@ export default function NavBar() {
     { href: '/reports/battlecards', label: 'Battlecards' },
     { href: '/reports/dashboard', label: 'Competitive Intelligence Dashboard' },
     { href: '/reports/geo-similarities', label: 'GEO Similarities' },
-  ];
+  ] as const;
 
   return (
     <nav className="bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100">
