@@ -36,6 +36,7 @@ export default function NavBar() {
     { href: '/reports/competition-heatmap', label: 'Competition Heat Map' },
     { href: '/reports/battlecards', label: 'Battlecards' },
     { href: '/reports/dashboard', label: 'Competitive Intelligence Dashboard' },
+    { href: '/reports/geo-similarities', label: 'GEO Similarities' },
   ];
 
   return (
