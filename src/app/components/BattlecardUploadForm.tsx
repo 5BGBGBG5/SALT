@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, X, ChevronDown, Plus, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { Upload, X, ChevronDown, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface Competitor {
   value: string;
@@ -86,9 +86,9 @@ export default function BattlecardUploadForm({ onClose, onSuccess }: BattlecardU
       if (data.success && Array.isArray(data.competitors)) {
         // Format competitors and add "Add New" option
         const competitorOptions: Competitor[] = [
-          ...data.competitors.map((comp: any) => ({
-            value: comp.value || comp.name || comp.id,
-            label: comp.label || comp.name || comp.id
+          ...data.competitors.map((comp: { value?: string; name?: string; id?: string; label?: string }) => ({
+            value: comp.value || comp.name || comp.id || '',
+            label: comp.label || comp.name || comp.id || ''
           })),
           { value: '__new__', label: '➕ Add New Competitor...' }
         ];
@@ -155,7 +155,14 @@ const handleSubmit = async (e: React.FormEvent) => {
     });
 
     // Prepare the submission data
-    let submitData: any = {
+    const submitData: {
+      competitorSelect: string;
+      newCompetitorName: string;
+      competitor: string;
+      verticals: string[];
+      sourceType: string;
+      content: string;
+    } = {
       competitorSelect: formData.competitorSelect,
       newCompetitorName: formData.newCompetitorName,
       competitor: finalCompetitorName,

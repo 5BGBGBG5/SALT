@@ -6,7 +6,6 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   FileText, 
   Search, 
-  Filter,
   ChevronDown,
   ChevronUp,
   ExternalLink,
