@@ -22,6 +22,28 @@ import MetricCard from '@/app/components/MetricCard';
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
+// Helper to safely parse JSONB data that might be returned as strings from Supabase
+function safeParseJSON<T>(data: T | string | null | undefined): T | null {
+  if (!data) return null;
+  
+  // If it's already an object, return it
+  if (typeof data === 'object' && data !== null) {
+    return data as T;
+  }
+  
+  // If it's a string, try to parse it
+  if (typeof data === 'string') {
+    try {
+      return JSON.parse(data) as T;
+    } catch (e) {
+      console.error('Failed to parse JSON:', e);
+      return null;
+    }
+  }
+  
+  return null;
+}
+
 // Keyword filtering utilities
 const FILTERED_KEYWORDS = [
   // Technical/URL terms
@@ -91,24 +113,24 @@ interface ContentGapReport {
   suggested_faqs: Array<{
     question: string;
     answer: string;
-  }> | null;
+  }> | string | null;
   suggested_tldr: string | null;
   missing_features: {
     missing_keywords: Record<string, number>;
     similarity_score: number;
-  } | null;
+  } | string | null;
   terminology_gaps: {
     missing_keywords: Record<string, number>;
     similarity_score: number;
-  } | null;
+  } | string | null;
   missing_use_cases: {
     missing: string[];
-  } | null;
-  competitive_gaps: Record<string, number> | null;
+  } | string | null;
+  competitive_gaps: Record<string, number> | string | null;
   priority_actions: {
     priority: number;
     actions: string[];
-  } | null;
+  } | string | null;
   inecta_mentioned: boolean;
   inecta_mention_count: number;
   created_at: string;
@@ -227,28 +249,45 @@ export default function GeoSimilaritiesPage() {
 
         const reportsData = (data || []) as ContentGapReport[];
         
-        // Debug: Log first report to see data structure
-        if (reportsData.length > 0) {
-          console.log('Sample report data:', {
-            id: reportsData[0].id,
-            has_missing_features: !!reportsData[0].missing_features,
-            has_terminology_gaps: !!reportsData[0].terminology_gaps,
-            has_missing_use_cases: !!reportsData[0].missing_use_cases,
-            missing_features_keys: reportsData[0].missing_features?.missing_keywords ? Object.keys(reportsData[0].missing_features.missing_keywords).length : 0,
-            terminology_keys: reportsData[0].terminology_gaps?.missing_keywords ? Object.keys(reportsData[0].terminology_gaps.missing_keywords).length : 0,
-            use_cases_count: reportsData[0].missing_use_cases?.missing ? reportsData[0].missing_use_cases.missing.length : 0
+        // Parse JSONB fields that might be strings
+        const parsedReports = reportsData.map(report => ({
+          ...report,
+          suggested_faqs: safeParseJSON(report.suggested_faqs),
+          missing_features: safeParseJSON(report.missing_features),
+          terminology_gaps: safeParseJSON(report.terminology_gaps),
+          missing_use_cases: safeParseJSON(report.missing_use_cases),
+          competitive_gaps: safeParseJSON(report.competitive_gaps),
+          priority_actions: safeParseJSON(report.priority_actions),
+        }));
+        
+        // Debug: Log first report to see data structure AFTER parsing
+        if (parsedReports.length > 0) {
+          const firstReport = parsedReports[0];
+          console.log('Sample report data (after parsing):', {
+            id: firstReport.id,
+            has_missing_features: !!firstReport.missing_features,
+            has_terminology_gaps: !!firstReport.terminology_gaps,
+            has_missing_use_cases: !!firstReport.missing_use_cases,
+            missing_features_type: typeof firstReport.missing_features,
+            missing_features_keys: firstReport.missing_features?.missing_keywords ? Object.keys(firstReport.missing_features.missing_keywords).length : 0,
+            terminology_keys: firstReport.terminology_gaps?.missing_keywords ? Object.keys(firstReport.terminology_gaps.missing_keywords).length : 0,
+            use_cases_count: firstReport.missing_use_cases?.missing ? firstReport.missing_use_cases.missing.length : 0,
+            // Log actual data for debugging
+            missing_features_sample: firstReport.missing_features?.missing_keywords ? Object.keys(firstReport.missing_features.missing_keywords).slice(0, 3) : [],
+            terminology_sample: firstReport.terminology_gaps?.missing_keywords ? Object.keys(firstReport.terminology_gaps.missing_keywords).slice(0, 3) : [],
+            use_cases_sample: firstReport.missing_use_cases?.missing ? firstReport.missing_use_cases.missing.slice(0, 3) : []
           });
         }
         
-        setReports(reportsData);
+        setReports(parsedReports);
 
         // Calculate stats
-        const totalReports = reportsData.length;
-        const highPriority = reportsData.filter(r => r.priority_score >= 4).length;
-        const avgSimilarity = reportsData.length > 0
-          ? reportsData.reduce((sum, r) => sum + (r.similarity_score * 100), 0) / reportsData.length
+        const totalReports = parsedReports.length;
+        const highPriority = parsedReports.filter(r => r.priority_score >= 4).length;
+        const avgSimilarity = parsedReports.length > 0
+          ? parsedReports.reduce((sum, r) => sum + (r.similarity_score * 100), 0) / parsedReports.length
           : 0;
-        const inectaMentions = reportsData.filter(r => r.inecta_mentioned).length;
+        const inectaMentions = parsedReports.filter(r => r.inecta_mentioned).length;
 
         setStats({
           total_reports: totalReports,
@@ -289,18 +328,23 @@ export default function GeoSimilaritiesPage() {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
+        const missingFeatures = report.missing_features?.missing_keywords 
+          ? Object.keys(report.missing_features.missing_keywords) 
+          : [];
+        const terminologyGaps = report.terminology_gaps?.missing_keywords 
+          ? Object.keys(report.terminology_gaps.missing_keywords) 
+          : [];
+        const useCases = report.missing_use_cases?.missing || [];
+        const faqs = report.suggested_faqs || [];
+        
         const searchableText = [
           report.page_title,
           report.persona_name,
           report.suggested_tldr,
-          ...(report.missing_features?.missing_keywords
-            ? Object.keys(report.missing_features.missing_keywords)
-            : []),
-          ...(report.terminology_gaps?.missing_keywords
-            ? Object.keys(report.terminology_gaps.missing_keywords)
-            : []),
-          ...(report.missing_use_cases?.missing || []),
-          ...(report.suggested_faqs?.map(faq => `${faq.question} ${faq.answer}`) || [])
+          ...missingFeatures,
+          ...terminologyGaps,
+          ...useCases,
+          ...(Array.isArray(faqs) ? faqs.map(faq => `${faq.question} ${faq.answer}`) : [])
         ].join(' ').toLowerCase();
 
         if (!searchableText.includes(searchLower)) return false;
@@ -345,19 +389,20 @@ export default function GeoSimilaritiesPage() {
   };
 
   const getMissingKeywords = (report: ContentGapReport): string[] => {
-    if (!report.missing_features) return [];
+    const missingFeatures = report.missing_features;
+    if (!missingFeatures) return [];
     
     // Handle different possible structures
-    if (typeof report.missing_features === 'object' && 'missing_keywords' in report.missing_features) {
-      const missingKeywords = report.missing_features.missing_keywords;
+    if (typeof missingFeatures === 'object' && 'missing_keywords' in missingFeatures) {
+      const missingKeywords = missingFeatures.missing_keywords;
       if (typeof missingKeywords === 'object' && missingKeywords !== null) {
         return Object.keys(missingKeywords).slice(0, 10);
       }
     }
     
     // If missing_features is directly an object with keywords
-    if (typeof report.missing_features === 'object' && report.missing_features !== null) {
-      const keys = Object.keys(report.missing_features).filter(k => k !== 'similarity_score');
+    if (typeof missingFeatures === 'object' && missingFeatures !== null) {
+      const keys = Object.keys(missingFeatures).filter(k => k !== 'similarity_score');
       if (keys.length > 0) {
         return keys.slice(0, 10);
       }
@@ -367,38 +412,59 @@ export default function GeoSimilaritiesPage() {
   };
 
   const getFilteredFeatures = (report: ContentGapReport): Record<string, number> => {
-    if (!report.missing_features?.missing_keywords) return {};
-    const filtered = filterKeywords(report.missing_features.missing_keywords);
+    const missingFeatures = report.missing_features;
+    if (!missingFeatures || typeof missingFeatures !== 'object') return {};
+    
+    // Get the missing_keywords object
+    const keywords = missingFeatures.missing_keywords;
+    if (!keywords || typeof keywords !== 'object') return {};
+    
+    // Filter the keywords
+    const filtered = filterKeywords(keywords);
+    
     // If filtering removed everything, show at least some keywords (unfiltered, top 15)
     if (Object.keys(filtered).length === 0) {
-      const allKeywords = report.missing_features.missing_keywords;
-      const sorted = Object.entries(allKeywords)
+      const sorted = Object.entries(keywords)
         .filter(([keyword]) => keyword.length > 2) // Still filter very short words
         .sort((a, b) => b[1] - a[1])
         .slice(0, 15);
       return Object.fromEntries(sorted);
     }
+    
     return filtered;
   };
 
   const getFilteredTerminology = (report: ContentGapReport): Record<string, number> => {
-    if (!report.terminology_gaps?.missing_keywords) return {};
-    const filtered = filterKeywords(report.terminology_gaps.missing_keywords);
+    const terminologyGaps = report.terminology_gaps;
+    if (!terminologyGaps || typeof terminologyGaps !== 'object') return {};
+    
+    // Get the missing_keywords object
+    const keywords = terminologyGaps.missing_keywords;
+    if (!keywords || typeof keywords !== 'object') return {};
+    
+    // Filter the keywords
+    const filtered = filterKeywords(keywords);
+    
     // If filtering removed everything, show at least some keywords (unfiltered, top 15)
     if (Object.keys(filtered).length === 0) {
-      const allKeywords = report.terminology_gaps.missing_keywords;
-      const sorted = Object.entries(allKeywords)
+      const sorted = Object.entries(keywords)
         .filter(([keyword]) => keyword.length > 2) // Still filter very short words
         .sort((a, b) => b[1] - a[1])
         .slice(0, 15);
       return Object.fromEntries(sorted);
     }
+    
     return filtered;
   };
 
   const getFilteredUseCases = (report: ContentGapReport): string[] => {
-    if (!report.missing_use_cases?.missing) return [];
-    return filterUseCases(report.missing_use_cases.missing);
+    const useCasesData = report.missing_use_cases;
+    if (!useCasesData || typeof useCasesData !== 'object') return [];
+    
+    const useCases = useCasesData.missing;
+    if (!useCases || !Array.isArray(useCases)) return [];
+    
+    return filterUseCases(useCases);
   };
 
   return (
@@ -576,7 +642,7 @@ export default function GeoSimilaritiesPage() {
                 {filteredReports.map((report) => {
                   const isExpanded = expandedCards.has(report.id);
                   const missingKeywords = getMissingKeywords(report);
-                  const faqs = report.suggested_faqs || [];
+                  const faqs = Array.isArray(report.suggested_faqs) ? report.suggested_faqs : [];
 
                   return (
                     <motion.div
