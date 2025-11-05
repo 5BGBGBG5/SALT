@@ -38,6 +38,7 @@ export default function Header() {
     { href: '/reports/competitor-content', label: 'Competitor Content Report' },
     { href: '/reports/dashboard', label: 'Competitive Intelligence Dashboard' },
     { href: '/reports/bdr-calls-transcript', label: 'BDR Calls Transcript' },
+    { href: '/reports/geo-similarities', label: 'GEO Similarities' },
   ];
 
   return (
