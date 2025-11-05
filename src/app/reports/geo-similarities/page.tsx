@@ -22,6 +22,61 @@ import MetricCard from '@/app/components/MetricCard';
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
+// Keyword filtering utilities
+const FILTERED_KEYWORDS = [
+  // Technical/URL terms
+  'https', 'http', 'www',
+  
+  // Generic/vague terms
+  'source', 'overview', 'features', 'solutions',
+  
+  // Navigation terms
+  'contact', 'about', 'home', 'page',
+  
+  // Common words that aren't meaningful
+  'click', 'learn', 'more', 'read', 'multi',
+  
+  // Add competitor names if you want to filter them
+  // 'aptean', 'sap', 'oracle'
+];
+
+function filterKeywords(keywords: Record<string, number> | undefined): Record<string, number> {
+  if (!keywords || typeof keywords !== 'object') return {};
+  
+  const filtered: Record<string, number> = {};
+  
+  for (const [keyword, count] of Object.entries(keywords)) {
+    const lowerKeyword = keyword.toLowerCase();
+    
+    // Skip filtered terms
+    if (FILTERED_KEYWORDS.includes(lowerKeyword)) continue;
+    
+    // Skip very short words
+    if (keyword.length <= 2) continue;
+    
+    // Skip numbers only
+    if (/^\d+$/.test(keyword)) continue;
+    
+    // Skip if appears only once (might be noise)
+    if (count < 2) continue;
+    
+    filtered[keyword] = count;
+  }
+  
+  return filtered;
+}
+
+function filterUseCases(useCases: string[] | undefined): string[] {
+  if (!useCases || !Array.isArray(useCases)) return [];
+  
+  return useCases
+    .filter(useCase => {
+      const lowerCase = useCase.toLowerCase();
+      return !FILTERED_KEYWORDS.includes(lowerCase) && useCase.length > 2;
+    })
+    .slice(0, 10); // Limit to top 10
+}
+
 interface ContentGapReport {
   id: string;
   query_id: string;
@@ -41,6 +96,13 @@ interface ContentGapReport {
   missing_features: {
     missing_keywords: Record<string, number>;
     similarity_score: number;
+  } | null;
+  terminology_gaps: {
+    missing_keywords: Record<string, number>;
+    similarity_score: number;
+  } | null;
+  missing_use_cases: {
+    missing: string[];
   } | null;
   competitive_gaps: Record<string, number> | null;
   priority_actions: {
@@ -147,6 +209,8 @@ export default function GeoSimilaritiesPage() {
             suggested_faqs,
             suggested_tldr,
             missing_features,
+            terminology_gaps,
+            missing_use_cases,
             competitive_gaps,
             priority_actions,
             inecta_mentioned,
@@ -218,6 +282,10 @@ export default function GeoSimilaritiesPage() {
           ...(report.missing_features?.missing_keywords
             ? Object.keys(report.missing_features.missing_keywords)
             : []),
+          ...(report.terminology_gaps?.missing_keywords
+            ? Object.keys(report.terminology_gaps.missing_keywords)
+            : []),
+          ...(report.missing_use_cases?.missing || []),
           ...(report.suggested_faqs?.map(faq => `${faq.question} ${faq.answer}`) || [])
         ].join(' ').toLowerCase();
 
@@ -282,6 +350,21 @@ export default function GeoSimilaritiesPage() {
     }
     
     return [];
+  };
+
+  const getFilteredFeatures = (report: ContentGapReport): Record<string, number> => {
+    if (!report.missing_features?.missing_keywords) return {};
+    return filterKeywords(report.missing_features.missing_keywords);
+  };
+
+  const getFilteredTerminology = (report: ContentGapReport): Record<string, number> => {
+    if (!report.terminology_gaps?.missing_keywords) return {};
+    return filterKeywords(report.terminology_gaps.missing_keywords);
+  };
+
+  const getFilteredUseCases = (report: ContentGapReport): string[] => {
+    if (!report.missing_use_cases?.missing) return [];
+    return filterUseCases(report.missing_use_cases.missing);
   };
 
   return (
@@ -566,6 +649,137 @@ export default function GeoSimilaritiesPage() {
                           )}
                         </div>
                       )}
+
+                      {/* Missing Features Section */}
+                      {(() => {
+                        const filteredFeatures = getFilteredFeatures(report);
+                        const featuresCount = Object.keys(filteredFeatures).length;
+                        
+                        if (featuresCount === 0) return null;
+                        
+                        return (
+                          <div className="mb-4">
+                            <button
+                              onClick={() => toggleCardExpansion(`${report.id}-features`)}
+                              className="flex items-center justify-between w-full text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+                            >
+                              <span>🔧 Missing Features ({featuresCount})</span>
+                              {expandedCards.has(`${report.id}-features`) ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                            {expandedCards.has(`${report.id}-features`) && (
+                              <div className="mt-3">
+                                <p className="text-xs text-gray-400 mb-2">
+                                  Key features mentioned in AI responses but missing from this page:
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {Object.entries(filteredFeatures)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .slice(0, 15)
+                                    .map(([keyword, count]) => (
+                                      <span
+                                        key={keyword}
+                                        className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded border border-blue-500/50 flex items-center gap-1"
+                                      >
+                                        <strong>{keyword}</strong>
+                                        <span className="text-blue-400/70">×{count}</span>
+                                      </span>
+                                    ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Terminology Gaps Section */}
+                      {(() => {
+                        const filteredTerminology = getFilteredTerminology(report);
+                        const terminologyCount = Object.keys(filteredTerminology).length;
+                        
+                        if (terminologyCount === 0) return null;
+                        
+                        return (
+                          <div className="mb-4">
+                            <button
+                              onClick={() => toggleCardExpansion(`${report.id}-terminology`)}
+                              className="flex items-center justify-between w-full text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+                            >
+                              <span>📚 Terminology Gaps ({terminologyCount})</span>
+                              {expandedCards.has(`${report.id}-terminology`) ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                            {expandedCards.has(`${report.id}-terminology`) && (
+                              <div className="mt-3">
+                                <p className="text-xs text-gray-400 mb-2">
+                                  Industry terms used by AI but not present on your page:
+                                </p>
+                                <div className="flex flex-wrap gap-2">
+                                  {Object.entries(filteredTerminology)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .slice(0, 15)
+                                    .map(([keyword, count]) => (
+                                      <span
+                                        key={keyword}
+                                        className="px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs rounded border border-yellow-500/50 flex items-center gap-1"
+                                      >
+                                        <strong>{keyword}</strong>
+                                        <span className="text-yellow-400/70">×{count}</span>
+                                      </span>
+                                    ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+
+                      {/* Missing Use Cases Section */}
+                      {(() => {
+                        const filteredUseCasesData = getFilteredUseCases(report);
+                        
+                        if (filteredUseCasesData.length === 0) return null;
+                        
+                        return (
+                          <div className="mb-4">
+                            <button
+                              onClick={() => toggleCardExpansion(`${report.id}-usecases`)}
+                              className="flex items-center justify-between w-full text-sm font-semibold text-gray-300 hover:text-white transition-colors"
+                            >
+                              <span>💼 Missing Use Cases ({filteredUseCasesData.length})</span>
+                              {expandedCards.has(`${report.id}-usecases`) ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                            {expandedCards.has(`${report.id}-usecases`) && (
+                              <div className="mt-3">
+                                <p className="text-xs text-gray-400 mb-2">
+                                  Important use cases/themes to address on this page:
+                                </p>
+                                <div className="space-y-2">
+                                  {filteredUseCasesData.map((useCase, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-start gap-2 p-2 bg-gray-800/50 rounded border border-gray-700"
+                                    >
+                                      <span className="text-teal-400 font-bold text-sm">•</span>
+                                      <span className="text-sm text-gray-300 capitalize">{useCase}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
 
                       {/* Action Buttons */}
                       <div className="flex gap-2 mt-4 pt-4 border-t border-gray-700">
