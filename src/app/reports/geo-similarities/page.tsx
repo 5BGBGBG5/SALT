@@ -157,6 +157,7 @@ export default function GeoSimilaritiesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPersona, setSelectedPersona] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('');
+  const [selectedUrl, setSelectedUrl] = useState('');
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [latestExecutionDate, setLatestExecutionDate] = useState<string>('');
 
@@ -164,6 +165,12 @@ export default function GeoSimilaritiesPage() {
   const personas = useMemo(() => {
     const uniquePersonas = Array.from(new Set(reports.map(r => r.persona_name).filter(Boolean)));
     return uniquePersonas.sort();
+  }, [reports]);
+
+  // Get unique URLs from reports
+  const urls = useMemo(() => {
+    const uniqueUrls = Array.from(new Set(reports.map(r => r.target_page_url).filter(Boolean)));
+    return uniqueUrls.sort();
   }, [reports]);
 
   // Fetch reports from Supabase
@@ -325,6 +332,9 @@ export default function GeoSimilaritiesPage() {
       // Persona filter
       if (selectedPersona && report.persona_name !== selectedPersona) return false;
 
+      // URL filter
+      if (selectedUrl && report.target_page_url !== selectedUrl) return false;
+
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
@@ -361,7 +371,7 @@ export default function GeoSimilaritiesPage() {
 
       return true;
     });
-  }, [reports, activeTab, searchTerm, selectedPersona, selectedPriority]);
+  }, [reports, activeTab, searchTerm, selectedPersona, selectedPriority, selectedUrl]);
 
   const toggleCardExpansion = (reportId: string) => {
     setExpandedCards(prev => {
@@ -591,6 +601,23 @@ export default function GeoSimilaritiesPage() {
                     <option value="high">High (4-5)</option>
                     <option value="medium">Medium (3)</option>
                     <option value="low">Low (1-2)</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                </div>
+
+                {/* URL Filter */}
+                <div className="relative">
+                  <select
+                    value={selectedUrl}
+                    onChange={(e) => setSelectedUrl(e.target.value)}
+                    className="appearance-none pl-4 pr-10 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent min-w-[200px]"
+                  >
+                    <option value="">All URLs</option>
+                    {urls.map(url => (
+                      <option key={url} value={url} title={url}>
+                        {url.length > 40 ? `${url.substring(0, 40)}...` : url}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                 </div>
