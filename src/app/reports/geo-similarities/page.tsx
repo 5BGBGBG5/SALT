@@ -57,8 +57,8 @@ function filterKeywords(keywords: Record<string, number> | undefined): Record<st
     // Skip numbers only
     if (/^\d+$/.test(keyword)) continue;
     
-    // Skip if appears only once (might be noise)
-    if (count < 2) continue;
+    // Show keywords that appear at least once (relaxed from 2 to show more results)
+    if (count < 1) continue;
     
     filtered[keyword] = count;
   }
@@ -226,6 +226,20 @@ export default function GeoSimilaritiesPage() {
         }
 
         const reportsData = (data || []) as ContentGapReport[];
+        
+        // Debug: Log first report to see data structure
+        if (reportsData.length > 0) {
+          console.log('Sample report data:', {
+            id: reportsData[0].id,
+            has_missing_features: !!reportsData[0].missing_features,
+            has_terminology_gaps: !!reportsData[0].terminology_gaps,
+            has_missing_use_cases: !!reportsData[0].missing_use_cases,
+            missing_features_keys: reportsData[0].missing_features?.missing_keywords ? Object.keys(reportsData[0].missing_features.missing_keywords).length : 0,
+            terminology_keys: reportsData[0].terminology_gaps?.missing_keywords ? Object.keys(reportsData[0].terminology_gaps.missing_keywords).length : 0,
+            use_cases_count: reportsData[0].missing_use_cases?.missing ? reportsData[0].missing_use_cases.missing.length : 0
+          });
+        }
+        
         setReports(reportsData);
 
         // Calculate stats
@@ -354,12 +368,32 @@ export default function GeoSimilaritiesPage() {
 
   const getFilteredFeatures = (report: ContentGapReport): Record<string, number> => {
     if (!report.missing_features?.missing_keywords) return {};
-    return filterKeywords(report.missing_features.missing_keywords);
+    const filtered = filterKeywords(report.missing_features.missing_keywords);
+    // If filtering removed everything, show at least some keywords (unfiltered, top 15)
+    if (Object.keys(filtered).length === 0) {
+      const allKeywords = report.missing_features.missing_keywords;
+      const sorted = Object.entries(allKeywords)
+        .filter(([keyword]) => keyword.length > 2) // Still filter very short words
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15);
+      return Object.fromEntries(sorted);
+    }
+    return filtered;
   };
 
   const getFilteredTerminology = (report: ContentGapReport): Record<string, number> => {
     if (!report.terminology_gaps?.missing_keywords) return {};
-    return filterKeywords(report.terminology_gaps.missing_keywords);
+    const filtered = filterKeywords(report.terminology_gaps.missing_keywords);
+    // If filtering removed everything, show at least some keywords (unfiltered, top 15)
+    if (Object.keys(filtered).length === 0) {
+      const allKeywords = report.terminology_gaps.missing_keywords;
+      const sorted = Object.entries(allKeywords)
+        .filter(([keyword]) => keyword.length > 2) // Still filter very short words
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15);
+      return Object.fromEntries(sorted);
+    }
+    return filtered;
   };
 
   const getFilteredUseCases = (report: ContentGapReport): string[] => {
