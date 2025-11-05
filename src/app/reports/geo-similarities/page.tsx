@@ -328,14 +328,23 @@ export default function GeoSimilaritiesPage() {
       // Search filter
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
-        const missingFeatures = report.missing_features?.missing_keywords 
+        
+        // Safely extract keywords from missing_features
+        const missingFeatures = (report.missing_features && typeof report.missing_features === 'object' && 'missing_keywords' in report.missing_features)
           ? Object.keys(report.missing_features.missing_keywords) 
           : [];
-        const terminologyGaps = report.terminology_gaps?.missing_keywords 
+        
+        // Safely extract keywords from terminology_gaps
+        const terminologyGaps = (report.terminology_gaps && typeof report.terminology_gaps === 'object' && 'missing_keywords' in report.terminology_gaps)
           ? Object.keys(report.terminology_gaps.missing_keywords) 
           : [];
-        const useCases = report.missing_use_cases?.missing || [];
-        const faqs = report.suggested_faqs || [];
+        
+        // Safely extract use cases
+        const useCases = (report.missing_use_cases && typeof report.missing_use_cases === 'object' && 'missing' in report.missing_use_cases && Array.isArray(report.missing_use_cases.missing))
+          ? report.missing_use_cases.missing
+          : [];
+        
+        const faqs = Array.isArray(report.suggested_faqs) ? report.suggested_faqs : [];
         
         const searchableText = [
           report.page_title,
@@ -344,7 +353,7 @@ export default function GeoSimilaritiesPage() {
           ...missingFeatures,
           ...terminologyGaps,
           ...useCases,
-          ...(Array.isArray(faqs) ? faqs.map(faq => `${faq.question} ${faq.answer}`) : [])
+          ...(faqs.map(faq => `${faq.question} ${faq.answer}`))
         ].join(' ').toLowerCase();
 
         if (!searchableText.includes(searchLower)) return false;
