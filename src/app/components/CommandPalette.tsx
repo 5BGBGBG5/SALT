@@ -14,7 +14,10 @@ import {
   AlertCircle,
   CheckCircle,
   Loader2,
-  ArrowLeft
+  ArrowLeft,
+  Bot,
+  Send,
+  User as UserIcon
 } from 'lucide-react';
 
 // TypeScript Interfaces
@@ -43,6 +46,21 @@ interface BattlecardForm {
   sourceType: string;
 }
 
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  isLoading?: boolean;
+}
+
+interface ChatState {
+  messages: ChatMessage[];
+  isLoading: boolean;
+  error: string | null;
+  sessionId: string;
+}
+
 type ViewState = 'main' | 'battlecard-upload' | 'company-analysis';
 
 export default function CommandPalette() {
@@ -67,10 +85,21 @@ export default function CommandPalette() {
     sourceType: 'battlecard'
   });
 
+  // Chat state for company deep dive
+  const [chatState, setChatState] = useState<ChatState>({
+    messages: [],
+    isLoading: false,
+    error: null,
+    sessionId: `session-${Date.now()}`
+  });
+  const [chatInput, setChatInput] = useState('');
+
   // Refs
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const chatMessagesRef = useRef<HTMLDivElement>(null);
+  const chatInputRef = useRef<HTMLInputElement>(null);
 
   // Commands Configuration
   const commands: Command[] = [
@@ -86,10 +115,27 @@ export default function CommandPalette() {
     {
       id: 'company-deep-dive',
       name: 'Company Deep Dive',
-      description: 'Generate comprehensive company analysis',
+      description: 'AI-powered analysis of Inecta and competitors',
       icon: <Building2 className="w-4 h-4" />,
       category: 'analysis',
-      action: () => console.log('Company Deep Dive - Coming Soon'),
+      action: () => {
+        setCurrentView('company-analysis');
+        // Add welcome message if no messages exist
+        setChatState(prev => {
+          if (prev.messages.length === 0) {
+            return {
+              ...prev,
+              messages: [{
+                id: `msg-${Date.now()}`,
+                role: 'assistant',
+                content: "Hi! I can help you with information about Inecta Food ERP and compare it with competitors like Business Central, NetSuite, and others. What would you like to know?",
+                timestamp: new Date()
+              }]
+            };
+          }
+          return prev;
+        });
+      },
       keywords: ['company', 'analysis', 'deep', 'dive', 'research']
     },
     {
@@ -190,6 +236,20 @@ export default function CommandPalette() {
     }
   }, [isOpen, currentView]);
 
+  // Auto-focus chat input when company-analysis view is active
+  useEffect(() => {
+    if (currentView === 'company-analysis' && chatInputRef.current) {
+      chatInputRef.current.focus();
+    }
+  }, [currentView]);
+
+  // Auto-scroll chat messages to bottom
+  useEffect(() => {
+    if (chatMessagesRef.current) {
+      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    }
+  }, [chatState.messages]);
+
   // Reset selected index when query changes
   useEffect(() => {
     setSelectedIndex(0);
@@ -241,6 +301,70 @@ export default function CommandPalette() {
         content: '' // Clear content when file is selected
       }));
       setUploadState(prev => ({ ...prev, error: null }));
+    }
+  };
+
+  // Chat Submit Handler
+  const handleChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const message = chatInput.trim();
+    if (!message || chatState.isLoading) return;
+
+    // Add user message
+    const userMessage: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      role: 'user',
+      content: message,
+      timestamp: new Date()
+    };
+
+    setChatState(prev => ({
+      ...prev,
+      messages: [...prev.messages, userMessage],
+      isLoading: true,
+      error: null
+    }));
+    setChatInput('');
+
+    try {
+      const response = await fetch('/api/company-deep-dive', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: message,
+          sessionId: chatState.sessionId,
+          context: { timestamp: new Date().toISOString() }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      const assistantMessage: ChatMessage = {
+        id: `msg-${Date.now()}`,
+        role: 'assistant',
+        content: data.response || data.message || 'I apologize, but I couldn\'t generate a response. Please try again.',
+        timestamp: new Date()
+      };
+
+      setChatState(prev => ({
+        ...prev,
+        messages: [...prev.messages, assistantMessage],
+        isLoading: false,
+        error: null
+      }));
+    } catch (error) {
+      setChatState(prev => ({
+        ...prev,
+        isLoading: false,
+        error: error instanceof Error ? error.message : 'Failed to get response. Please try again.'
+      }));
     }
   };
 
@@ -389,6 +513,114 @@ export default function CommandPalette() {
           ))
         )}
       </div>
+    </>
+  );
+
+  // Render Chat View
+  const renderChatView = () => (
+    <>
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-4 border-b border-emerald-500/20">
+        <button
+          onClick={() => setCurrentView('main')}
+          className="p-1 rounded-lg hover:bg-emerald-500/20 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4 text-emerald-400" />
+        </button>
+        <Bot className="w-5 h-5 text-emerald-400" />
+        <div className="flex-1">
+          <h2 className="text-lg font-semibold text-white">Company Deep Dive</h2>
+          <p className="text-xs text-gray-400">AI-powered competitive intelligence</p>
+        </div>
+      </div>
+
+      {/* Messages Container */}
+      <div 
+        ref={chatMessagesRef}
+        className="flex-1 overflow-y-auto max-h-96 p-4 space-y-4"
+      >
+        {chatState.messages.map((message) => (
+          <div
+            key={message.id}
+            className={`flex gap-3 ${
+              message.role === 'user' ? 'justify-end' : 'justify-start'
+            }`}
+          >
+            {message.role === 'assistant' && (
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-emerald-400" />
+              </div>
+            )}
+            <div
+              className={`max-w-[80%] rounded-lg px-4 py-3 ${
+                message.role === 'user'
+                  ? 'bg-emerald-600 text-white'
+                  : 'bg-gray-800/50 border border-gray-700 text-gray-100'
+              }`}
+            >
+              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+              <p className={`text-xs mt-2 ${
+                message.role === 'user' ? 'text-emerald-100' : 'text-gray-400'
+              }`}>
+                {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+            {message.role === 'user' && (
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-600/20 flex items-center justify-center">
+                <UserIcon className="w-4 h-4 text-emerald-400" />
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Loading Indicator */}
+        {chatState.isLoading && (
+          <div className="flex gap-3 justify-start">
+            <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              <Bot className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="bg-gray-800/50 border border-gray-700 rounded-lg px-4 py-3">
+              <div className="flex items-center gap-2 text-gray-400">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm">Thinking...</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {chatState.error && (
+          <div className="flex items-center gap-2 p-3 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span className="text-sm">{chatState.error}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Input Form */}
+      <form onSubmit={handleChatSubmit} className="p-4 border-t border-emerald-500/20">
+        <div className="flex gap-2">
+          <input
+            ref={chatInputRef}
+            type="text"
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            placeholder="Ask about Inecta or competitors..."
+            disabled={chatState.isLoading}
+            className="flex-1 px-4 py-2 bg-gray-800/50 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 focus:outline-none transition-all disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={chatState.isLoading || !chatInput.trim()}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mt-2 px-1">
+          Try: &quot;How does Inecta handle traceability?&quot; or &quot;Compare Inecta to Business Central&quot;
+        </p>
+      </form>
     </>
   );
 
@@ -556,10 +788,11 @@ export default function CommandPalette() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center pt-20">
           <div
             ref={modalRef}
-            className="w-full max-w-2xl mx-4 bg-gray-900/95 backdrop-blur-xl border border-emerald-500/20 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-top-4 duration-300"
+            className="w-full max-w-2xl mx-4 bg-gray-900/95 backdrop-blur-xl border border-emerald-500/20 rounded-xl shadow-2xl overflow-hidden animate-in slide-in-from-top-4 duration-300 flex flex-col max-h-[80vh]"
           >
             {currentView === 'main' && renderMainView()}
             {currentView === 'battlecard-upload' && renderBattlecardUploadView()}
+            {currentView === 'company-analysis' && renderChatView()}
             
             {/* Close Button */}
             <button
