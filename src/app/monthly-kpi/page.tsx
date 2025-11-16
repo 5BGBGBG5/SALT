@@ -446,6 +446,22 @@ export default function MonthlyKPIPage() {
 
       console.log('[MonthlyKPI] Filtered engagement data count:', filteredEngagementData.length);
 
+      // Fetch industry engagement data from database function
+      console.log('[MonthlyKPI] Fetching industry engagement data from database function...');
+      const { data: industryEngagementData, error: industryEngagementError } = await supabase
+        .rpc('get_monthly_industry_engagement', {
+          start_date: dateRange.from,
+          end_date: dateRange.to
+        });
+
+      if (industryEngagementError) {
+        console.error('[MonthlyKPI] Industry engagement RPC error:', industryEngagementError);
+        // Continue with client-side fallback if RPC fails
+        console.warn('[MonthlyKPI] Falling back to client-side industry aggregation');
+      }
+
+      console.log('[MonthlyKPI] Industry engagement data count:', industryEngagementData?.length || 0);
+
       // Process and aggregate data by month
       const monthlyData = new Map<string, MonthlyKPI>();
 
@@ -482,17 +498,25 @@ export default function MonthlyKPIPage() {
         }
       }
 
-      // Process engagement data
+      // Populate industry breakdown from database function results
+      if (industryEngagementData && !industryEngagementError) {
+        industryEngagementData.forEach((row: { month: string; industry: string; engagement_count: number }) => {
+          const monthKey = row.month;
+          const monthData = monthlyData.get(monthKey);
+          if (monthData) {
+            monthData.industry_breakdown[row.industry] = Number(row.engagement_count);
+          }
+        });
+        console.log('[MonthlyKPI] Industry breakdown populated from database function');
+      }
+
+      // Process engagement data (for role, company size, and interaction counts)
       filteredEngagementData.forEach(engagement => {
         const monthKey = engagement.engagement_timestamp.slice(0, 7) + '-01';
         const monthData = monthlyData.get(monthKey);
         
         if (monthData) {
           monthData.post_interactions++;
-
-          // Industry breakdown
-          const industry = engagement.engager_company_industry || 'Other/Blank';
-          monthData.industry_breakdown[industry] = (monthData.industry_breakdown[industry] || 0) + 1;
 
           // Role breakdown
           const jobTitle = (engagement.engager_job_title || '').toLowerCase();
