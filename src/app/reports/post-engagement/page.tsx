@@ -63,6 +63,39 @@ type FilterConfig = {
   date_to: string;
 };
 
+const TruncatedText = ({ 
+  text, 
+  maxLength = 100 
+}: { 
+  text: string | null; 
+  maxLength?: number;
+}) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  if (!text) return <>N/A</>;
+  
+  const shouldTruncate = text.length > maxLength;
+  const displayText = isExpanded || !shouldTruncate 
+    ? text 
+    : text.substring(0, maxLength) + '...';
+  
+  return (
+    <div className="max-w-xs">
+      <div className="text-sm">
+        {displayText}
+      </div>
+      {shouldTruncate && (
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="text-xs text-blue-500 hover:text-blue-700 mt-1"
+        >
+          {isExpanded ? 'Show Less' : 'Show More'}
+        </button>
+      )}
+    </div>
+  );
+};
+
 const PostEngagementTable = ({ 
   data, 
   isLoading, 
@@ -513,7 +546,7 @@ const PostEngagementTable = ({
               {filteredAndSortedData.map((row, index) => (
                 <tr key={index} className="hover:bg-teal-500/5 transition-colors">
                   {visibleColumns.type && (
-                    <td className="px-6 py-4 whitespace-normal min-w-[100px]">
+                    <td className="px-4 py-2 whitespace-normal min-w-[100px]">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                         row.engagement_type === 'like' ? 'bg-green-100 text-green-800' :
                         row.engagement_type === 'comment' ? 'bg-blue-100 text-blue-800' :
@@ -524,47 +557,55 @@ const PostEngagementTable = ({
                     </td>
                   )}
                   {visibleColumns.engager_name && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {row.engager_name || 'N/A'}
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+                      <div className="max-w-[150px] truncate" title={row.engager_name || 'N/A'}>
+                        {row.engager_name || 'N/A'}
+                      </div>
                     </td>
                   )}
                   {visibleColumns.engager_company_name && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {row.engager_company_name ? (
-                        row.engager_company_url ? (
-                          <a href={row.engager_company_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
-                            {row.engager_company_name}
-                          </a>
+                    <td className="px-4 py-2 text-sm text-gray-500">
+                      <div className="max-w-[180px] truncate" title={row.engager_company_name || 'N/A'}>
+                        {row.engager_company_name ? (
+                          row.engager_company_url ? (
+                            <a href={row.engager_company_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
+                              {row.engager_company_name}
+                            </a>
+                          ) : (
+                            row.engager_company_name
+                          )
                         ) : (
-                          row.engager_company_name
-                        )
-                      ) : (
-                        'N/A'
-                      )}
+                          'N/A'
+                        )}
+                      </div>
                     </td>
                   )}
                   {visibleColumns.engager_company_industry && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {row.engager_company_industry || 'N/A'}
+                    <td className="px-4 py-2 text-sm text-gray-500">
+                      <div className="max-w-[150px] truncate" title={row.engager_company_industry || 'N/A'}>
+                        {row.engager_company_industry || 'N/A'}
+                      </div>
                     </td>
                   )}
                   {visibleColumns.engager_company_size && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                       {row.engager_company_size || 'N/A'}
                     </td>
                   )}
                   {visibleColumns.engager_company_employees && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500 text-right">
                       {row.engager_company_employees ? row.engager_company_employees.toLocaleString() : 'N/A'}
                     </td>
                   )}
                   {visibleColumns.engager_job_title && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {row.engager_job_title || 'N/A'}
+                    <td className="px-4 py-2 text-sm text-gray-500">
+                      <div className="max-w-[180px] truncate" title={row.engager_job_title || 'N/A'}>
+                        {row.engager_job_title || 'N/A'}
+                      </div>
                     </td>
                   )}
                   {visibleColumns.profile && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm">
                       {row.linkedin_profile_url ? (
                         <a href={row.linkedin_profile_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
                           View Profile
@@ -575,27 +616,23 @@ const PostEngagementTable = ({
                     </td>
                   )}
                   {visibleColumns.post_content && (
-                    <td className="px-6 py-4 text-sm text-gray-900 max-w-xs whitespace-normal">
-                      {row.post_content ? (
-                        <div className="max-w-xs">
-                          {row.post_content}
-                        </div>
-                      ) : (
-                        'N/A'
-                      )}
+                    <td className="px-4 py-2 text-sm text-gray-900">
+                      <TruncatedText text={row.post_content} maxLength={150} />
                     </td>
                   )}
                   {visibleColumns.details && (
-                    <td className="px-6 py-4 whitespace-normal text-sm text-gray-500 max-w-xs">
-                      {row.engagement_type === 'comment'
-                        ? `Comment: "${row.reaction_type}"`
-                        : row.engagement_type === 'like'
-                        ? `Reaction: ${row.reaction_type}`
-                        : `Shared`}
+                    <td className="px-4 py-2 text-sm text-gray-500">
+                      {row.engagement_type === 'comment' ? (
+                        <TruncatedText text={row.reaction_type} maxLength={80} />
+                      ) : row.engagement_type === 'like' ? (
+                        <span className="text-xs">Reaction: {row.reaction_type || 'like'}</span>
+                      ) : (
+                        'Shared'
+                      )}
                     </td>
                   )}
                   {visibleColumns.post_url && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                       {row.post_url ? (
                         <a href={row.post_url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-900">
                           View Post
@@ -606,7 +643,7 @@ const PostEngagementTable = ({
                     </td>
                   )}
                   {visibleColumns.engagement_timestamp && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
                       {row.engagement_timestamp ? new Date(row.engagement_timestamp).toLocaleDateString() : 'N/A'}
                     </td>
                   )}
