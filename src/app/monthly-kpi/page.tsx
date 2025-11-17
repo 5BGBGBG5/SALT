@@ -7,7 +7,8 @@ import * as XLSX from 'xlsx';
 import { 
   Calendar, 
   Download, 
-  RefreshCw
+  RefreshCw,
+  Filter
 } from 'lucide-react';
 
 // Force dynamic rendering
@@ -32,8 +33,6 @@ type MonthlyKPI = {
   youtube_total_comments: number;
   youtube_avg_views_per_video: number;
 };
-
-// Removed unused type definitions
 
 const formatMonth = (dateStr: string): string => {
   // Parse year-month directly from string to avoid timezone issues
@@ -393,6 +392,7 @@ export default function MonthlyKPIPage() {
   const [kpiData, setKpiData] = useState<MonthlyKPI[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [excludeInectaEmployees, setExcludeInectaEmployees] = useState(true);
   const [dateRange, setDateRange] = useState({ 
     from: '2025-06-01', 
     to: new Date().toISOString().split('T')[0] 
@@ -404,6 +404,7 @@ export default function MonthlyKPIPage() {
       setError(null);
 
       console.log('[MonthlyKPI] Starting data fetch...');
+      console.log('[MonthlyKPI] Exclude Inecta Employees:', excludeInectaEmployees);
       
       // Use AiEO project credentials
       const aieoSupabaseUrl = process.env.NEXT_PUBLIC_AIEO_SUPABASE_URL;
@@ -465,7 +466,7 @@ export default function MonthlyKPIPage() {
         console.log('[MonthlyKPI] Processed post data:', processedPostData);
       }
 
-      // Fetch engagement data by month
+      // Fetch engagement data by month - ADDED engager_company_name field
       console.log('[MonthlyKPI] Fetching engagement data...');
       const { data: engagementData, error: engagementError } = await supabase
         .from('v_post_engagement_v2')
@@ -475,7 +476,8 @@ export default function MonthlyKPIPage() {
           post_id,
           engager_company_industry,
           engager_job_title,
-          engager_company_size
+          engager_company_size,
+          engager_company_name
         `)
         .gte('engagement_timestamp', dateRange.from)
         .lte('engagement_timestamp', dateRange.to);
@@ -498,9 +500,21 @@ export default function MonthlyKPIPage() {
       }
 
       const inectaPostIds = new Set((inectaPosts || []).map(p => p.id));
-      const filteredEngagementData = (engagementData || []).filter(e => inectaPostIds.has(e.post_id));
+      let filteredEngagementData = (engagementData || []).filter(e => inectaPostIds.has(e.post_id));
 
-      console.log('[MonthlyKPI] Filtered engagement data count:', filteredEngagementData.length);
+      console.log('[MonthlyKPI] Engagement data after Inecta post filter:', filteredEngagementData.length);
+
+      // NEW: Filter out Inecta employees if the toggle is enabled
+      if (excludeInectaEmployees) {
+        const beforeFilterCount = filteredEngagementData.length;
+        filteredEngagementData = filteredEngagementData.filter(e => {
+          const companyName = (e.engager_company_name || '').toLowerCase();
+          return !companyName.includes('inecta');
+        });
+        const afterFilterCount = filteredEngagementData.length;
+        console.log(`[MonthlyKPI] Filtered out ${beforeFilterCount - afterFilterCount} Inecta employee engagements`);
+        console.log('[MonthlyKPI] Remaining engagement data count:', afterFilterCount);
+      }
 
       // Fetch YouTube data
       console.log('[MonthlyKPI] Fetching YouTube data...');
@@ -521,7 +535,8 @@ export default function MonthlyKPIPage() {
       const { data: industryEngagementData, error: industryEngagementError } = await supabase
         .rpc('get_monthly_industry_engagement', {
           start_date: dateRange.from,
-          end_date: dateRange.to
+          end_date: dateRange.to,
+          exclude_inecta: excludeInectaEmployees
         });
 
       const useDatabaseFunction = !industryEngagementError && industryEngagementData && industryEngagementData.length > 0;
@@ -577,7 +592,7 @@ export default function MonthlyKPIPage() {
         }
       }
 
-      // Populate industry breakdown from database function results OR fallback to client-side
+      // Populate industry breakdown from database function OR fallback to client-side
       if (useDatabaseFunction) {
         console.log('[MonthlyKPI] Using database function for industry breakdown');
         let populatedCount = 0;
@@ -696,7 +711,7 @@ export default function MonthlyKPIPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [dateRange.from, dateRange.to]);
+  }, [dateRange.from, dateRange.to, excludeInectaEmployees]);
 
   const handleExportToExcel = () => {
     try {
@@ -801,13 +816,14 @@ export default function MonthlyKPIPage() {
 
       // Generate filename with current date
       const currentDate = new Date().toISOString().split('T')[0];
-      const filename = `monthly-kpi-report-${currentDate}.xlsx`;
+      const filterSuffix = excludeInectaEmployees ? '-external-only' : '-all-engagement';
+      const filename = `monthly-kpi-report${filterSuffix}-${currentDate}.xlsx`;
 
       // Save the file
       XLSX.writeFile(workbook, filename);
       
       console.log('[MonthlyKPI] Excel export completed successfully');
-      alert(`Excel file exported successfully!\nFilename: ${filename}\nRows exported: ${exportData.length}`);
+      alert(`Excel file exported successfully!\nFilename: ${filename}\nRows exported: ${exportData.length}\nFilter: ${excludeInectaEmployees ? 'External engagement only (Inecta employees excluded)' : 'All engagement included'}`);
       
     } catch (error) {
       console.error('[MonthlyKPI] Excel export error:', error);
@@ -872,34 +888,64 @@ export default function MonthlyKPIPage() {
           </div>
         </motion.div>
 
-        {/* Date Range Controls */}
+        {/* Date Range Controls + Inecta Employee Filter */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
           className="glass-card p-6 mb-6"
         >
-          <div className="flex items-center gap-4">
-            <Calendar className="w-5 h-5 text-teal-400" />
+          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6">
+            {/* Date Range */}
             <div className="flex items-center gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">From Date</label>
-                <input
-                  type="date"
-                  value={dateRange.from}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-                  className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-teal-500 transition-colors"
-                />
+              <Calendar className="w-5 h-5 text-teal-400" />
+              <div className="flex items-center gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">From Date</label>
+                  <input
+                    type="date"
+                    value={dateRange.from}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+                    className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-teal-500 transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">To Date</label>
+                  <input
+                    type="date"
+                    value={dateRange.to}
+                    onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+                    className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-teal-500 transition-colors"
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">To Date</label>
-                <input
-                  type="date"
-                  value={dateRange.to}
-                  onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-                  className="px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-teal-500 transition-colors"
-                />
-              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="hidden lg:block w-px h-12 bg-teal-500/30"></div>
+
+            {/* Filter Toggle */}
+            <div className="flex items-center gap-4">
+              <Filter className="w-5 h-5 text-teal-400" />
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={excludeInectaEmployees}
+                    onChange={(e) => setExcludeInectaEmployees(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-500/20 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-300 group-hover:text-white transition-colors">
+                    Exclude Inecta Employees
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {excludeInectaEmployees ? 'External engagement only' : 'All engagement included'}
+                  </span>
+                </div>
+              </label>
             </div>
           </div>
         </motion.div>
