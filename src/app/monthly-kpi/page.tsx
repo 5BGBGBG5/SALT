@@ -25,6 +25,12 @@ type MonthlyKPI = {
   industry_breakdown: Record<string, number>;
   role_breakdown: Record<string, number>;
   company_size_breakdown: Record<string, number>;
+  // YouTube metrics
+  youtube_videos_published: number;
+  youtube_total_views: number;
+  youtube_total_likes: number;
+  youtube_total_comments: number;
+  youtube_avg_views_per_video: number;
 };
 
 // Removed unused type definitions
@@ -308,16 +314,66 @@ const MonthlyKPITable = ({
             {/* YouTube Section */}
             <tr className="bg-red-500/10">
               <td colSpan={months.length + 1} className="py-3 px-4 text-red-300 font-semibold">
-                🎥 YouTube Metrics
+                🎥 YouTube Metrics (Videos Published Nov 2025+)
               </td>
             </tr>
+
+            {/* Videos Published */}
             <tr className="hover:bg-teal-500/5 transition-colors">
               <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
-                YouTube metrics coming soon
+                # Videos Published
               </td>
               {data.map(monthData => (
-                <td key={monthData.month} className="py-3 px-4 text-center text-gray-400 italic">
-                  Coming Soon
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  {monthData.youtube_videos_published || 0}
+                </td>
+              ))}
+            </tr>
+
+            {/* Total Views */}
+            <tr className="hover:bg-teal-500/5 transition-colors">
+              <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
+                Total Views
+              </td>
+              {data.map(monthData => (
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  {monthData.youtube_total_views?.toLocaleString() || 0}
+                </td>
+              ))}
+            </tr>
+
+            {/* Average Views per Video */}
+            <tr className="hover:bg-teal-500/5 transition-colors">
+              <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
+                Avg Views per Video
+              </td>
+              {data.map(monthData => (
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  {Math.round(monthData.youtube_avg_views_per_video || 0).toLocaleString()}
+                </td>
+              ))}
+            </tr>
+
+            {/* Total Likes */}
+            <tr className="hover:bg-teal-500/5 transition-colors">
+              <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
+                Total Likes
+              </td>
+              {data.map(monthData => (
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  {monthData.youtube_total_likes?.toLocaleString() || 0}
+                </td>
+              ))}
+            </tr>
+
+            {/* Total Comments */}
+            <tr className="hover:bg-teal-500/5 transition-colors">
+              <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
+                Total Comments
+              </td>
+              {data.map(monthData => (
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  {monthData.youtube_total_comments?.toLocaleString() || 0}
                 </td>
               ))}
             </tr>
@@ -446,6 +502,20 @@ export default function MonthlyKPIPage() {
 
       console.log('[MonthlyKPI] Filtered engagement data count:', filteredEngagementData.length);
 
+      // Fetch YouTube data
+      console.log('[MonthlyKPI] Fetching YouTube data...');
+      const { data: youtubeData, error: youtubeError } = await supabase
+        .rpc('get_monthly_youtube_stats', {
+          start_date: dateRange.from,
+          end_date: dateRange.to
+        });
+
+      if (youtubeError) {
+        console.error('[MonthlyKPI] YouTube data error:', youtubeError);
+      } else {
+        console.log('[MonthlyKPI] YouTube data:', youtubeData);
+      }
+
       // Fetch industry engagement data from database function
       console.log('[MonthlyKPI] Fetching industry engagement data from database function...');
       const { data: industryEngagementData, error: industryEngagementError } = await supabase
@@ -454,13 +524,16 @@ export default function MonthlyKPIPage() {
           end_date: dateRange.to
         });
 
+      const useDatabaseFunction = !industryEngagementError && industryEngagementData && industryEngagementData.length > 0;
+      
       if (industryEngagementError) {
         console.error('[MonthlyKPI] Industry engagement RPC error:', industryEngagementError);
-        // Continue with client-side fallback if RPC fails
         console.warn('[MonthlyKPI] Falling back to client-side industry aggregation');
+      } else if (!industryEngagementData || industryEngagementData.length === 0) {
+        console.warn('[MonthlyKPI] No industry engagement data returned from RPC, falling back to client-side aggregation');
+      } else {
+        console.log('[MonthlyKPI] Industry engagement data count:', industryEngagementData.length);
       }
-
-      console.log('[MonthlyKPI] Industry engagement data count:', industryEngagementData?.length || 0);
 
       // Process and aggregate data by month
       const monthlyData = new Map<string, MonthlyKPI>();
@@ -487,7 +560,13 @@ export default function MonthlyKPIPage() {
           avg_engagement_percent: null,
           industry_breakdown: {},
           role_breakdown: {},
-          company_size_breakdown: {}
+          company_size_breakdown: {},
+          // Initialize YouTube metrics
+          youtube_videos_published: 0,
+          youtube_total_views: 0,
+          youtube_total_likes: 0,
+          youtube_total_comments: 0,
+          youtube_avg_views_per_video: 0
         });
 
         // Increment month
@@ -498,25 +577,38 @@ export default function MonthlyKPIPage() {
         }
       }
 
-      // Populate industry breakdown from database function results
-      if (industryEngagementData && !industryEngagementError) {
+      // Populate industry breakdown from database function results OR fallback to client-side
+      if (useDatabaseFunction) {
+        console.log('[MonthlyKPI] Using database function for industry breakdown');
+        let populatedCount = 0;
         industryEngagementData.forEach((row: { month: string; industry: string; engagement_count: number }) => {
           const monthKey = row.month;
           const monthData = monthlyData.get(monthKey);
           if (monthData) {
             monthData.industry_breakdown[row.industry] = Number(row.engagement_count);
+            populatedCount++;
+          } else {
+            console.warn(`[MonthlyKPI] Month key ${monthKey} not found in monthlyData map. Available keys:`, Array.from(monthlyData.keys()));
           }
         });
-        console.log('[MonthlyKPI] Industry breakdown populated from database function');
+        console.log(`[MonthlyKPI] Industry breakdown populated from database function: ${populatedCount} entries`);
+      } else {
+        console.log('[MonthlyKPI] Using client-side fallback for industry breakdown');
       }
 
-      // Process engagement data (for role, company size, and interaction counts)
+      // Process engagement data (for role, company size, interaction counts, and industry if RPC failed)
       filteredEngagementData.forEach(engagement => {
         const monthKey = engagement.engagement_timestamp.slice(0, 7) + '-01';
         const monthData = monthlyData.get(monthKey);
         
         if (monthData) {
           monthData.post_interactions++;
+
+          // Industry breakdown (client-side fallback if RPC didn't work)
+          if (!useDatabaseFunction) {
+            const industry = engagement.engager_company_industry || 'Other/Blank';
+            monthData.industry_breakdown[industry] = (monthData.industry_breakdown[industry] || 0) + 1;
+          }
 
           // Role breakdown
           const jobTitle = (engagement.engager_job_title || '').toLowerCase();
@@ -557,6 +649,21 @@ export default function MonthlyKPIPage() {
           monthData.company_size_breakdown[sizeCategory] = (monthData.company_size_breakdown[sizeCategory] || 0) + 1;
         }
       });
+
+      // Populate YouTube data
+      if (youtubeData && youtubeData.length > 0) {
+        youtubeData.forEach((row: { month: string; videos_published: number; total_views: number; total_likes: number; total_comments: number; avg_views_per_video: number }) => {
+          const monthData = monthlyData.get(row.month);
+          if (monthData) {
+            monthData.youtube_videos_published = row.videos_published || 0;
+            monthData.youtube_total_views = Number(row.total_views) || 0;
+            monthData.youtube_total_likes = row.total_likes || 0;
+            monthData.youtube_total_comments = row.total_comments || 0;
+            monthData.youtube_avg_views_per_video = Number(row.avg_views_per_video) || 0;
+          }
+        });
+        console.log('[MonthlyKPI] YouTube data populated');
+      }
 
       // Get post counts (fallback method since we might not have the RPC)
       const { data: postCounts, error: postCountError } = await supabase
@@ -649,6 +756,34 @@ export default function MonthlyKPIPage() {
           'KPI Metric': `  ${size}`,
           ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: d.company_size_breakdown[size] || 0 }), {})
         });
+      });
+
+      // YouTube section
+      exportData.push({ 'KPI Metric': 'YouTube Metrics (Nov 2025+)', ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: '' }), {}) });
+
+      exportData.push({ 
+        'KPI Metric': '# Videos Published', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: d.youtube_videos_published || 0 }), {}) 
+      });
+
+      exportData.push({ 
+        'KPI Metric': 'Total Views', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: d.youtube_total_views || 0 }), {}) 
+      });
+
+      exportData.push({ 
+        'KPI Metric': 'Avg Views per Video', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: Math.round(d.youtube_avg_views_per_video || 0) }), {}) 
+      });
+
+      exportData.push({ 
+        'KPI Metric': 'Total Likes', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: d.youtube_total_likes || 0 }), {}) 
+      });
+
+      exportData.push({ 
+        'KPI Metric': 'Total Comments', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: d.youtube_total_comments || 0 }), {}) 
       });
 
       // Create workbook and worksheet
