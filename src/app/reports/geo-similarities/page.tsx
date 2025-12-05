@@ -563,7 +563,8 @@ export default function GeoSimilaritiesPage() {
         }
 
         // Fetch reports for latest execution date
-        const { data, error: fetchError } = await supabase
+        // Try with prompt/response columns first, fallback if they don't exist
+        let { data, error: fetchError } = await supabase
           .from('content_gap_reports')
           .select(`
             id,
@@ -594,13 +595,57 @@ export default function GeoSimilaritiesPage() {
           .order('priority_score', { ascending: false })
           .order('similarity_score', { ascending: true });
 
-        if (fetchError) {
+        // If columns don't exist, retry without them
+        if (fetchError && (fetchError.message.includes('does not exist') || fetchError.message.includes('prompt_text') || fetchError.message.includes('model_response') || fetchError.message.includes('ai_response'))) {
+          console.warn('[GeoSimilarities] Prompt/response columns not found, fetching without them:', fetchError.message);
+          const { data: fallbackData, error: fallbackError } = await supabase
+            .from('content_gap_reports')
+            .select(`
+              id,
+              query_id,
+              persona_id,
+              persona_name,
+              target_page_url,
+              page_title,
+              priority_score,
+              similarity_score,
+              execution_date,
+              execution_id,
+              suggested_faqs,
+              suggested_tldr,
+              missing_features,
+              terminology_gaps,
+              missing_use_cases,
+              competitive_gaps,
+              priority_actions,
+              inecta_mentioned,
+              inecta_mention_count,
+              created_at
+            `)
+            .eq('execution_date', latestDate)
+            .order('priority_score', { ascending: false })
+            .order('similarity_score', { ascending: true });
+          
+          if (fallbackError) {
+            throw new Error(`Failed to fetch reports: ${fallbackError.message}`);
+          }
+          
+          // Add null values for missing columns
+          data = (fallbackData || []).map((report: any) => ({
+            ...report,
+            prompt_text: null,
+            model_response: null,
+            ai_response: null,
+          }));
+          fetchError = null;
+        } else if (fetchError) {
           throw new Error(`Failed to fetch reports: ${fetchError.message}`);
         }
 
         const reportsData = (data || []) as ContentGapReport[];
         
         // Parse JSONB fields that might be strings
+        // Ensure prompt/response fields are set to null if not present
         const parsedReports = reportsData.map(report => ({
           ...report,
           suggested_faqs: safeParseJSON(report.suggested_faqs),
@@ -609,6 +654,9 @@ export default function GeoSimilaritiesPage() {
           missing_use_cases: safeParseJSON(report.missing_use_cases),
           competitive_gaps: safeParseJSON(report.competitive_gaps),
           priority_actions: safeParseJSON(report.priority_actions),
+          prompt_text: report.prompt_text || null,
+          model_response: report.model_response || null,
+          ai_response: report.ai_response || null,
         }));
         
         // Debug: Log first report to see data structure AFTER parsing
