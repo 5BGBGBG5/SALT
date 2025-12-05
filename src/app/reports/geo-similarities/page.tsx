@@ -326,7 +326,7 @@ const AnalysisDrawer = ({
                 <h3 className="text-lg font-semibold text-white mb-3">Prompt Used</h3>
                 <div className="bg-gray-950/50 p-4 rounded-lg border border-gray-700 overflow-x-auto">
                   <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
-                    {report.prompt_text && report.prompt_text.trim() ? report.prompt_text : <span className="text-gray-400 italic">No prompt text found in &apos;persona_response_embeddings&apos; table for this ID.</span>}
+                    {report.prompt_text && report.prompt_text.trim() ? report.prompt_text : <span className="text-gray-400 italic">No prompt text found in database for this ID.</span>}
                   </pre>
                 </div>
               </div>
@@ -334,7 +334,7 @@ const AnalysisDrawer = ({
                 <h3 className="text-lg font-semibold text-white mb-3">AI Response</h3>
                 <div className="bg-gray-950/50 p-4 rounded-lg border border-gray-700 overflow-x-auto">
                   <div className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
-                    {report.ai_response && report.ai_response.trim() ? highlightInecta(report.ai_response) : <span className="text-gray-400 italic">No response text found in &apos;persona_response_embeddings&apos; table for this ID.</span>}
+                    {report.ai_response && report.ai_response.trim() ? highlightInecta(report.ai_response) : <span className="text-gray-400 italic">No response text found in database for this ID.</span>}
                   </div>
                 </div>
               </div>
@@ -405,42 +405,33 @@ export default function GeoSimilaritiesPage() {
         
         const rawReports = (reportsData || []) as ContentGapReport[];
 
-        // 2. Fetch Raw Text from 'persona_response_embeddings'
-        // We look for rows where the metadata->>execution_date matches our date
-        // Note: The workflow saves execution_id inside the 'metadata' column
+        // 2. Normalize the date string for the JSON filter
+        // The table might return a timestamp, but the metadata JSON likely has YYYY-MM-DD
+        const dateString = new Date(latestDate).toISOString().split('T')[0];
+
+        // 3. Fetch Raw Text from 'persona_response_embeddings'
+        // Use arrow syntax ->> to check the execution_date field inside the metadata JSON
         let rawTexts: Array<{ content: string | null; metadata: Record<string, unknown> | null }> = [];
         
         const { data: rawData, error: rawError } = await supabase
             .from('persona_response_embeddings')
-            .select('content, metadata');
+            .select('content, metadata')
+            // This is the robust filter:
+            .filter('metadata->>execution_date', 'eq', dateString);
         
         if (!rawError && rawData) {
-            // Filter to only rows where metadata.execution_id matches one of our execution_ids
-            const executionIds = rawReports.map(r => r.execution_id).filter(Boolean) as string[];
-            rawTexts = rawData.filter((r: { metadata: Record<string, unknown> | null }) => {
-              if (!r.metadata || typeof r.metadata !== 'object') return false;
-              const execId = r.metadata.execution_id;
-              return execId && executionIds.includes(String(execId));
-            }) as Array<{ content: string | null; metadata: Record<string, unknown> | null }>;
+            rawTexts = rawData as Array<{ content: string | null; metadata: Record<string, unknown> | null }>;
         } else {
             console.warn('Could not fetch raw texts from embeddings:', rawError);
         }
 
-        // 3. Merge Data
+        // 4. Merge Data
         const parsedReports: ContentGapReport[] = rawReports.map(report => {
           // Find matching raw text by checking metadata.execution_id
           const rawMatch = rawTexts.find(r => {
             if (!r.metadata || typeof r.metadata !== 'object') return false;
             return String(r.metadata.execution_id) === report.execution_id;
           });
-
-          // Extract prompt from metadata - try different possible field names
-          const promptText = rawMatch?.metadata 
-            ? (rawMatch.metadata.prompt || rawMatch.metadata.prompt_text || null)
-            : null;
-          
-          // Get content as AI response
-          const aiResponseText = rawMatch?.content || null;
 
           return {
             ...report,
@@ -450,9 +441,9 @@ export default function GeoSimilaritiesPage() {
             missing_use_cases: safeParseJSON(report.missing_use_cases),
             competitive_gaps: safeParseJSON(report.competitive_gaps),
             priority_actions: safeParseJSON(report.priority_actions),
-            // Map the joined data from metadata and content
-            prompt_text: typeof promptText === 'string' ? promptText : null,
-            ai_response: typeof aiResponseText === 'string' ? aiResponseText : null 
+            // Map the joined data
+            prompt_text: rawMatch?.metadata?.prompt || null,
+            ai_response: rawMatch?.content || null 
           } as ContentGapReport;
         });
 
