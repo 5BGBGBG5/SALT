@@ -7,7 +7,6 @@ import {
   FileText, 
   Search, 
   ChevronDown,
-  ChevronUp,
   ExternalLink,
   AlertCircle,
   CheckCircle,
@@ -497,7 +496,6 @@ export default function GeoSimilaritiesPage() {
   const [selectedPersona, setSelectedPersona] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('');
   const [selectedUrl, setSelectedUrl] = useState('');
-  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [latestExecutionDate, setLatestExecutionDate] = useState<string>('');
   const [selectedReport, setSelectedReport] = useState<ContentGapReport | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -631,12 +629,12 @@ export default function GeoSimilaritiesPage() {
           }
           
           // Add null values for missing columns
-          data = (fallbackData || []).map((report: any) => ({
+          data = (fallbackData || []).map((report: Partial<ContentGapReport>) => ({
             ...report,
             prompt_text: null,
             model_response: null,
             ai_response: null,
-          }));
+          })) as ContentGapReport[];
           fetchError = null;
         } else if (fetchError) {
           throw new Error(`Failed to fetch reports: ${fetchError.message}`);
@@ -765,18 +763,6 @@ export default function GeoSimilaritiesPage() {
     });
   }, [reports, activeTab, searchTerm, selectedPersona, selectedPriority, selectedUrl]);
 
-  const toggleCardExpansion = (reportId: string) => {
-    setExpandedCards(prev => {
-      const next = new Set(prev);
-      if (next.has(reportId)) {
-        next.delete(reportId);
-      } else {
-        next.add(reportId);
-      }
-      return next;
-    });
-  };
-
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
@@ -797,29 +783,6 @@ export default function GeoSimilaritiesPage() {
     if (priority >= 4) return 'High';
     if (priority === 3) return 'Medium';
     return 'Low';
-  };
-
-  const getMissingKeywords = (report: ContentGapReport): string[] => {
-    const missingFeatures = report.missing_features;
-    if (!missingFeatures) return [];
-    
-    // Handle different possible structures
-    if (typeof missingFeatures === 'object' && 'missing_keywords' in missingFeatures) {
-      const missingKeywords = missingFeatures.missing_keywords;
-      if (typeof missingKeywords === 'object' && missingKeywords !== null) {
-        return Object.keys(missingKeywords).slice(0, 10);
-      }
-    }
-    
-    // If missing_features is directly an object with keywords
-    if (typeof missingFeatures === 'object' && missingFeatures !== null) {
-      const keys = Object.keys(missingFeatures).filter(k => k !== 'similarity_score');
-      if (keys.length > 0) {
-        return keys.slice(0, 10);
-      }
-    }
-    
-    return [];
   };
 
   const getFilteredFeatures = (report: ContentGapReport): Record<string, number> => {
