@@ -201,7 +201,6 @@ const AnalysisDrawer = ({
   const faqs = Array.isArray(report.suggested_faqs) ? report.suggested_faqs : [];
   const filteredFeatures = getFilteredFeatures(report);
   const filteredTerminology = getFilteredTerminology(report);
-  const filteredUseCases = getFilteredUseCases(report);
 
   return (
     <>
@@ -327,7 +326,7 @@ const AnalysisDrawer = ({
                 <h3 className="text-lg font-semibold text-white mb-3">Prompt Used</h3>
                 <div className="bg-gray-950/50 p-4 rounded-lg border border-gray-700 overflow-x-auto">
                   <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
-                    {report.prompt_text && report.prompt_text.trim() ? report.prompt_text : <span className="text-gray-400 italic">No prompt text found in 'ai_responses' table for this ID.</span>}
+                    {report.prompt_text && report.prompt_text.trim() ? report.prompt_text : <span className="text-gray-400 italic">No prompt text found in &apos;ai_responses&apos; table for this ID.</span>}
                   </pre>
                 </div>
               </div>
@@ -335,7 +334,7 @@ const AnalysisDrawer = ({
                 <h3 className="text-lg font-semibold text-white mb-3">AI Response</h3>
                 <div className="bg-gray-950/50 p-4 rounded-lg border border-gray-700 overflow-x-auto">
                   <div className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
-                    {report.ai_response && report.ai_response.trim() ? highlightInecta(report.ai_response) : <span className="text-gray-400 italic">No response text found in 'ai_responses' table for this ID.</span>}
+                    {report.ai_response && report.ai_response.trim() ? highlightInecta(report.ai_response) : <span className="text-gray-400 italic">No response text found in &apos;ai_responses&apos; table for this ID.</span>}
                   </div>
                 </div>
               </div>
@@ -404,10 +403,10 @@ export default function GeoSimilaritiesPage() {
 
         if (fetchError) throw new Error(`Failed to fetch reports: ${fetchError.message}`);
         
-        const rawReports = (reportsData || []) as any[];
+        const rawReports = (reportsData || []) as ContentGapReport[];
 
         // 2. Extract IDs to fetch raw text from 'ai_responses'
-        const executionIds = rawReports.map(r => r.execution_id).filter(Boolean);
+        const executionIds = rawReports.map(r => r.execution_id).filter(Boolean) as string[];
 
         // 3. Fetch Raw Text from 'ai_responses' table
         let rawTexts: RawAiResponse[] = [];
@@ -425,7 +424,7 @@ export default function GeoSimilaritiesPage() {
         }
 
         // 4. Merge Data
-        const parsedReports = rawReports.map(report => {
+        const parsedReports: ContentGapReport[] = rawReports.map(report => {
           // Find matching raw text
           const rawMatch = rawTexts.find(r => r.execution_id === report.execution_id);
 
@@ -440,7 +439,7 @@ export default function GeoSimilaritiesPage() {
             // Map the joined data
             prompt_text: rawMatch?.prompt_text || null,
             ai_response: rawMatch?.model_responses || null 
-          };
+          } as ContentGapReport;
         });
 
         setReports(parsedReports);
