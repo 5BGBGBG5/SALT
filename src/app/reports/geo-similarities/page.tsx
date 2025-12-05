@@ -430,7 +430,7 @@ export default function GeoSimilaritiesPage() {
           // Find matching raw text by checking metadata.execution_id
           const rawMatch = rawTexts.find(r => {
             if (!r.metadata || typeof r.metadata !== 'object') return false;
-            return String(r.metadata.execution_id) === report.execution_id;
+            return String(r.metadata.query_id) === report.query_id;  // ← Unique per persona query
           });
 
           return {
