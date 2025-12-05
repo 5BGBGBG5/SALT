@@ -459,7 +459,7 @@ const AnalysisDrawer = ({
                 <h3 className="text-lg font-semibold text-white mb-3">Prompt Used</h3>
                 <div className="bg-gray-950/50 p-4 rounded-lg border border-gray-700 overflow-x-auto">
                   <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
-                    {report.prompt_text || 'N/A'}
+                    {report.prompt_text && report.prompt_text.trim() ? report.prompt_text : <span className="text-gray-400 italic">N/A</span>}
                   </pre>
                 </div>
               </div>
@@ -469,7 +469,7 @@ const AnalysisDrawer = ({
                 <h3 className="text-lg font-semibold text-white mb-3">AI Response</h3>
                 <div className="bg-gray-950/50 p-4 rounded-lg border border-gray-700 overflow-x-auto">
                   <div className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
-                    {aiResponse ? highlightInecta(aiResponse) : <span className="text-gray-400 italic">N/A</span>}
+                    {aiResponse && aiResponse.trim() ? highlightInecta(aiResponse) : <span className="text-gray-400 italic">N/A</span>}
                   </div>
                 </div>
               </div>
@@ -594,7 +594,13 @@ export default function GeoSimilaritiesPage() {
           .order('similarity_score', { ascending: true });
 
         // If columns don't exist, retry without them
-        if (fetchError && (fetchError.message.includes('does not exist') || fetchError.message.includes('prompt_text') || fetchError.message.includes('model_response') || fetchError.message.includes('ai_response'))) {
+        // Check for specific column error messages
+        const isColumnError = fetchError && (
+          fetchError.message.includes('column') && fetchError.message.includes('does not exist') && 
+          (fetchError.message.includes('prompt_text') || fetchError.message.includes('model_response') || fetchError.message.includes('ai_response'))
+        );
+        
+        if (isColumnError && fetchError) {
           console.warn('[GeoSimilarities] Prompt/response columns not found, fetching without them:', fetchError.message);
           const { data: fallbackData, error: fallbackError } = await supabase
             .from('content_gap_reports')
