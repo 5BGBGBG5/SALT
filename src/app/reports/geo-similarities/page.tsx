@@ -15,7 +15,9 @@ import {
   Calendar,
   Users,
   Target,
-  BarChart3
+  BarChart3,
+  X as CloseIcon,
+  Eye
 } from 'lucide-react';
 import MetricCard from '@/app/components/MetricCard';
 
@@ -134,6 +136,9 @@ interface ContentGapReport {
   inecta_mentioned: boolean;
   inecta_mention_count: number;
   created_at: string;
+  prompt_text: string | null;
+  model_response: string | null;
+  ai_response: string | null;
 }
 
 interface ReportStats {
@@ -142,6 +147,340 @@ interface ReportStats {
   avg_similarity: number;
   inecta_mentions: number;
 }
+
+// Helper function to highlight "Inecta" in text
+const highlightInecta = (text: string | null): React.ReactNode => {
+  if (!text) return <span className="text-gray-400 italic">N/A</span>;
+  
+  const regex = /(inecta)/gi;
+  const parts: string[] = [];
+  let lastIndex = 0;
+  let match;
+  
+  // Reset regex lastIndex
+  regex.lastIndex = 0;
+  
+  while ((match = regex.exec(text)) !== null) {
+    // Add text before match
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    // Add highlighted match
+    parts.push(match[0]);
+    lastIndex = regex.lastIndex;
+  }
+  
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+  
+  return (
+    <span>
+      {parts.map((part, index) => {
+        const isInecta = /^inecta$/i.test(part);
+        return isInecta ? (
+          <mark key={index} className="bg-yellow-400/50 text-yellow-100 px-1 rounded">
+            {part}
+          </mark>
+        ) : (
+          <span key={index}>{part}</span>
+        );
+      })}
+    </span>
+  );
+};
+
+// Analysis Drawer Component
+const AnalysisDrawer = ({ 
+  report, 
+  isOpen, 
+  onClose 
+}: { 
+  report: ContentGapReport | null; 
+  isOpen: boolean; 
+  onClose: () => void;
+}) => {
+  const [activeTab, setActiveTab] = useState<'gaps' | 'raw'>('gaps');
+  
+  if (!report || !isOpen) return null;
+
+  const getFilteredFeatures = (report: ContentGapReport): Record<string, number> => {
+    const missingFeatures = report.missing_features;
+    if (!missingFeatures || typeof missingFeatures !== 'object') return {};
+    const keywords = missingFeatures.missing_keywords;
+    if (!keywords || typeof keywords !== 'object') return {};
+    const filtered = filterKeywords(keywords);
+    if (Object.keys(filtered).length === 0) {
+      const sorted = Object.entries(keywords)
+        .filter(([keyword]) => keyword.length > 2)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15);
+      return Object.fromEntries(sorted);
+    }
+    return filtered;
+  };
+
+  const getFilteredTerminology = (report: ContentGapReport): Record<string, number> => {
+    const terminologyGaps = report.terminology_gaps;
+    if (!terminologyGaps || typeof terminologyGaps !== 'object') return {};
+    const keywords = terminologyGaps.missing_keywords;
+    if (!keywords || typeof keywords !== 'object') return {};
+    const filtered = filterKeywords(keywords);
+    if (Object.keys(filtered).length === 0) {
+      const sorted = Object.entries(keywords)
+        .filter(([keyword]) => keyword.length > 2)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 15);
+      return Object.fromEntries(sorted);
+    }
+    return filtered;
+  };
+
+  const getFilteredUseCases = (report: ContentGapReport): string[] => {
+    const useCasesData = report.missing_use_cases;
+    if (!useCasesData || typeof useCasesData !== 'object') return [];
+    const useCases = useCasesData.missing;
+    if (!useCases || !Array.isArray(useCases)) return [];
+    return filterUseCases(useCases);
+  };
+
+  const faqs = Array.isArray(report.suggested_faqs) ? report.suggested_faqs : [];
+  const filteredFeatures = getFilteredFeatures(report);
+  const filteredTerminology = getFilteredTerminology(report);
+  const filteredUseCases = getFilteredUseCases(report);
+  const aiResponse = report.model_response || report.ai_response || null;
+
+  return (
+    <>
+      {/* Backdrop */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isOpen ? 1 : 0 }}
+        exit={{ opacity: 0 }}
+        onClick={onClose}
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+      />
+      
+      {/* Drawer */}
+      <motion.div
+        initial={{ x: '100%' }}
+        animate={{ x: isOpen ? 0 : '100%' }}
+        exit={{ x: '100%' }}
+        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+        className="fixed right-0 top-0 h-full w-full max-w-4xl bg-gray-900/95 backdrop-blur-xl shadow-2xl z-50 overflow-y-auto"
+      >
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-6 pb-4 border-b border-gray-700">
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-white mb-2">
+                {report.page_title || 'Untitled Page'}
+              </h2>
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Users className="w-4 h-4" />
+                  <span>{report.persona_name}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-400">
+                  <Calendar className="w-4 h-4" />
+                  <span>{(() => {
+                    if (!report.execution_date) return '';
+                    const date = new Date(report.execution_date);
+                    return date.toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    });
+                  })()}</span>
+                </div>
+                <span className={`px-3 py-1 rounded text-xs font-semibold border ${(() => {
+                  const priority = report.priority_score;
+                  if (priority >= 4) return 'bg-red-500/20 text-red-400 border-red-500/50';
+                  if (priority === 3) return 'bg-orange-500/20 text-orange-400 border-orange-500/50';
+                  return 'bg-green-500/20 text-green-400 border-green-500/50';
+                })()}`}>
+                  {(() => {
+                    const priority = report.priority_score;
+                    if (priority >= 4) return 'High';
+                    if (priority === 3) return 'Medium';
+                    return 'Low';
+                  })()} ({report.priority_score})
+                </span>
+                {report.inecta_mentioned ? (
+                  <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded border border-green-500/50">
+                    <CheckCircle className="w-3 h-3" />
+                    Inecta Mentioned
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded border border-red-500/50">
+                    <X className="w-3 h-3" />
+                    No Inecta
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              <CloseIcon className="w-6 h-6 text-gray-400" />
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => setActiveTab('gaps')}
+              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                activeTab === 'gaps'
+                  ? 'bg-teal-500 text-white'
+                  : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
+              }`}
+            >
+              Content Gaps
+            </button>
+            <button
+              onClick={() => setActiveTab('raw')}
+              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+                activeTab === 'raw'
+                  ? 'bg-teal-500 text-white'
+                  : 'bg-gray-800/50 text-gray-300 hover:bg-gray-700/50'
+              }`}
+            >
+              Raw Data
+            </button>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === 'gaps' ? (
+            <div className="space-y-6">
+              {/* TL;DR */}
+              {report.suggested_tldr && (
+                <div className="glass-card p-4">
+                  <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+                    <Target className="w-5 h-5" />
+                    Suggested TL;DR
+                  </h3>
+                  <p className="text-sm text-gray-300 leading-relaxed">
+                    {report.suggested_tldr}
+                  </p>
+                </div>
+              )}
+
+              {/* FAQs */}
+              {faqs.length > 0 && (
+                <div className="glass-card p-4">
+                  <h3 className="text-lg font-semibold text-white mb-4">
+                    ❓ Suggested FAQs ({faqs.length})
+                  </h3>
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {faqs.map((faq, idx) => (
+                      <div key={idx} className="p-3 bg-gray-800/50 rounded border border-gray-700">
+                        <p className="text-sm font-medium text-white mb-1">
+                          Q: {faq.question}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          A: {faq.answer}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Missing Features */}
+              {Object.keys(filteredFeatures).length > 0 && (
+                <div className="glass-card p-4">
+                  <h3 className="text-lg font-semibold text-white mb-4">
+                    🔧 Missing Features ({Object.keys(filteredFeatures).length})
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(filteredFeatures)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([keyword, count]) => (
+                        <span
+                          key={keyword}
+                          className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded border border-blue-500/50 flex items-center gap-1"
+                        >
+                          <strong>{keyword}</strong>
+                          <span className="text-blue-400/70">×{count}</span>
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Terminology Gaps */}
+              {Object.keys(filteredTerminology).length > 0 && (
+                <div className="glass-card p-4">
+                  <h3 className="text-lg font-semibold text-white mb-4">
+                    📚 Terminology Gaps ({Object.keys(filteredTerminology).length})
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(filteredTerminology)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([keyword, count]) => (
+                        <span
+                          key={keyword}
+                          className="px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs rounded border border-yellow-500/50 flex items-center gap-1"
+                        >
+                          <strong>{keyword}</strong>
+                          <span className="text-yellow-400/70">×{count}</span>
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Missing Use Cases */}
+              {filteredUseCases.length > 0 && (
+                <div className="glass-card p-4">
+                  <h3 className="text-lg font-semibold text-white mb-4">
+                    💼 Missing Use Cases ({filteredUseCases.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {filteredUseCases.map((useCase, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-start gap-2 p-2 bg-gray-800/50 rounded border border-gray-700"
+                      >
+                        <span className="text-teal-400 font-bold text-sm">•</span>
+                        <span className="text-sm text-gray-300 capitalize">{useCase}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Prompt */}
+              <div className="glass-card p-4">
+                <h3 className="text-lg font-semibold text-white mb-3">Prompt Used</h3>
+                <div className="bg-gray-950/50 p-4 rounded-lg border border-gray-700 overflow-x-auto">
+                  <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
+                    {report.prompt_text || 'N/A'}
+                  </pre>
+                </div>
+              </div>
+
+              {/* AI Response */}
+              <div className="glass-card p-4">
+                <h3 className="text-lg font-semibold text-white mb-3">AI Response</h3>
+                <div className="bg-gray-950/50 p-4 rounded-lg border border-gray-700 overflow-x-auto">
+                  <div className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
+                    {aiResponse ? highlightInecta(aiResponse) : <span className="text-gray-400 italic">N/A</span>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </>
+  );
+};
 
 export default function GeoSimilaritiesPage() {
   const [reports, setReports] = useState<ContentGapReport[]>([]);
@@ -160,6 +499,8 @@ export default function GeoSimilaritiesPage() {
   const [selectedUrl, setSelectedUrl] = useState('');
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [latestExecutionDate, setLatestExecutionDate] = useState<string>('');
+  const [selectedReport, setSelectedReport] = useState<ContentGapReport | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   // Get unique personas from reports
   const personas = useMemo(() => {
@@ -244,7 +585,10 @@ export default function GeoSimilaritiesPage() {
             priority_actions,
             inecta_mentioned,
             inecta_mention_count,
-            created_at
+            created_at,
+            prompt_text,
+            model_response,
+            ai_response
           `)
           .eq('execution_date', latestDate)
           .order('priority_score', { ascending: false })
@@ -674,11 +1018,24 @@ export default function GeoSimilaritiesPage() {
                 <p className="text-gray-400 text-lg">No reports found matching your filters.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {filteredReports.map((report) => {
-                  const isExpanded = expandedCards.has(report.id);
-                  const missingKeywords = getMissingKeywords(report);
                   const faqs = Array.isArray(report.suggested_faqs) ? report.suggested_faqs : [];
+                  const filteredFeatures = getFilteredFeatures(report);
+                  const filteredTerminology = getFilteredTerminology(report);
+                  const filteredUseCases = getFilteredUseCases(report);
+                  
+                  // Calculate counts
+                  const missingKeywordsCount = Object.keys(filteredFeatures).length;
+                  const terminologyCount = Object.keys(filteredTerminology).length;
+                  const useCasesCount = filteredUseCases.length;
+                  
+                  // Truncate URL for display
+                  const displayUrl = report.target_page_url 
+                    ? (report.target_page_url.length > 50 
+                        ? `${report.target_page_url.substring(0, 50)}...` 
+                        : report.target_page_url)
+                    : 'N/A';
 
                   return (
                     <motion.div
@@ -686,248 +1043,92 @@ export default function GeoSimilaritiesPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3 }}
-                      className="glass-card p-6"
+                      className="glass-card p-4"
                     >
-                      {/* Card Header */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex-1">
+                      {/* Compact Card Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-2">
-                            <FileText className="w-5 h-5 text-teal-400" />
-                            <h3 className="text-lg font-semibold text-white line-clamp-2">
+                            <FileText className="w-4 h-4 text-teal-400 flex-shrink-0" />
+                            <h3 className="text-base font-semibold text-white line-clamp-1 truncate" title={report.page_title || 'Untitled Page'}>
                               {report.page_title || 'Untitled Page'}
                             </h3>
                           </div>
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <div className="flex items-center gap-1 text-sm text-gray-400">
-                              <Users className="w-4 h-4" />
+                          <div className="text-xs text-gray-400 truncate mb-2" title={report.target_page_url || 'N/A'}>
+                            {displayUrl}
+                          </div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-1 text-xs text-gray-400">
+                              <Users className="w-3 h-3" />
                               <span>{report.persona_name}</span>
                             </div>
-                            <span className="text-sm text-blue-400">
+                            <span className="text-xs text-blue-400">
                               {Math.round(report.similarity_score * 100)}% Similarity
                             </span>
-                            {report.inecta_mentioned ? (
-                              <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded border border-green-500/50">
-                                <CheckCircle className="w-3 h-3" />
-                                Inecta Mentioned
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded border border-red-500/50">
-                                <X className="w-3 h-3" />
-                                No Inecta
-                              </span>
-                            )}
                           </div>
                         </div>
-                        <span className={`px-3 py-1 rounded text-xs font-semibold border ${getPriorityBadgeColor(report.priority_score)}`}>
-                          {getPriorityLabel(report.priority_score)} ({report.priority_score})
-                        </span>
-                      </div>
-
-                      {/* TL;DR Section */}
-                      {report.suggested_tldr && (
-                        <div className="mb-4">
-                          <h4 className="text-sm font-semibold text-gray-300 mb-2 flex items-center gap-2">
-                            <Target className="w-4 h-4" />
-                            Suggested TL;DR:
-                          </h4>
-                          <p className="text-sm text-gray-400 leading-relaxed">
-                            {report.suggested_tldr}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Missing Keywords */}
-                      {missingKeywords.length > 0 && (
-                        <div className="mb-4">
-                          <h4 className="text-sm font-semibold text-gray-300 mb-2">
-                            🔑 Missing Keywords:
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {missingKeywords.map((keyword, idx) => (
-                              <span
-                                key={idx}
-                                className="px-2 py-1 bg-gray-700/50 text-gray-300 text-xs rounded border border-gray-600"
-                              >
-                                {keyword}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {/* FAQs Section */}
-                      {faqs.length > 0 && (
-                        <div className="mb-4">
-                          <button
-                            onClick={() => toggleCardExpansion(report.id)}
-                            className="flex items-center justify-between w-full text-sm font-semibold text-gray-300 hover:text-white transition-colors"
-                          >
-                            <span>❓ Suggested FAQs ({faqs.length})</span>
-                            {isExpanded ? (
-                              <ChevronUp className="w-4 h-4" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4" />
-                            )}
-                          </button>
-                          {isExpanded && (
-                            <div className="mt-3 space-y-3 max-h-96 overflow-y-auto">
-                              {faqs.map((faq, idx) => (
-                                <div key={idx} className="p-3 bg-gray-800/50 rounded border border-gray-700">
-                                  <p className="text-sm font-medium text-white mb-1">
-                                    Q: {faq.question}
-                                  </p>
-                                  <p className="text-xs text-gray-400">
-                                    A: {faq.answer}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
+                        <div className="flex flex-col items-end gap-2 flex-shrink-0 ml-2">
+                          <span className={`px-2 py-1 rounded text-xs font-semibold border ${getPriorityBadgeColor(report.priority_score)}`}>
+                            {getPriorityLabel(report.priority_score)} ({report.priority_score})
+                          </span>
+                          {report.inecta_mentioned ? (
+                            <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded border border-green-500/50">
+                              <CheckCircle className="w-3 h-3" />
+                              Inecta
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded border border-red-500/50">
+                              <X className="w-3 h-3" />
+                              No Inecta
+                            </span>
                           )}
                         </div>
-                      )}
+                      </div>
 
-                      {/* Missing Features Section */}
-                      {(() => {
-                        const filteredFeatures = getFilteredFeatures(report);
-                        const featuresCount = Object.keys(filteredFeatures).length;
-                        
-                        if (featuresCount === 0) return null;
-                        
-                        return (
-                          <div className="mb-4">
-                            <button
-                              onClick={() => toggleCardExpansion(`${report.id}-features`)}
-                              className="flex items-center justify-between w-full text-sm font-semibold text-gray-300 hover:text-white transition-colors"
-                            >
-                              <span>🔧 Missing Features ({featuresCount})</span>
-                              {expandedCards.has(`${report.id}-features`) ? (
-                                <ChevronUp className="w-4 h-4" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4" />
-                              )}
-                            </button>
-                            {expandedCards.has(`${report.id}-features`) && (
-                              <div className="mt-3">
-                                <p className="text-xs text-gray-400 mb-2">
-                                  Key features mentioned in AI responses but missing from this page:
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                  {Object.entries(filteredFeatures)
-                                    .sort((a, b) => b[1] - a[1])
-                                    .slice(0, 15)
-                                    .map(([keyword, count]) => (
-                                      <span
-                                        key={keyword}
-                                        className="px-2 py-1 bg-blue-500/20 text-blue-300 text-xs rounded border border-blue-500/50 flex items-center gap-1"
-                                      >
-                                        <strong>{keyword}</strong>
-                                        <span className="text-blue-400/70">×{count}</span>
-                                      </span>
-                                    ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Terminology Gaps Section */}
-                      {(() => {
-                        const filteredTerminology = getFilteredTerminology(report);
-                        const terminologyCount = Object.keys(filteredTerminology).length;
-                        
-                        if (terminologyCount === 0) return null;
-                        
-                        return (
-                          <div className="mb-4">
-                            <button
-                              onClick={() => toggleCardExpansion(`${report.id}-terminology`)}
-                              className="flex items-center justify-between w-full text-sm font-semibold text-gray-300 hover:text-white transition-colors"
-                            >
-                              <span>📚 Terminology Gaps ({terminologyCount})</span>
-                              {expandedCards.has(`${report.id}-terminology`) ? (
-                                <ChevronUp className="w-4 h-4" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4" />
-                              )}
-                            </button>
-                            {expandedCards.has(`${report.id}-terminology`) && (
-                              <div className="mt-3">
-                                <p className="text-xs text-gray-400 mb-2">
-                                  Industry terms used by AI but not present on your page:
-                                </p>
-                                <div className="flex flex-wrap gap-2">
-                                  {Object.entries(filteredTerminology)
-                                    .sort((a, b) => b[1] - a[1])
-                                    .slice(0, 15)
-                                    .map(([keyword, count]) => (
-                                      <span
-                                        key={keyword}
-                                        className="px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs rounded border border-yellow-500/50 flex items-center gap-1"
-                                      >
-                                        <strong>{keyword}</strong>
-                                        <span className="text-yellow-400/70">×{count}</span>
-                                      </span>
-                                    ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
-
-                      {/* Missing Use Cases Section */}
-                      {(() => {
-                        const filteredUseCasesData = getFilteredUseCases(report);
-                        
-                        if (filteredUseCasesData.length === 0) return null;
-                        
-                        return (
-                          <div className="mb-4">
-                            <button
-                              onClick={() => toggleCardExpansion(`${report.id}-usecases`)}
-                              className="flex items-center justify-between w-full text-sm font-semibold text-gray-300 hover:text-white transition-colors"
-                            >
-                              <span>💼 Missing Use Cases ({filteredUseCasesData.length})</span>
-                              {expandedCards.has(`${report.id}-usecases`) ? (
-                                <ChevronUp className="w-4 h-4" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4" />
-                              )}
-                            </button>
-                            {expandedCards.has(`${report.id}-usecases`) && (
-                              <div className="mt-3">
-                                <p className="text-xs text-gray-400 mb-2">
-                                  Important use cases/themes to address on this page:
-                                </p>
-                                <div className="space-y-2">
-                                  {filteredUseCasesData.map((useCase, idx) => (
-                                    <div
-                                      key={idx}
-                                      className="flex items-start gap-2 p-2 bg-gray-800/50 rounded border border-gray-700"
-                                    >
-                                      <span className="text-teal-400 font-bold text-sm">•</span>
-                                      <span className="text-sm text-gray-300 capitalize">{useCase}</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })()}
+                      {/* Summary Counts */}
+                      <div className="flex flex-wrap gap-2 mb-3 text-xs">
+                        {faqs.length > 0 && (
+                          <span className="px-2 py-1 bg-gray-700/50 text-gray-300 rounded border border-gray-600">
+                            {faqs.length} FAQs
+                          </span>
+                        )}
+                        {missingKeywordsCount > 0 && (
+                          <span className="px-2 py-1 bg-blue-500/20 text-blue-300 rounded border border-blue-500/50">
+                            {missingKeywordsCount} Missing Keywords
+                          </span>
+                        )}
+                        {terminologyCount > 0 && (
+                          <span className="px-2 py-1 bg-yellow-500/20 text-yellow-300 rounded border border-yellow-500/50">
+                            {terminologyCount} Terminology Gaps
+                          </span>
+                        )}
+                        {useCasesCount > 0 && (
+                          <span className="px-2 py-1 bg-teal-500/20 text-teal-300 rounded border border-teal-500/50">
+                            {useCasesCount} Use Cases
+                          </span>
+                        )}
+                      </div>
 
                       {/* Action Buttons */}
-                      <div className="flex gap-2 mt-4 pt-4 border-t border-gray-700">
+                      <div className="flex gap-2 pt-3 border-t border-gray-700">
+                        <button
+                          onClick={() => {
+                            setSelectedReport(report);
+                            setIsDrawerOpen(true);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-teal-500/20 hover:bg-teal-500/30 text-teal-400 rounded-lg transition-colors text-sm font-medium border border-teal-500/50"
+                        >
+                          <Eye className="w-4 h-4" />
+                          View Analysis
+                        </button>
                         {report.target_page_url && (
                           <a
                             href={report.target_page_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-teal-500/20 hover:bg-teal-500/30 text-teal-400 rounded-lg transition-colors text-sm font-medium border border-teal-500/50"
+                            className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 rounded-lg transition-colors text-sm font-medium border border-gray-600"
                           >
                             <ExternalLink className="w-4 h-4" />
-                            View Page
                           </a>
                         )}
                       </div>
@@ -938,6 +1139,16 @@ export default function GeoSimilaritiesPage() {
             )}
           </>
         )}
+        
+        {/* Analysis Drawer */}
+        <AnalysisDrawer
+          report={selectedReport}
+          isOpen={isDrawerOpen}
+          onClose={() => {
+            setIsDrawerOpen(false);
+            setSelectedReport(null);
+          }}
+        />
       </div>
     </div>
   );
