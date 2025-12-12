@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { createClient } from '@supabase/supabase-js';
 import { 
   MessageSquare, 
   Send, 
@@ -76,45 +75,6 @@ export default function ChatPage() {
     }));
   };
 
-  const searchDocuments = async (query: string): Promise<Source[]> => {
-    try {
-      // 1. Generate embedding
-      const embeddingResponse = await fetch('/api/embeddings', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: query })
-      });
-
-      if (!embeddingResponse.ok) {
-        throw new Error('Failed to generate embedding');
-      }
-
-      const { embedding } = await embeddingResponse.json();
-
-      // 2. Query Supabase
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-      if (!supabaseUrl || !supabaseKey) {
-        throw new Error('Supabase environment variables are not configured');
-      }
-
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      const { data, error } = await supabase.rpc('match_documents', {
-        query_embedding: embedding,
-        match_threshold: 0.5,
-        match_count: 5
-      });
-
-      if (error) throw error;
-      return data || [];
-    } catch (err) {
-      console.error('Error searching documents:', err);
-      return [];
-    }
-  };
-
   const handleSend = async () => {
     if (!input.trim() || loading) return;
 
@@ -131,44 +91,43 @@ export default function ChatPage() {
     setError(null);
 
     try {
-      // Search for relevant documents
-      const sources = await searchDocuments(userMessage.content);
+      // Call n8n webhook - it handles everything (embeddings, search, AI response)
+      const webhookUrl = process.env.NEXT_PUBLIC_N8N_CHAT_WEBHOOK;
+      
+      if (!webhookUrl) {
+        throw new Error('N8N webhook URL is not configured');
+      }
 
-      // Build context from sources
-      const context = sources.length > 0
-        ? sources.map(s => `Title: ${s.title}\nContent: ${s.content}`).join('\n\n---\n\n')
-        : 'No relevant documentation found.';
-
-      // Get response from Claude
-      const response = await fetch('/api/chat', {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, userMessage].map(m => ({
+          query: userMessage.content,
+          conversation_history: messages.map(m => ({
             role: m.role,
             content: m.content
-          })),
-          context
+          }))
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to get response');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to get response');
       }
 
-      const { content } = await response.json();
+      const data = await response.json();
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content,
-        sources: sources.length > 0 ? sources : undefined,
+        content: data.response,
+        sources: data.sources || [],
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (err) {
-      console.error('Error sending message:', err);
+      console.error('Error:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
       
       const errorMessage: Message = {
