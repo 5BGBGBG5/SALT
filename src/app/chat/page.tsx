@@ -22,10 +22,10 @@ import {
 export const dynamic = 'force-dynamic';
 
 interface Source {
-  id: number;
+  id?: number;
   content: string;
   title: string;
-  similarity: number;
+  similarity?: number;
 }
 
 interface Message {
@@ -91,11 +91,11 @@ export default function ChatPage() {
     setError(null);
 
     try {
-      // Call n8n webhook - it handles everything (embeddings, search, AI response)
+      // Single call to n8n webhook - handles embeddings, vector search, and AI response
       const webhookUrl = process.env.NEXT_PUBLIC_N8N_CHAT_WEBHOOK;
       
       if (!webhookUrl) {
-        throw new Error('N8N webhook URL is not configured');
+        throw new Error('Chat webhook URL not configured');
       }
 
       const response = await fetch(webhookUrl, {
@@ -120,14 +120,14 @@ export default function ChatPage() {
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.response,
+        content: data.response || data.output || 'No response received',
         sources: data.sources || [],
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, assistantMessage]);
     } catch (err) {
-      console.error('Error:', err);
+      console.error('Error sending message:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
       
       const errorMessage: Message = {
@@ -276,7 +276,7 @@ export default function ChatPage() {
                                   <div key={idx} className="p-2 bg-gray-900/50 rounded border border-gray-700 text-xs">
                                     <div className="flex justify-between items-center mb-1">
                                       <span className="font-medium text-teal-400">{source.title}</span>
-                                      <span className="text-gray-500">{Math.round(source.similarity * 100)}% match</span>
+                                      <span className="text-gray-500">{source.similarity ? `${Math.round(source.similarity * 100)}% match` : 'N/A'}</span>
                                     </div>
                                     <p className="text-gray-400 line-clamp-2">{source.content}</p>
                                   </div>
