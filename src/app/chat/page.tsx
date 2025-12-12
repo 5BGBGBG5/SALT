@@ -91,14 +91,8 @@ export default function ChatPage() {
     setError(null);
 
     try {
-      // Single call to n8n webhook - handles embeddings, vector search, and AI response
-      const webhookUrl = process.env.NEXT_PUBLIC_N8N_CHAT_WEBHOOK;
-      
-      if (!webhookUrl) {
-        throw new Error('Chat webhook URL not configured');
-      }
-
-      const response = await fetch(webhookUrl, {
+      // Call n8n webhook - handles embeddings, vector search, and AI response
+      const response = await fetch('https://inecta.app.n8n.cloud/webhook/inecta-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -117,10 +111,22 @@ export default function ChatPage() {
 
       const data = await response.json();
 
+      // Handle different response formats from n8n
+      let responseText = '';
+      if (typeof data.response === 'string') {
+        responseText = data.response;
+      } else if (typeof data.output === 'string') {
+        responseText = data.output;
+      } else if (data.text) {
+        responseText = data.text;
+      } else {
+        responseText = JSON.stringify(data);
+      }
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: data.response || data.output || 'No response received',
+        content: responseText,
         sources: data.sources || [],
         timestamp: new Date()
       };
