@@ -87,8 +87,9 @@ export default function MarketingManagerWeeklyPage() {
           url: process.env.NEXT_PUBLIC_INTEL_SUPABASE_URL,
           key: process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY ? 'exists' : 'missing'
         });
-        const supabaseUrl = process.env.NEXT_PUBLIC_INTEL_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY;
+// TEMPORARY FALLBACK - remove after fixing env vars
+const supabaseUrl = process.env.NEXT_PUBLIC_INTEL_SUPABASE_URL || 'https://otwhejokkrjlqwzscyfx.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY || 'sb_publishable_2aJxcP0vpdXYm9Ax06j1bg_KLwW6L_L';
 
         if (!supabaseUrl || !supabaseKey) {
           throw new Error('Inecta Intelligence Supabase environment variables are not configured. Set NEXT_PUBLIC_INTEL_SUPABASE_URL and NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY.');
