@@ -5,7 +5,6 @@ import { createClient } from '@supabase/supabase-js';
 import { Calendar, RefreshCw, AlertCircle } from 'lucide-react';
 import SummaryCards from './components/SummaryCards';
 import MqlSqlChart from './components/MqlSqlChart';
-import MqlSqlTable from './components/MqlSqlTable';
 import CompanyDrilldownModal from './components/CompanyDrilldownModal';
 import PipelineSummaryCards from './components/PipelineSummaryCards';
 import PipelineChart from './components/PipelineChart';
@@ -336,12 +335,6 @@ const supabaseKey = process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY || 'sb_publi
                 <PipelineChart data={filteredPipelineData} />
               </div>
             )}
-
-            {/* MQL/SQL Table */}
-            <div className="glass-card p-6 mb-6">
-              <h2 className="text-xl font-semibold text-white mb-4">MQL & SQL Monthly Performance</h2>
-              <MqlSqlTable data={filteredData} onRowClick={handleRowClick} />
-            </div>
 
             {/* Pipeline Table */}
             {filteredPipelineData.length > 0 && (
