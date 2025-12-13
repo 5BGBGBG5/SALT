@@ -76,6 +76,10 @@ export default function MarketingManagerWeeklyPage() {
 
       try {
         // Use Inecta Intelligence Supabase connection
+        console.log('ENV CHECK:', {
+          url: process.env.NEXT_PUBLIC_INTEL_SUPABASE_URL,
+          key: process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY ? 'exists' : 'missing'
+        });
         const supabaseUrl = process.env.NEXT_PUBLIC_INTEL_SUPABASE_URL;
         const supabaseKey = process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY;
 

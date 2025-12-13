@@ -57,3 +57,4 @@ Navigate to `/chat` to access the chat interface. The assistant will:
 3. Use retrieved context to generate accurate responses via Claude
 4. Display source documents with similarity scores
 
+

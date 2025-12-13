@@ -36,3 +36,4 @@ $$ LANGUAGE plpgsql;
 GRANT EXECUTE ON FUNCTION get_monthly_industry_engagement(DATE, DATE) TO authenticated;
 GRANT EXECUTE ON FUNCTION get_monthly_industry_engagement(DATE, DATE) TO anon;
 
+

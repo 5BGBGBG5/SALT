@@ -29,3 +29,4 @@ $$;
 GRANT EXECUTE ON FUNCTION match_documents(vector, float, int) TO authenticated;
 GRANT EXECUTE ON FUNCTION match_documents(vector, float, int) TO anon;
 
+
