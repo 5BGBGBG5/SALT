@@ -39,6 +39,7 @@ export default function Header() {
     { href: '/reports/dashboard', label: 'Competitive Intelligence Dashboard' },
     { href: '/reports/bdr-calls-transcript', label: 'BDR Calls Transcript' },
     { href: '/reports/geo-similarities', label: 'GEO Similarities' },
+    { href: '/reports/marketing-manager-weekly', label: 'Marketing Manager Weekly' },
     { href: '/chat', label: 'Documentation Assistant' },
   ];
 
