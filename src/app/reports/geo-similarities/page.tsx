@@ -90,6 +90,7 @@ interface ContentGapReport {
   inecta_mentioned: boolean;
   inecta_mention_count: number;
   created_at: string;
+  model_source: string | null;
   // Merged fields
   prompt_text: string | null;
   ai_response: string | null;
@@ -100,6 +101,8 @@ interface ReportStats {
   high_priority: number;
   avg_similarity: number;
   inecta_mentions: number;
+  chatgpt_count: number;
+  gemini_count: number;
 }
 
 // Helper function to highlight "Inecta" in text
@@ -317,7 +320,13 @@ const AnalysisDrawer = ({
                 </div>
               </div>
               <div className="glass-card p-4">
-                <h3 className="text-lg font-semibold text-white mb-3">AI Response</h3>
+                <h3 className="text-lg font-semibold text-white mb-3">
+                  {report.model_source?.toLowerCase().includes('chatgpt') 
+                    ? 'AI Response (ChatGPT)' 
+                    : report.model_source?.toLowerCase().includes('gemini')
+                    ? 'AI Response (Gemini)'
+                    : 'AI Response'}
+                </h3>
                 <div className="bg-gray-950/50 p-4 rounded-lg border border-gray-700 overflow-x-auto">
                   <div className="text-sm text-gray-300 whitespace-pre-wrap font-mono">
                     {report.ai_response && report.ai_response.trim() ? highlightInecta(report.ai_response) : <span className="text-gray-400 italic">No response text found in database for this ID.</span>}
@@ -334,13 +343,14 @@ const AnalysisDrawer = ({
 
 export default function GeoSimilaritiesPage() {
   const [reports, setReports] = useState<ContentGapReport[]>([]);
-  const [stats, setStats] = useState<ReportStats>({ total_reports: 0, high_priority: 0, avg_similarity: 0, inecta_mentions: 0 });
+  const [stats, setStats] = useState<ReportStats>({ total_reports: 0, high_priority: 0, avg_similarity: 0, inecta_mentions: 0, chatgpt_count: 0, gemini_count: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPersona, setSelectedPersona] = useState('');
   const [selectedPriority, setSelectedPriority] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
   const [selectedUrl, setSelectedUrl] = useState('');
   const [latestExecutionDate, setLatestExecutionDate] = useState<string>('');
   const [selectedReport, setSelectedReport] = useState<ContentGapReport | null>(null);
@@ -383,7 +393,7 @@ export default function GeoSimilaritiesPage() {
         // 1. Fetch the Reports (Metadata)
         const { data: reportsData, error: fetchError } = await supabase
           .from('content_gap_reports')
-          .select('*')
+          .select('*, model_source')
           .eq('execution_date', latestDate)
           .order('priority_score', { ascending: false });
 
@@ -439,7 +449,9 @@ export default function GeoSimilaritiesPage() {
           total_reports: parsedReports.length,
           high_priority: parsedReports.filter(r => r.priority_score >= 4).length,
           avg_similarity: parsedReports.length > 0 ? parsedReports.reduce((sum, r) => sum + (r.similarity_score * 100), 0) / parsedReports.length : 0,
-          inecta_mentions: parsedReports.filter(r => r.inecta_mentioned).length
+          inecta_mentions: parsedReports.filter(r => r.inecta_mentioned).length,
+          chatgpt_count: parsedReports.filter(r => r.model_source?.toLowerCase().includes('chatgpt')).length,
+          gemini_count: parsedReports.filter(r => r.model_source?.toLowerCase().includes('gemini')).length
         });
 
       } catch (err) {
@@ -463,6 +475,10 @@ export default function GeoSimilaritiesPage() {
         if (selectedPriority === 'medium' && report.priority_score !== 3) return false;
         if (selectedPriority === 'low' && report.priority_score > 2) return false;
       }
+      if (selectedModel) {
+        if (selectedModel === 'chatgpt' && !report.model_source?.toLowerCase().includes('chatgpt')) return false;
+        if (selectedModel === 'gemini' && !report.model_source?.toLowerCase().includes('gemini')) return false;
+      }
       if (selectedPersona && report.persona_name !== selectedPersona) return false;
       if (selectedUrl && report.target_page_url !== selectedUrl) return false;
       if (searchTerm) {
@@ -480,7 +496,7 @@ export default function GeoSimilaritiesPage() {
       }
       return true;
     });
-  }, [reports, activeTab, searchTerm, selectedPersona, selectedPriority, selectedUrl]);
+  }, [reports, activeTab, searchTerm, selectedPersona, selectedPriority, selectedModel, selectedUrl]);
 
   const getPriorityBadgeColor = (priority: number) => {
     if (priority >= 4) return 'bg-red-500/20 text-red-400 border-red-500/50';
@@ -563,6 +579,10 @@ export default function GeoSimilaritiesPage() {
               <MetricCard title="Avg Similarity" value={stats.avg_similarity} format="percentage" icon={<BarChart3 className="w-8 h-8" />} />
               <MetricCard title="Inecta Mentions" value={`${stats.inecta_mentions}/${stats.total_reports}`} format="number" icon={<CheckCircle className="w-8 h-8" />} />
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <MetricCard title="ChatGPT Reports" value={stats.chatgpt_count} format="number" icon={<FileText className="w-8 h-8" />} />
+              <MetricCard title="Gemini Reports" value={stats.gemini_count} format="number" icon={<FileText className="w-8 h-8" />} />
+            </div>
 
             <div className="glass-card p-6 mb-6">
               <div className="flex flex-col md:flex-row gap-4">
@@ -583,6 +603,14 @@ export default function GeoSimilaritiesPage() {
                     <option value="high">High (4-5)</option>
                     <option value="medium">Medium (3)</option>
                     <option value="low">Low (1-2)</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                </div>
+                <div className="relative">
+                  <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} className="appearance-none pl-4 pr-10 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent min-w-[150px]">
+                    <option value="">All Models</option>
+                    <option value="chatgpt">ChatGPT</option>
+                    <option value="gemini">Gemini</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                 </div>
@@ -633,11 +661,19 @@ export default function GeoSimilaritiesPage() {
                         </div>
                         <div className="flex flex-col items-end gap-2 flex-shrink-0 ml-2">
                           <span className={`px-2 py-1 rounded text-xs font-semibold border ${getPriorityBadgeColor(report.priority_score)}`}>{report.priority_score >= 4 ? 'High' : report.priority_score === 3 ? 'Medium' : 'Low'} ({report.priority_score})</span>
-                          {report.inecta_mentioned ? (
-                            <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded border border-green-500/50"><CheckCircle className="w-3 h-3" /> Inecta</span>
-                          ) : (
-                            <span className="flex items-center gap-1 text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded border border-red-500/50"><X className="w-3 h-3" /> No Inecta</span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {report.inecta_mentioned ? (
+                              <span className="flex items-center gap-1 text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded border border-green-500/50"><CheckCircle className="w-3 h-3" /> Inecta</span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded border border-red-500/50"><X className="w-3 h-3" /> No Inecta</span>
+                            )}
+                            {report.model_source?.toLowerCase().includes('chatgpt') && (
+                              <span className="text-xs bg-green-500/20 text-green-400 px-2 py-1 rounded border border-green-500/50">GPT</span>
+                            )}
+                            {report.model_source?.toLowerCase().includes('gemini') && (
+                              <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded border border-purple-500/50">Gemini</span>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2 mb-3 text-xs">
