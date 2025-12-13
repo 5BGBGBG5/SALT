@@ -29,6 +29,13 @@ interface SummaryStats {
 }
 
 export default function MarketingManagerWeeklyPage() {
+  // TEMPORARY DEBUG - remove after testing
+  console.log('ALL PUBLIC ENV:', {
+    regularSupabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    intelSupabaseUrl: process.env.NEXT_PUBLIC_INTEL_SUPABASE_URL,
+    intelSupabaseKey: process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY ? 'exists' : 'missing',
+  });
+
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +47,7 @@ export default function MarketingManagerWeeklyPage() {
 
   const filteredData = useMemo(() => {
     const monthsToShow = parseInt(dateRange);
-    return monthlyData.slice(0, monthsToShow).reverse(); // Reverse to show oldest first
+    return monthlyData.slice(0, monthsToShow).reverse();
   }, [monthlyData, dateRange]);
 
   const summaryStats = useMemo((): SummaryStats => {
@@ -59,16 +66,6 @@ export default function MarketingManagerWeeklyPage() {
     const avgConversionRate = filteredData.reduce((sum, d) => sum + (d.conversion_rate || 0), 0) / filteredData.length;
     const months = filteredData.length;
     const avgMonthlyMQLs = totalMQLs / months;
-
-    export default function MarketingManagerWeeklyPage() {
-      // TEMPORARY DEBUG - remove after testing
-      console.log('ALL PUBLIC ENV:', {
-        regularSupabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
-        intelSupabaseUrl: process.env.NEXT_PUBLIC_INTEL_SUPABASE_URL,
-        intelSupabaseKey: process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY,
-      });
-      
-      // ... rest of your code
 
     return {
       totalMQLs,
@@ -112,7 +109,6 @@ export default function MarketingManagerWeeklyPage() {
 
         if (data && data.length > 0) {
           setMonthlyData(data as MonthlyData[]);
-          // Get the most recent updated_at
           const latestUpdate = data[0]?.updated_at;
           setLastUpdated(latestUpdate || null);
         } else {
@@ -278,4 +274,3 @@ export default function MarketingManagerWeeklyPage() {
     </div>
   );
 }
-
