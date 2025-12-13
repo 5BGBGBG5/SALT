@@ -75,12 +75,12 @@ export default function MarketingManagerWeeklyPage() {
       setError(null);
 
       try {
-        // Use Inecta Intelligence Supabase connection (same as geo-similarities report)
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        // Use Inecta Intelligence Supabase connection
+        const supabaseUrl = process.env.NEXT_PUBLIC_INTEL_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY;
 
         if (!supabaseUrl || !supabaseKey) {
-          throw new Error('Inecta Intelligence Supabase environment variables are not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.');
+          throw new Error('Inecta Intelligence Supabase environment variables are not configured. Set NEXT_PUBLIC_INTEL_SUPABASE_URL and NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY.');
         }
 
         const supabase = createClient(supabaseUrl, supabaseKey);
