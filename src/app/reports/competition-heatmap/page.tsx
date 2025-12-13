@@ -89,6 +89,40 @@ interface EmbeddingRow {
   } | null;
 }
 
+// Helper function to get only the latest response per query_id + model_source
+// Equivalent to SQL: ROW_NUMBER() OVER (PARTITION BY query_id, model_source ORDER BY execution_date DESC) = 1
+function getLatestResponses(responses: EmbeddingRow[]): EmbeddingRow[] {
+  // Group by query_id + model_source, keep only the latest by execution_date
+  const grouped = new Map<string, EmbeddingRow>();
+  
+  responses.forEach((row) => {
+    const queryId = row.metadata?.query_id;
+    const modelSource = row.metadata?.model_source;
+    const executionDate = row.metadata?.execution_date;
+    
+    if (!queryId || !modelSource) return;
+    
+    const key = `${queryId}::${modelSource}`;
+    const existing = grouped.get(key);
+    
+    if (!existing) {
+      grouped.set(key, row);
+    } else {
+      // Compare execution dates - keep the one with the latest date
+      // Dates are in YYYY-MM-DD format, so string comparison works
+      const existingDate = existing.metadata?.execution_date || '';
+      const currentDate = executionDate || '';
+      
+      // If current date is later (or existing has no date), replace
+      if (!existingDate || (currentDate && currentDate > existingDate)) {
+        grouped.set(key, row);
+      }
+    }
+  });
+  
+  return Array.from(grouped.values());
+}
+
 export default function InectaMentionsDashboard() {
   const [overviewStats, setOverviewStats] = useState<OverviewStats>({
     totalResponses: 0,
@@ -135,13 +169,15 @@ export default function InectaMentionsDashboard() {
 
           if (allData) {
             const typedData = allData as EmbeddingRow[];
-            const total = typedData.length;
-            const mentions = typedData.filter((r) => r.metadata?.inecta_mentioned === true).length;
-            const models = new Set(typedData.map((r) => r.metadata?.model_source).filter(Boolean));
+            // Filter to only latest responses per query_id + model_source
+            const latestData = getLatestResponses(typedData);
+            const total = latestData.length;
+            const mentions = latestData.filter((r) => r.metadata?.inecta_mentioned === true).length;
+            const models = new Set(latestData.map((r) => r.metadata?.model_source).filter(Boolean));
             
             // Get top competitor
             const competitorCounts: Record<string, number> = {};
-            typedData.forEach((r) => {
+            latestData.forEach((r) => {
               const vendors = r.metadata?.vendor_mentions;
               if (vendors && typeof vendors === 'object') {
                 Object.entries(vendors).forEach(([vendor, count]) => {
@@ -180,9 +216,11 @@ export default function InectaMentionsDashboard() {
 
         if (!modelError && modelData) {
           const typedModelData = modelData as EmbeddingRow[];
+          // Filter to only latest responses per query_id + model_source
+          const latestModelData = getLatestResponses(typedModelData);
           const modelMap: Record<string, { total: number; mentions: number }> = {};
           
-          typedModelData.forEach((row) => {
+          latestModelData.forEach((row) => {
             const model = row.metadata?.model_source;
             if (model) {
               if (!modelMap[model]) {
@@ -212,9 +250,11 @@ export default function InectaMentionsDashboard() {
 
         if (!personaError && personaData) {
           const typedPersonaData = personaData as EmbeddingRow[];
+          // Filter to only latest responses per query_id + model_source
+          const latestPersonaData = getLatestResponses(typedPersonaData);
           const personaMap: Record<string, PersonaRow> = {};
 
-          typedPersonaData.forEach((row) => {
+          latestPersonaData.forEach((row) => {
             const personaName = row.metadata?.persona_name;
             const personaId = row.metadata?.persona_id;
             const model = row.metadata?.model_source;
@@ -247,7 +287,7 @@ export default function InectaMentionsDashboard() {
           });
 
           setPersonaRows(Object.values(personaMap));
-          setAllResponses(typedPersonaData);
+          setAllResponses(latestPersonaData);
         }
 
         // 4. Fetch Competitor Mentions
@@ -257,9 +297,11 @@ export default function InectaMentionsDashboard() {
 
         if (!competitorError && competitorData) {
           const typedCompetitorData = competitorData as EmbeddingRow[];
+          // Filter to only latest responses per query_id + model_source
+          const latestCompetitorData = getLatestResponses(typedCompetitorData);
           const competitorMap: Record<string, { totalMentions: number; responsesMentionedIn: number }> = {};
 
-          typedCompetitorData.forEach((row) => {
+          latestCompetitorData.forEach((row) => {
             const vendors = row.metadata?.vendor_mentions;
             if (vendors && typeof vendors === 'object') {
               Object.entries(vendors).forEach(([vendor, count]) => {
@@ -304,9 +346,11 @@ export default function InectaMentionsDashboard() {
   };
 
   const getPersonaResponses = (personaId: string): ResponseDetail[] => {
-    return allResponses
-      .filter((r: EmbeddingRow) => r.metadata?.persona_id === personaId)
-      .map((r: EmbeddingRow) => ({
+    // Filter to persona, then get only latest responses per query_id + model_source
+    const personaResponses = allResponses.filter((r: EmbeddingRow) => r.metadata?.persona_id === personaId);
+    const latestPersonaResponses = getLatestResponses(personaResponses);
+    
+    return latestPersonaResponses.map((r: EmbeddingRow) => ({
         id: r.id,
         queryId: r.metadata?.query_id || '',
         model: r.metadata?.model_source || '',
