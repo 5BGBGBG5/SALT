@@ -60,6 +60,16 @@ export default function MarketingManagerWeeklyPage() {
     const months = filteredData.length;
     const avgMonthlyMQLs = totalMQLs / months;
 
+    export default function MarketingManagerWeeklyPage() {
+      // TEMPORARY DEBUG - remove after testing
+      console.log('ALL PUBLIC ENV:', {
+        regularSupabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        intelSupabaseUrl: process.env.NEXT_PUBLIC_INTEL_SUPABASE_URL,
+        intelSupabaseKey: process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY,
+      });
+      
+      // ... rest of your code
+
     return {
       totalMQLs,
       totalSQLs,
