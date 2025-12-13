@@ -7,6 +7,9 @@ import SummaryCards from './components/SummaryCards';
 import MqlSqlChart from './components/MqlSqlChart';
 import MqlSqlTable from './components/MqlSqlTable';
 import CompanyDrilldownModal from './components/CompanyDrilldownModal';
+import PipelineSummaryCards from './components/PipelineSummaryCards';
+import PipelineChart from './components/PipelineChart';
+import PipelineTable from './components/PipelineTable';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -28,6 +31,26 @@ interface SummaryStats {
   months: number;
 }
 
+interface PipelineData {
+  month: string;
+  month_display: string;
+  deals_created: number;
+  pipeline_value: number;
+  deals_won: number;
+  revenue_won: number;
+  deals_lost: number;
+  revenue_lost: number;
+  avg_deal_size: number;
+  updated_at: string;
+}
+
+interface PipelineSummaryStats {
+  totalPipelineGenerated: number;
+  totalRevenueWon: number;
+  avgDealSize: number;
+  winRate: number;
+}
+
 export default function MarketingManagerWeeklyPage() {
   // TEMPORARY DEBUG - remove after testing
   console.log('ALL PUBLIC ENV:', {
@@ -37,6 +60,7 @@ export default function MarketingManagerWeeklyPage() {
   });
 
   const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([]);
+  const [pipelineData, setPipelineData] = useState<PipelineData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<'6' | '12' | '24'>('12');
@@ -49,6 +73,11 @@ export default function MarketingManagerWeeklyPage() {
     const monthsToShow = parseInt(dateRange);
     return monthlyData.slice(0, monthsToShow).reverse();
   }, [monthlyData, dateRange]);
+
+  const filteredPipelineData = useMemo(() => {
+    const monthsToShow = parseInt(dateRange);
+    return pipelineData.slice(0, monthsToShow).reverse();
+  }, [pipelineData, dateRange]);
 
   const summaryStats = useMemo((): SummaryStats => {
     if (filteredData.length === 0) {
@@ -76,6 +105,34 @@ export default function MarketingManagerWeeklyPage() {
     };
   }, [filteredData]);
 
+  const pipelineSummaryStats = useMemo((): PipelineSummaryStats => {
+    if (filteredPipelineData.length === 0) {
+      return {
+        totalPipelineGenerated: 0,
+        totalRevenueWon: 0,
+        avgDealSize: 0,
+        winRate: 0
+      };
+    }
+
+    const totalPipelineGenerated = filteredPipelineData.reduce((sum, d) => sum + (Number(d.pipeline_value) || 0), 0);
+    const totalRevenueWon = filteredPipelineData.reduce((sum, d) => sum + (Number(d.revenue_won) || 0), 0);
+    const totalDealsWon = filteredPipelineData.reduce((sum, d) => sum + (d.deals_won || 0), 0);
+    const totalDealsLost = filteredPipelineData.reduce((sum, d) => sum + (d.deals_lost || 0), 0);
+    const totalDeals = totalDealsWon + totalDealsLost;
+    const winRate = totalDeals > 0 ? (totalDealsWon / totalDeals) * 100 : 0;
+    
+    const avgDealSizeSum = filteredPipelineData.reduce((sum, d) => sum + (Number(d.avg_deal_size) || 0), 0);
+    const avgDealSize = filteredPipelineData.length > 0 ? avgDealSizeSum / filteredPipelineData.length : 0;
+
+    return {
+      totalPipelineGenerated,
+      totalRevenueWon,
+      avgDealSize,
+      winRate
+    };
+  }, [filteredPipelineData]);
+
   useEffect(() => {
     async function fetchData() {
       setLoading(true);
@@ -98,22 +155,41 @@ const supabaseKey = process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY || 'sb_publi
         const supabase = createClient(supabaseUrl, supabaseKey);
 
         const monthsToFetch = parseInt(dateRange);
-        const { data, error: fetchError } = await supabase
+        
+        // Fetch MQL/SQL data
+        const { data: mqlSqlData, error: mqlSqlError } = await supabase
           .from('hubspot_mql_sql_monthly')
           .select('*')
           .order('month', { ascending: false })
           .limit(monthsToFetch);
 
-        if (fetchError) {
-          throw new Error(`Failed to fetch data: ${fetchError.message}`);
+        if (mqlSqlError) {
+          throw new Error(`Failed to fetch MQL/SQL data: ${mqlSqlError.message}`);
         }
 
-        if (data && data.length > 0) {
-          setMonthlyData(data as MonthlyData[]);
-          const latestUpdate = data[0]?.updated_at;
+        // Fetch Pipeline data
+        const { data: pipelineDataResult, error: pipelineError } = await supabase
+          .from('hubspot_pipeline_monthly')
+          .select('*')
+          .order('month', { ascending: false })
+          .limit(monthsToFetch);
+
+        if (pipelineError) {
+          throw new Error(`Failed to fetch pipeline data: ${pipelineError.message}`);
+        }
+
+        if (mqlSqlData && mqlSqlData.length > 0) {
+          setMonthlyData(mqlSqlData as MonthlyData[]);
+          const latestUpdate = mqlSqlData[0]?.updated_at;
           setLastUpdated(latestUpdate || null);
         } else {
           setMonthlyData([]);
+        }
+
+        if (pipelineDataResult && pipelineDataResult.length > 0) {
+          setPipelineData(pipelineDataResult as PipelineData[]);
+        } else {
+          setPipelineData([]);
         }
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -239,20 +315,41 @@ const supabaseKey = process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY || 'sb_publi
         {/* Content */}
         {!loading && !error && (
           <>
-            {/* Summary Cards */}
+            {/* MQL/SQL Summary Cards */}
             <SummaryCards stats={summaryStats} dateRangeText={getDateRangeText()} />
 
-            {/* Chart */}
+            {/* Pipeline Summary Cards */}
+            {filteredPipelineData.length > 0 && (
+              <PipelineSummaryCards stats={pipelineSummaryStats} dateRangeText={getDateRangeText()} />
+            )}
+
+            {/* MQL/SQL Chart */}
             <div className="glass-card p-6 mb-6">
               <h2 className="text-xl font-semibold text-white mb-4">MQL & SQL by Month</h2>
               <MqlSqlChart data={filteredData} />
             </div>
 
-            {/* Table */}
-            <div className="glass-card p-6">
-              <h2 className="text-xl font-semibold text-white mb-4">Monthly Performance</h2>
+            {/* Pipeline Chart */}
+            {filteredPipelineData.length > 0 && (
+              <div className="glass-card p-6 mb-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Pipeline by Month</h2>
+                <PipelineChart data={filteredPipelineData} />
+              </div>
+            )}
+
+            {/* MQL/SQL Table */}
+            <div className="glass-card p-6 mb-6">
+              <h2 className="text-xl font-semibold text-white mb-4">MQL & SQL Monthly Performance</h2>
               <MqlSqlTable data={filteredData} onRowClick={handleRowClick} />
             </div>
+
+            {/* Pipeline Table */}
+            {filteredPipelineData.length > 0 && (
+              <div className="glass-card p-6">
+                <h2 className="text-xl font-semibold text-white mb-4">Pipeline Monthly Performance</h2>
+                <PipelineTable data={filteredPipelineData} />
+              </div>
+            )}
           </>
         )}
 
