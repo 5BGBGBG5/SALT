@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
 import { Calendar, RefreshCw, AlertCircle } from 'lucide-react';
-import MetricCard from '@/app/components/MetricCard';
 import SummaryCards from './components/SummaryCards';
 import MqlSqlChart from './components/MqlSqlChart';
 import MqlSqlTable from './components/MqlSqlTable';

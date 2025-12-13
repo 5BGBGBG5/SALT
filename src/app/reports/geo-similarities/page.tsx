@@ -69,12 +69,6 @@ function filterUseCases(useCases: string[] | undefined): string[] {
 }
 
 // Interfaces
-interface RawAiResponse {
-  execution_id: string;
-  prompt_text: string;
-  model_responses: string; // Note: N8N saves this as 'model_responses'
-}
-
 interface ContentGapReport {
   id: string;
   query_id: string;
@@ -188,14 +182,6 @@ const AnalysisDrawer = ({
       return Object.fromEntries(sorted);
     }
     return filtered;
-  };
-
-  const getFilteredUseCases = (report: ContentGapReport): string[] => {
-    const useCasesData = report.missing_use_cases;
-    if (!useCasesData || typeof useCasesData !== 'object') return [];
-    const useCases = useCasesData.missing;
-    if (!useCases || !Array.isArray(useCases)) return [];
-    return filterUseCases(useCases);
   };
 
   const faqs = Array.isArray(report.suggested_faqs) ? report.suggested_faqs : [];
