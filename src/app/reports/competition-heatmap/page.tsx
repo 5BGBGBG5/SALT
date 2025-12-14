@@ -20,6 +20,7 @@ import ModelComparison from './components/ModelComparison';
 import PersonaTable from './components/PersonaTable';
 import CompetitorChart from './components/CompetitorChart';
 import ResponseDetailModal from './components/ResponseDetailModal';
+import MentionTrends from './components/MentionTrends';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -71,6 +72,19 @@ interface CompetitorMention {
   vendor: string;
   totalMentions: number;
   responsesMentionedIn: number;
+}
+
+interface InectaTrendData {
+  execution_date: string;
+  total_responses: number;
+  inecta_mentions: number;
+  mention_rate: number;
+}
+
+interface CompetitorTrendData {
+  execution_date: string;
+  vendor: string;
+  total_mentions: number;
 }
 
 interface EmbeddingRow {
@@ -136,6 +150,8 @@ export default function InectaMentionsDashboard() {
   const [personaRows, setPersonaRows] = useState<PersonaRow[]>([]);
   const [competitorMentions, setCompetitorMentions] = useState<CompetitorMention[]>([]);
   const [allResponses, setAllResponses] = useState<EmbeddingRow[]>([]);
+  const [inectaTrend, setInectaTrend] = useState<InectaTrendData[]>([]);
+  const [competitorTrend, setCompetitorTrend] = useState<CompetitorTrendData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPersona, setSelectedPersona] = useState<PersonaRow | null>(null);
@@ -456,6 +472,24 @@ export default function InectaMentionsDashboard() {
                 Model Performance
               </h2>
               <ModelComparison modelStats={modelStats} />
+            </div>
+
+            {/* Mention Trends */}
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Mention Trends
+              </h2>
+              <MentionTrends inectaTrend={inectaTrend} competitorTrend={competitorTrend} />
+            </div>
+
+            {/* Mention Trends */}
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <TrendingUp className="w-5 h-5" />
+                Mention Trends
+              </h2>
+              <MentionTrends inectaTrend={inectaTrend} competitorTrend={competitorTrend} />
             </div>
 
             {/* Persona Breakdown */}
