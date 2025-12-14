@@ -85,7 +85,7 @@ interface EmbeddingRow {
     prompt?: string;
     query_id?: string;
     execution_date?: string;
-    vendor_mentions?: Record<string, number>;
+    vendor_mentions?: string | Record<string, number>; // Can be string (JSON) or object
   } | null;
 }
 
@@ -175,13 +175,27 @@ export default function InectaMentionsDashboard() {
             const mentions = latestData.filter((r) => r.metadata?.inecta_mentioned === true).length;
             const models = new Set(latestData.map((r) => r.metadata?.model_source).filter(Boolean));
             
-            // Get top competitor
+            // Get top competitor (excluding Inecta)
             const competitorCounts: Record<string, number> = {};
             latestData.forEach((r) => {
-              const vendors = r.metadata?.vendor_mentions;
+              let vendors: string | Record<string, number> | undefined = r.metadata?.vendor_mentions;
+              
+              // Handle vendor_mentions as string (needs JSON parse) or object
+              if (typeof vendors === 'string' && vendors.trim() !== '') {
+                try {
+                  vendors = JSON.parse(vendors) as Record<string, number>;
+                } catch (e) {
+                  console.warn('Failed to parse vendor_mentions as JSON:', e);
+                  return; // Skip this row if parsing fails
+                }
+              }
+              
               if (vendors && typeof vendors === 'object') {
                 Object.entries(vendors).forEach(([vendor, count]) => {
-                  competitorCounts[vendor] = (competitorCounts[vendor] || 0) + (Number(count) || 0);
+                  // Exclude Inecta from competitor counts
+                  if (vendor && vendor.toLowerCase() !== 'inecta') {
+                    competitorCounts[vendor] = (competitorCounts[vendor] || 0) + (Number(count) || 0);
+                  }
                 });
               }
             });
@@ -302,16 +316,30 @@ export default function InectaMentionsDashboard() {
           const competitorMap: Record<string, { totalMentions: number; responsesMentionedIn: number }> = {};
 
           latestCompetitorData.forEach((row) => {
-            const vendors = row.metadata?.vendor_mentions;
+            let vendors: string | Record<string, number> | undefined = row.metadata?.vendor_mentions;
+            
+            // Handle vendor_mentions as string (needs JSON parse) or object
+            if (typeof vendors === 'string' && vendors.trim() !== '') {
+              try {
+                vendors = JSON.parse(vendors) as Record<string, number>;
+              } catch (e) {
+                console.warn('Failed to parse vendor_mentions as JSON:', e);
+                return; // Skip this row if parsing fails
+              }
+            }
+            
             if (vendors && typeof vendors === 'object') {
               Object.entries(vendors).forEach(([vendor, count]) => {
-                if (!competitorMap[vendor]) {
-                  competitorMap[vendor] = { totalMentions: 0, responsesMentionedIn: 0 };
-                }
-                const mentionCount = Number(count) || 0;
-                competitorMap[vendor].totalMentions += mentionCount;
-                if (mentionCount > 0) {
-                  competitorMap[vendor].responsesMentionedIn++;
+                // Exclude Inecta from competitor counts
+                if (vendor && vendor.toLowerCase() !== 'inecta') {
+                  if (!competitorMap[vendor]) {
+                    competitorMap[vendor] = { totalMentions: 0, responsesMentionedIn: 0 };
+                  }
+                  const mentionCount = Number(count) || 0;
+                  competitorMap[vendor].totalMentions += mentionCount;
+                  if (mentionCount > 0) {
+                    competitorMap[vendor].responsesMentionedIn++;
+                  }
                 }
               });
             }
@@ -358,9 +386,21 @@ export default function InectaMentionsDashboard() {
         response: r.content || '',
         inectaMentioned: r.metadata?.inecta_mentioned === true,
         mentionCount: Number(r.metadata?.mention_count) || 0,
-        competitorsMentioned: (r.metadata?.vendor_mentions && typeof r.metadata.vendor_mentions === 'object') 
-          ? r.metadata.vendor_mentions as Record<string, number>
-          : {},
+        competitorsMentioned: (() => {
+          let vendors: string | Record<string, number> | undefined = r.metadata?.vendor_mentions;
+          // Handle vendor_mentions as string (needs JSON parse) or object
+          if (typeof vendors === 'string' && vendors.trim() !== '') {
+            try {
+              vendors = JSON.parse(vendors) as Record<string, number>;
+            } catch (e) {
+              console.warn('Failed to parse vendor_mentions as JSON:', e);
+              return {};
+            }
+          }
+          return (vendors && typeof vendors === 'object') 
+            ? vendors as Record<string, number>
+            : {};
+        })(),
         date: r.metadata?.execution_date || ''
       }));
   };
