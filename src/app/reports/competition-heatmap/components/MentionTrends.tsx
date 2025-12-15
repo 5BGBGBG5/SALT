@@ -137,15 +137,12 @@ export default function MentionTrends({ inectaTrend, competitorTrend, modelFilte
       dateData[item.vendor] = item.total_mentions;
     });
     
-    // Get all unique vendors
-    const vendors = new Set(competitorTrend.map(item => item.vendor));
-    
     // Convert to array format
     return Array.from(dateMap.entries()).map(([date, vendors]) => ({
       execution_date: date,
       ...vendors
     }));
-  }, [competitorTrend]);
+  }, [filteredCompetitorTrend]);
   
   // Get unique vendors for legend
   const vendors = React.useMemo(() => {

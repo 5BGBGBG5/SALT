@@ -462,12 +462,16 @@ export default function InectaMentionsDashboard() {
             .slice(0, 5)
             .map(([vendor]) => vendor);
           
-          // Now get trend data for top 5 vendors by execution_date
-          const competitorTrendByDate = new Map<string, Record<string, number>>();
+          // Now get trend data for top 5 vendors by execution_date AND model
+          const competitorTrendByDateModel = new Map<string, Record<string, number>>();
           
           typedCompetitorTrendData.forEach((row) => {
             const date = row.metadata?.execution_date;
-            if (!date) return;
+            const model = row.metadata?.model_source;
+            if (!date || !model) return;
+            
+            // Create composite key for date and model
+            const dateModelKey = `${date}::${model}`;
             
             let vendors: string | Record<string, number> | undefined = row.metadata?.vendor_mentions;
             
@@ -480,10 +484,10 @@ export default function InectaMentionsDashboard() {
             }
             
             if (vendors && typeof vendors === 'object') {
-              if (!competitorTrendByDate.has(date)) {
-                competitorTrendByDate.set(date, {});
+              if (!competitorTrendByDateModel.has(dateModelKey)) {
+                competitorTrendByDateModel.set(dateModelKey, {});
               }
-              const dateData = competitorTrendByDate.get(date)!;
+              const dateData = competitorTrendByDateModel.get(dateModelKey)!;
               
               Object.entries(vendors).forEach(([vendor, count]) => {
                 if (vendor && vendor.toLowerCase() !== 'inecta' && top5Vendors.includes(vendor)) {
@@ -493,25 +497,15 @@ export default function InectaMentionsDashboard() {
             }
           });
           
-          // Get model for each date by finding a row with that date
-          const dateToModel = new Map<string, string>();
-          typedCompetitorTrendData.forEach((row) => {
-            const date = row.metadata?.execution_date;
-            const model = row.metadata?.model_source;
-            if (date && model && !dateToModel.has(date)) {
-              dateToModel.set(date, model);
-            }
-          });
-          
           const competitorTrendArray: CompetitorTrendData[] = [];
-          competitorTrendByDate.forEach((vendors, date) => {
-            const model = dateToModel.get(date) || '';
+          competitorTrendByDateModel.forEach((vendors, dateModelKey) => {
+            const [date, model] = dateModelKey.split('::');
             Object.entries(vendors).forEach(([vendor, mentions]) => {
               competitorTrendArray.push({
                 execution_date: date,
                 vendor,
                 total_mentions: mentions,
-                model: model
+                model: model || ''
               });
             });
           });
