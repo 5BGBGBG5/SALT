@@ -86,6 +86,7 @@ interface CompetitorTrendData {
   execution_date: string;
   vendor: string;
   total_mentions: number;
+  model: string;
 }
 
 interface EmbeddingRow {
@@ -153,6 +154,7 @@ export default function InectaMentionsDashboard() {
   const [allResponses, setAllResponses] = useState<EmbeddingRow[]>([]);
   const [inectaTrend, setInectaTrend] = useState<InectaTrendData[]>([]);
   const [competitorTrend, setCompetitorTrend] = useState<CompetitorTrendData[]>([]);
+  const [modelFilter, setModelFilter] = useState<'all' | 'chatgpt' | 'gemini'>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPersona, setSelectedPersona] = useState<PersonaRow | null>(null);
@@ -491,13 +493,25 @@ export default function InectaMentionsDashboard() {
             }
           });
           
+          // Get model for each date by finding a row with that date
+          const dateToModel = new Map<string, string>();
+          typedCompetitorTrendData.forEach((row) => {
+            const date = row.metadata?.execution_date;
+            const model = row.metadata?.model_source;
+            if (date && model && !dateToModel.has(date)) {
+              dateToModel.set(date, model);
+            }
+          });
+          
           const competitorTrendArray: CompetitorTrendData[] = [];
           competitorTrendByDate.forEach((vendors, date) => {
+            const model = dateToModel.get(date) || '';
             Object.entries(vendors).forEach(([vendor, mentions]) => {
               competitorTrendArray.push({
                 execution_date: date,
                 vendor,
-                total_mentions: mentions
+                total_mentions: mentions,
+                model: model
               });
             });
           });
@@ -621,7 +635,12 @@ export default function InectaMentionsDashboard() {
                 <TrendingUp className="w-5 h-5" />
                 Mention Trends
               </h2>
-              <MentionTrends inectaTrend={inectaTrend} competitorTrend={competitorTrend} />
+              <MentionTrends 
+                inectaTrend={inectaTrend} 
+                competitorTrend={competitorTrend}
+                modelFilter={modelFilter}
+                onModelFilterChange={setModelFilter}
+              />
             </div>
 
             {/* Persona Breakdown */}

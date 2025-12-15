@@ -25,11 +25,14 @@ interface CompetitorTrendData {
   execution_date: string;
   vendor: string;
   total_mentions: number;
+  model: string;
 }
 
 interface MentionTrendsProps {
   inectaTrend: InectaTrendData[];
   competitorTrend: CompetitorTrendData[];
+  modelFilter: 'all' | 'chatgpt' | 'gemini';
+  onModelFilterChange: (filter: 'all' | 'chatgpt' | 'gemini') => void;
 }
 
 const COMPETITOR_COLORS: Record<string, string> = {
@@ -104,12 +107,29 @@ const CompetitorTrendTooltip = ({ active, payload, label }: CompetitorTooltipPro
   return null;
 };
 
-export default function MentionTrends({ inectaTrend, competitorTrend }: MentionTrendsProps) {
+export default function MentionTrends({ inectaTrend, competitorTrend, modelFilter, onModelFilterChange }: MentionTrendsProps) {
+  // Filter data based on model filter
+  const filteredInectaTrend = React.useMemo(() => {
+    if (modelFilter === 'all') return inectaTrend;
+    const modelMatch = modelFilter === 'chatgpt' ? 'chatgpt' : 'gemini';
+    return inectaTrend.filter(item => 
+      item.model?.toLowerCase().includes(modelMatch)
+    );
+  }, [inectaTrend, modelFilter]);
+
+  const filteredCompetitorTrend = React.useMemo(() => {
+    if (modelFilter === 'all') return competitorTrend;
+    const modelMatch = modelFilter === 'chatgpt' ? 'chatgpt' : 'gemini';
+    return competitorTrend.filter(item => 
+      item.model?.toLowerCase().includes(modelMatch)
+    );
+  }, [competitorTrend, modelFilter]);
+
   // Prepare competitor trend data - group by date
   const competitorDataByDate = React.useMemo(() => {
     const dateMap = new Map<string, Record<string, number>>();
     
-    competitorTrend.forEach(item => {
+    filteredCompetitorTrend.forEach(item => {
       if (!dateMap.has(item.execution_date)) {
         dateMap.set(item.execution_date, {});
       }
@@ -129,14 +149,14 @@ export default function MentionTrends({ inectaTrend, competitorTrend }: MentionT
   
   // Get unique vendors for legend
   const vendors = React.useMemo(() => {
-    return Array.from(new Set(competitorTrend.map(item => item.vendor)));
-  }, [competitorTrend]);
+    return Array.from(new Set(filteredCompetitorTrend.map(item => item.vendor)));
+  }, [filteredCompetitorTrend]);
   
   // Prepare Inecta trend data - pivot by model
   const inectaChartData = React.useMemo(() => {
     const dateMap = new Map<string, Record<string, number>>();
     
-    inectaTrend.forEach(item => {
+    filteredInectaTrend.forEach(item => {
       if (!dateMap.has(item.execution_date)) {
         dateMap.set(item.execution_date, {});
       }
@@ -153,7 +173,7 @@ export default function MentionTrends({ inectaTrend, competitorTrend }: MentionT
         ...models
       }))
       .sort((a, b) => a.execution_date.localeCompare(b.execution_date));
-  }, [inectaTrend]);
+  }, [filteredInectaTrend]);
   
   const competitorChartData = React.useMemo(() => {
     return competitorDataByDate.map(item => ({
@@ -162,20 +182,58 @@ export default function MentionTrends({ inectaTrend, competitorTrend }: MentionT
     }));
   }, [competitorDataByDate]);
   
-  const maxMentionRate = inectaTrend.length > 0 
-    ? Math.max(...inectaTrend.map(d => d.mention_rate), 0)
+  const maxMentionRate = filteredInectaTrend.length > 0 
+    ? Math.max(...filteredInectaTrend.map(d => d.mention_rate), 0)
     : 0;
   const goalLine = Math.max(10, Math.ceil(maxMentionRate / 5) * 5); // Round up to nearest 5, min 10
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Inecta Mention Rate Chart */}
-      <div className="glass-card p-6">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-teal-400" />
-          Inecta Mention Rate Over Time
-        </h3>
-        {!inectaTrend || inectaTrend.length === 0 || inectaChartData.length === 0 ? (
+    <div className="space-y-6">
+      {/* Model Filter Toggle */}
+      <div className="flex items-center gap-4">
+        <span className="text-gray-400 text-sm font-medium">Filter by Model:</span>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onModelFilterChange('all')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              modelFilter === 'all' 
+                ? 'bg-teal-500 text-white' 
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            All Models
+          </button>
+          <button
+            onClick={() => onModelFilterChange('chatgpt')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              modelFilter === 'chatgpt' 
+                ? 'bg-teal-500 text-white' 
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            ChatGPT
+          </button>
+          <button
+            onClick={() => onModelFilterChange('gemini')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              modelFilter === 'gemini' 
+                ? 'bg-purple-500 text-white' 
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            Gemini
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Inecta Mention Rate Chart */}
+        <div className="glass-card p-6">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-teal-400" />
+            Inecta Mention Rate Over Time
+          </h3>
+        {!filteredInectaTrend || filteredInectaTrend.length === 0 || inectaChartData.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-gray-400">
             No trend data available
           </div>
@@ -241,7 +299,7 @@ export default function MentionTrends({ inectaTrend, competitorTrend }: MentionT
           <TrendingUp className="w-5 h-5 text-blue-400" />
           Top Competitor Mentions Over Time
         </h3>
-        {!competitorTrend || competitorTrend.length === 0 || competitorChartData.length === 0 || vendors.length === 0 ? (
+        {!filteredCompetitorTrend || filteredCompetitorTrend.length === 0 || competitorChartData.length === 0 || vendors.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-gray-400">
             No competitor trend data available
           </div>
@@ -284,6 +342,7 @@ export default function MentionTrends({ inectaTrend, competitorTrend }: MentionT
             </LineChart>
           </ResponsiveContainer>
         )}
+      </div>
       </div>
     </div>
   );
