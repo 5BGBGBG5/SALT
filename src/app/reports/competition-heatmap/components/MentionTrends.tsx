@@ -149,7 +149,9 @@ export default function MentionTrends({ inectaTrend, competitorTrend }: MentionT
     }));
   }, [competitorDataByDate]);
   
-  const maxMentionRate = Math.max(...inectaTrend.map(d => d.mention_rate), 0);
+  const maxMentionRate = inectaTrend.length > 0 
+    ? Math.max(...inectaTrend.map(d => d.mention_rate), 0)
+    : 0;
   const goalLine = Math.max(10, Math.ceil(maxMentionRate / 5) * 5); // Round up to nearest 5, min 10
 
   return (
@@ -160,7 +162,7 @@ export default function MentionTrends({ inectaTrend, competitorTrend }: MentionT
           <TrendingUp className="w-5 h-5 text-teal-400" />
           Inecta Mention Rate Over Time
         </h3>
-        {inectaChartData.length === 0 ? (
+        {!inectaTrend || inectaTrend.length === 0 || inectaChartData.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-gray-400">
             No trend data available
           </div>
@@ -219,7 +221,7 @@ export default function MentionTrends({ inectaTrend, competitorTrend }: MentionT
           <TrendingUp className="w-5 h-5 text-blue-400" />
           Top Competitor Mentions Over Time
         </h3>
-        {competitorChartData.length === 0 || vendors.length === 0 ? (
+        {!competitorTrend || competitorTrend.length === 0 || competitorChartData.length === 0 || vendors.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-gray-400">
             No competitor trend data available
           </div>

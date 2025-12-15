@@ -373,6 +373,136 @@ export default function InectaMentionsDashboard() {
           setCompetitorMentions(competitorArray);
         }
 
+        // 5. Fetch Inecta Trend Data (ALL historical data, not just latest)
+        const { data: trendData, error: trendError } = await supabase
+          .from('persona_response_embeddings')
+          .select('metadata');
+
+        if (!trendError && trendData) {
+          const typedTrendData = trendData as EmbeddingRow[];
+          
+          // Group by execution_date (use ALL data for trends, not filtered)
+          const trendByDate = new Map<string, { total: number; mentions: number }>();
+          
+          typedTrendData.forEach((row) => {
+            const date = row.metadata?.execution_date;
+            if (date) {
+              if (!trendByDate.has(date)) {
+                trendByDate.set(date, { total: 0, mentions: 0 });
+              }
+              const stats = trendByDate.get(date)!;
+              stats.total++;
+              if (row.metadata?.inecta_mentioned === true) {
+                stats.mentions++;
+              }
+            }
+          });
+          
+          const inectaTrendArray: InectaTrendData[] = Array.from(trendByDate.entries())
+            .map(([date, stats]) => ({
+              execution_date: date,
+              total_responses: stats.total,
+              inecta_mentions: stats.mentions,
+              mention_rate: stats.total > 0 ? (stats.mentions / stats.total) * 100 : 0
+            }))
+            .sort((a, b) => a.execution_date.localeCompare(b.execution_date));
+          
+          console.log('Inecta trend data:', inectaTrendArray);
+          setInectaTrend(inectaTrendArray);
+        } else if (trendError) {
+          console.error('Error fetching trend data:', trendError);
+        }
+
+        // 6. Fetch Competitor Trend Data (Top 5, ALL historical data)
+        const { data: competitorTrendData, error: competitorTrendError } = await supabase
+          .from('persona_response_embeddings')
+          .select('metadata');
+
+        if (!competitorTrendError && competitorTrendData) {
+          const typedCompetitorTrendData = competitorTrendData as EmbeddingRow[];
+          
+          // First, get top 5 vendors overall (from ALL data)
+          const vendorTotals: Record<string, number> = {};
+          
+          typedCompetitorTrendData.forEach((row) => {
+            let vendors: string | Record<string, number> | undefined = row.metadata?.vendor_mentions;
+            
+            if (typeof vendors === 'string' && vendors.trim() !== '') {
+              try {
+                vendors = JSON.parse(vendors) as Record<string, number>;
+              } catch (e) {
+                return;
+              }
+            }
+            
+            if (vendors && typeof vendors === 'object') {
+              Object.entries(vendors).forEach(([vendor, count]) => {
+                if (vendor && vendor.toLowerCase() !== 'inecta') {
+                  vendorTotals[vendor] = (vendorTotals[vendor] || 0) + (Number(count) || 0);
+                }
+              });
+            }
+          });
+          
+          const top5Vendors = Object.entries(vendorTotals)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([vendor]) => vendor);
+          
+          // Now get trend data for top 5 vendors by execution_date
+          const competitorTrendByDate = new Map<string, Record<string, number>>();
+          
+          typedCompetitorTrendData.forEach((row) => {
+            const date = row.metadata?.execution_date;
+            if (!date) return;
+            
+            let vendors: string | Record<string, number> | undefined = row.metadata?.vendor_mentions;
+            
+            if (typeof vendors === 'string' && vendors.trim() !== '') {
+              try {
+                vendors = JSON.parse(vendors) as Record<string, number>;
+              } catch (e) {
+                return;
+              }
+            }
+            
+            if (vendors && typeof vendors === 'object') {
+              if (!competitorTrendByDate.has(date)) {
+                competitorTrendByDate.set(date, {});
+              }
+              const dateData = competitorTrendByDate.get(date)!;
+              
+              Object.entries(vendors).forEach(([vendor, count]) => {
+                if (vendor && vendor.toLowerCase() !== 'inecta' && top5Vendors.includes(vendor)) {
+                  dateData[vendor] = (dateData[vendor] || 0) + (Number(count) || 0);
+                }
+              });
+            }
+          });
+          
+          const competitorTrendArray: CompetitorTrendData[] = [];
+          competitorTrendByDate.forEach((vendors, date) => {
+            Object.entries(vendors).forEach(([vendor, mentions]) => {
+              competitorTrendArray.push({
+                execution_date: date,
+                vendor,
+                total_mentions: mentions
+              });
+            });
+          });
+          
+          competitorTrendArray.sort((a, b) => {
+            const dateCompare = a.execution_date.localeCompare(b.execution_date);
+            if (dateCompare !== 0) return dateCompare;
+            return b.total_mentions - a.total_mentions;
+          });
+          
+          console.log('Competitor trend data:', competitorTrendArray);
+          setCompetitorTrend(competitorTrendArray);
+        } else if (competitorTrendError) {
+          console.error('Error fetching competitor trend data:', competitorTrendError);
+        }
+
       } catch (err) {
         console.error('Error fetching data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -472,15 +602,6 @@ export default function InectaMentionsDashboard() {
                 Model Performance
               </h2>
               <ModelComparison modelStats={modelStats} />
-            </div>
-
-            {/* Mention Trends */}
-            <div className="mb-6">
-              <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
-                Mention Trends
-              </h2>
-              <MentionTrends inectaTrend={inectaTrend} competitorTrend={competitorTrend} />
             </div>
 
             {/* Mention Trends */}
