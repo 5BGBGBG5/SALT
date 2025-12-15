@@ -76,6 +76,7 @@ interface CompetitorMention {
 
 interface InectaTrendData {
   execution_date: string;
+  model: string;
   total_responses: number;
   inecta_mentions: number;
   mention_rate: number;
@@ -381,16 +382,18 @@ export default function InectaMentionsDashboard() {
         if (!trendError && trendData) {
           const typedTrendData = trendData as EmbeddingRow[];
           
-          // Group by execution_date (use ALL data for trends, not filtered)
-          const trendByDate = new Map<string, { total: number; mentions: number }>();
+          // Group by execution_date AND model (use ALL data for trends, not filtered)
+          const trendByDateModel = new Map<string, { total: number; mentions: number }>();
           
           typedTrendData.forEach((row) => {
             const date = row.metadata?.execution_date;
-            if (date) {
-              if (!trendByDate.has(date)) {
-                trendByDate.set(date, { total: 0, mentions: 0 });
+            const model = row.metadata?.model_source;
+            if (date && model) {
+              const key = `${date}::${model}`;
+              if (!trendByDateModel.has(key)) {
+                trendByDateModel.set(key, { total: 0, mentions: 0 });
               }
-              const stats = trendByDate.get(date)!;
+              const stats = trendByDateModel.get(key)!;
               stats.total++;
               if (row.metadata?.inecta_mentioned === true) {
                 stats.mentions++;
@@ -398,14 +401,22 @@ export default function InectaMentionsDashboard() {
             }
           });
           
-          const inectaTrendArray: InectaTrendData[] = Array.from(trendByDate.entries())
-            .map(([date, stats]) => ({
-              execution_date: date,
-              total_responses: stats.total,
-              inecta_mentions: stats.mentions,
-              mention_rate: stats.total > 0 ? (stats.mentions / stats.total) * 100 : 0
-            }))
-            .sort((a, b) => a.execution_date.localeCompare(b.execution_date));
+          const inectaTrendArray: InectaTrendData[] = Array.from(trendByDateModel.entries())
+            .map(([key, stats]) => {
+              const [date, model] = key.split('::');
+              return {
+                execution_date: date,
+                model: model || '',
+                total_responses: stats.total,
+                inecta_mentions: stats.mentions,
+                mention_rate: stats.total > 0 ? (stats.mentions / stats.total) * 100 : 0
+              };
+            })
+            .sort((a, b) => {
+              const dateCompare = a.execution_date.localeCompare(b.execution_date);
+              if (dateCompare !== 0) return dateCompare;
+              return a.model.localeCompare(b.model);
+            });
           
           console.log('Inecta trend data:', inectaTrendArray);
           setInectaTrend(inectaTrendArray);

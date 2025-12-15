@@ -4,8 +4,6 @@ import React from 'react';
 import {
   LineChart,
   Line,
-  Area,
-  AreaChart,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -17,6 +15,7 @@ import { TrendingUp } from 'lucide-react';
 
 interface InectaTrendData {
   execution_date: string;
+  model: string;
   total_responses: number;
   inecta_mentions: number;
   mention_rate: number;
@@ -56,8 +55,9 @@ const formatDate = (dateString: string) => {
 interface TooltipProps {
   active?: boolean;
   payload?: Array<{
-    payload: InectaTrendData & { date_display: string };
+    name: string;
     value: number;
+    color: string;
   }>;
   label?: string;
 }
@@ -74,16 +74,14 @@ interface CompetitorTooltipProps {
 
 const InectaTrendTooltip = ({ active, payload, label }: TooltipProps) => {
   if (active && payload && payload.length) {
-    const data = payload[0].payload;
     return (
       <div className="bg-gray-900/95 border border-gray-700 rounded-lg p-3 shadow-lg">
         <p className="text-white font-semibold mb-2">{formatDate(label || '')}</p>
-        <p className="text-sm text-teal-400">
-          Mention Rate: <span className="font-semibold">{data.mention_rate.toFixed(1)}%</span>
-        </p>
-        <p className="text-sm text-gray-400">
-          Mentions: {data.inecta_mentions} / {data.total_responses} responses
-        </p>
+        {payload.map((entry, index) => (
+          <p key={index} className="text-sm" style={{ color: entry.color }}>
+            {entry.name}: <span className="font-semibold">{entry.value?.toFixed(1)}%</span>
+          </p>
+        ))}
       </div>
     );
   }
@@ -134,12 +132,27 @@ export default function MentionTrends({ inectaTrend, competitorTrend }: MentionT
     return Array.from(new Set(competitorTrend.map(item => item.vendor)));
   }, [competitorTrend]);
   
-  // Prepare Inecta trend data with formatted dates
+  // Prepare Inecta trend data - pivot by model
   const inectaChartData = React.useMemo(() => {
-    return inectaTrend.map(item => ({
-      ...item,
-      date_display: formatDate(item.execution_date)
-    }));
+    const dateMap = new Map<string, Record<string, number>>();
+    
+    inectaTrend.forEach(item => {
+      if (!dateMap.has(item.execution_date)) {
+        dateMap.set(item.execution_date, {});
+      }
+      const dateData = dateMap.get(item.execution_date)!;
+      // Use friendly names
+      const modelName = item.model?.toLowerCase().includes('gemini') ? 'Gemini' : 'ChatGPT';
+      dateData[modelName] = item.mention_rate;
+    });
+    
+    return Array.from(dateMap.entries())
+      .map(([date, models]) => ({
+        execution_date: date,
+        date_display: formatDate(date),
+        ...models
+      }))
+      .sort((a, b) => a.execution_date.localeCompare(b.execution_date));
   }, [inectaTrend]);
   
   const competitorChartData = React.useMemo(() => {
@@ -168,13 +181,7 @@ export default function MentionTrends({ inectaTrend, competitorTrend }: MentionT
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={inectaChartData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
-              <defs>
-                <linearGradient id="colorMentionRate" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
+            <LineChart data={inectaChartData} margin={{ top: 10, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis 
                 dataKey="date_display" 
@@ -191,14 +198,27 @@ export default function MentionTrends({ inectaTrend, competitorTrend }: MentionT
                 label={{ value: 'Mention Rate %', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#9CA3AF' } }}
               />
               <Tooltip content={<InectaTrendTooltip />} />
-              <Area 
+              <Legend 
+                wrapperStyle={{ color: '#9CA3AF', fontSize: '12px' }}
+                iconType="line"
+              />
+              <Line 
                 type="monotone" 
-                dataKey="mention_rate" 
+                dataKey="ChatGPT" 
                 stroke="#10B981" 
                 strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#colorMentionRate)"
-                name="Mention Rate"
+                dot={{ r: 4 }}
+                name="ChatGPT"
+                connectNulls={false}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="Gemini" 
+                stroke="#8B5CF6" 
+                strokeWidth={2}
+                dot={{ r: 4 }}
+                name="Gemini"
+                connectNulls={false}
               />
               {/* Goal line */}
               <Line 
@@ -210,7 +230,7 @@ export default function MentionTrends({ inectaTrend, competitorTrend }: MentionT
                 dot={false}
                 name={`Goal (${goalLine}%)`}
               />
-            </AreaChart>
+            </LineChart>
           </ResponsiveContainer>
         )}
       </div>
