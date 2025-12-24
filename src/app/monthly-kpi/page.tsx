@@ -41,6 +41,15 @@ type MonthlyKPI = {
   google_ads_conversions: number;
   google_ads_conversion_rate_percent: number;
   google_ads_cost_per_conversion: number;
+  // LinkedIn Ads metrics
+  linkedin_ads_spend: number;
+  linkedin_ads_impressions: number;
+  linkedin_ads_clicks: number;
+  linkedin_ads_ctr_percent: number;
+  linkedin_ads_avg_cpc: number;
+  linkedin_ads_conversions: number;
+  linkedin_ads_conversion_rate_percent: number;
+  linkedin_ads_cost_per_conversion: number;
 };
 
 const formatMonth = (dateStr: string): string => {
@@ -488,13 +497,116 @@ const MonthlyKPITable = ({
                 </td>
               ))}
             </tr>
+
+            {/* LinkedIn Ads Section */}
+            <tr className="bg-blue-600/10">
+              <td colSpan={months.length + 1} className="py-3 px-4 text-blue-300 font-semibold">
+                📢 LinkedIn Ads Metrics
+              </td>
+            </tr>
+
+            {/* Ad Spend */}
+            <tr className="hover:bg-teal-500/5 transition-colors">
+              <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
+                Ad Spend
+              </td>
+              {data.map(monthData => (
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  ${monthData.linkedin_ads_spend?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '0.00'}
+                </td>
+              ))}
+            </tr>
+
+            {/* Impressions */}
+            <tr className="hover:bg-teal-500/5 transition-colors">
+              <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
+                Impressions
+              </td>
+              {data.map(monthData => (
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  {monthData.linkedin_ads_impressions?.toLocaleString() || 0}
+                </td>
+              ))}
+            </tr>
+
+            {/* Clicks */}
+            <tr className="hover:bg-teal-500/5 transition-colors">
+              <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
+                Clicks
+              </td>
+              {data.map(monthData => (
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  {monthData.linkedin_ads_clicks?.toLocaleString() || 0}
+                </td>
+              ))}
+            </tr>
+
+            {/* CTR */}
+            <tr className="hover:bg-teal-500/5 transition-colors">
+              <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
+                CTR %
+              </td>
+              {data.map(monthData => (
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  {monthData.linkedin_ads_ctr_percent?.toFixed(2) || '0.00'}%
+                </td>
+              ))}
+            </tr>
+
+            {/* Average CPC */}
+            <tr className="hover:bg-teal-500/5 transition-colors">
+              <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
+                Avg CPC
+              </td>
+              {data.map(monthData => (
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  ${monthData.linkedin_ads_avg_cpc?.toFixed(2) || '0.00'}
+                </td>
+              ))}
+            </tr>
+
+            {/* Conversions */}
+            <tr className="hover:bg-teal-500/5 transition-colors">
+              <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
+                Conversions
+              </td>
+              {data.map(monthData => (
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  {monthData.linkedin_ads_conversions?.toFixed(1) || '0.0'}
+                </td>
+              ))}
+            </tr>
+
+            {/* Conversion Rate */}
+            <tr className="hover:bg-teal-500/5 transition-colors">
+              <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
+                Conversion Rate %
+              </td>
+              {data.map(monthData => (
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  {monthData.linkedin_ads_conversion_rate_percent?.toFixed(2) || '0.00'}%
+                </td>
+              ))}
+            </tr>
+
+            {/* Cost Per Conversion */}
+            <tr className="hover:bg-teal-500/5 transition-colors">
+              <td className="py-3 px-4 text-white font-medium sticky left-0 bg-gray-900/80 backdrop-blur-sm">
+                Cost Per Conversion
+              </td>
+              {data.map(monthData => (
+                <td key={monthData.month} className="py-3 px-4 text-center text-gray-300">
+                  ${monthData.linkedin_ads_cost_per_conversion?.toFixed(2) || '0.00'}
+                </td>
+              ))}
+            </tr>
           </tbody>
         </table>
       </div>
 
       {/* Data source indicator */}
       <div className="mt-4 text-xs text-teal-300/80">
-        Data sources: <code>posts</code>, <code>v_post_engagement_v2</code>, <code>youtube_videos</code>, <code>v_google_ads_monthly</code>
+        Data sources: <code>posts</code>, <code>v_post_engagement_v2</code>, <code>youtube_videos</code>, <code>v_google_ads_monthly</code>, <code>v_linkedin_ads_monthly</code>
       </div>
     </div>
   );
@@ -657,6 +769,21 @@ export default function MonthlyKPIPage() {
         console.log('[MonthlyKPI] Google Ads data:', googleAdsData);
       }
 
+      // Fetch LinkedIn Ads data
+      console.log('[MonthlyKPI] Fetching LinkedIn Ads data...');
+      const { data: linkedinAdsData, error: linkedinAdsError } = await supabase
+        .from('v_linkedin_ads_monthly')
+        .select('*')
+        .gte('month', dateRange.from)
+        .lte('month', dateRange.to)
+        .order('month', { ascending: true });
+
+      if (linkedinAdsError) {
+        console.error('[MonthlyKPI] LinkedIn Ads data error:', linkedinAdsError);
+      } else {
+        console.log('[MonthlyKPI] LinkedIn Ads data:', linkedinAdsData);
+      }
+
       // Fetch industry engagement data from database function
       console.log('[MonthlyKPI] Fetching industry engagement data from database function...');
       const { data: industryEngagementData, error: industryEngagementError } = await supabase
@@ -717,7 +844,16 @@ export default function MonthlyKPIPage() {
           google_ads_avg_cpc: 0,
           google_ads_conversions: 0,
           google_ads_conversion_rate_percent: 0,
-          google_ads_cost_per_conversion: 0
+          google_ads_cost_per_conversion: 0,
+          // Initialize LinkedIn Ads metrics
+          linkedin_ads_spend: 0,
+          linkedin_ads_impressions: 0,
+          linkedin_ads_clicks: 0,
+          linkedin_ads_ctr_percent: 0,
+          linkedin_ads_avg_cpc: 0,
+          linkedin_ads_conversions: 0,
+          linkedin_ads_conversion_rate_percent: 0,
+          linkedin_ads_cost_per_conversion: 0
         });
 
         // Increment month
@@ -845,6 +981,35 @@ export default function MonthlyKPIPage() {
           }
         });
         console.log('[MonthlyKPI] Google Ads data populated');
+      }
+
+      // Populate LinkedIn Ads data
+      if (linkedinAdsData && linkedinAdsData.length > 0) {
+        linkedinAdsData.forEach((row: {
+          month: string;
+          total_spend: string | number;
+          impressions: number;
+          clicks: number;
+          ctr_percent: string | number;
+          avg_cpc: string | number;
+          conversions: number;
+          conversion_rate_percent: string | number;
+          cost_per_conversion: string | number;
+        }) => {
+          const monthKey = row.month;
+          const monthData = monthlyData.get(monthKey);
+          if (monthData) {
+            monthData.linkedin_ads_spend = parseFloat(String(row.total_spend)) || 0;
+            monthData.linkedin_ads_impressions = Number(row.impressions) || 0;
+            monthData.linkedin_ads_clicks = Number(row.clicks) || 0;
+            monthData.linkedin_ads_ctr_percent = parseFloat(String(row.ctr_percent)) || 0;
+            monthData.linkedin_ads_avg_cpc = parseFloat(String(row.avg_cpc)) || 0;
+            monthData.linkedin_ads_conversions = Number(row.conversions) || 0;
+            monthData.linkedin_ads_conversion_rate_percent = parseFloat(String(row.conversion_rate_percent)) || 0;
+            monthData.linkedin_ads_cost_per_conversion = parseFloat(String(row.cost_per_conversion)) || 0;
+          }
+        });
+        console.log('[MonthlyKPI] LinkedIn Ads data populated');
       }
 
       // Get post counts (fallback method since we might not have the RPC)
@@ -1011,6 +1176,49 @@ export default function MonthlyKPIPage() {
         ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: d.google_ads_cost_per_conversion?.toFixed(2) || '0.00' }), {}) 
       });
 
+      // LinkedIn Ads section
+      exportData.push({ 'KPI Metric': 'LinkedIn Ads Metrics', ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: '' }), {}) });
+
+      exportData.push({ 
+        'KPI Metric': 'Ad Spend ($)', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: d.linkedin_ads_spend?.toFixed(2) || '0.00' }), {}) 
+      });
+
+      exportData.push({ 
+        'KPI Metric': 'Impressions', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: d.linkedin_ads_impressions || 0 }), {}) 
+      });
+
+      exportData.push({ 
+        'KPI Metric': 'Clicks', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: d.linkedin_ads_clicks || 0 }), {}) 
+      });
+
+      exportData.push({ 
+        'KPI Metric': 'CTR %', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: (d.linkedin_ads_ctr_percent?.toFixed(2) || '0.00') + '%' }), {}) 
+      });
+
+      exportData.push({ 
+        'KPI Metric': 'Avg CPC ($)', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: d.linkedin_ads_avg_cpc?.toFixed(2) || '0.00' }), {}) 
+      });
+
+      exportData.push({ 
+        'KPI Metric': 'Conversions', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: d.linkedin_ads_conversions?.toFixed(1) || '0.0' }), {}) 
+      });
+
+      exportData.push({ 
+        'KPI Metric': 'Conversion Rate %', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: (d.linkedin_ads_conversion_rate_percent?.toFixed(2) || '0.00') + '%' }), {}) 
+      });
+
+      exportData.push({ 
+        'KPI Metric': 'Cost Per Conversion ($)', 
+        ...kpiData.reduce((acc, d) => ({ ...acc, [d.month]: d.linkedin_ads_cost_per_conversion?.toFixed(2) || '0.00' }), {}) 
+      });
+
       // Create workbook and worksheet
       const workbook = XLSX.utils.book_new();
       const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -1094,7 +1302,7 @@ export default function MonthlyKPIPage() {
             Track LinkedIn engagement metrics, industry insights, and performance trends over time.
           </p>
           <div className="mt-1 text-xs text-teal-300/80">
-            Data sources: <code>posts</code>, <code>v_post_engagement_v2</code>, <code>youtube_videos</code>, <code>v_google_ads_monthly</code>
+            Data sources: <code>posts</code>, <code>v_post_engagement_v2</code>, <code>youtube_videos</code>, <code>v_google_ads_monthly</code>, <code>v_linkedin_ads_monthly</code>
           </div>
         </motion.div>
 
