@@ -12,8 +12,7 @@ import {
   Brain,
   TrendingUp,
   AlertCircle,
-  CheckCircle2,
-  XCircle
+  CheckCircle2
 } from 'lucide-react';
 
 // Force dynamic rendering
@@ -190,7 +189,18 @@ export default function CustomerIntelligencePage() {
   // Export to Excel
   const handleExportToExcel = () => {
     try {
-      const exportData: any[] = [];
+      const exportData: Array<{
+        'Company Name': string;
+        'Internal ID': string;
+        'Industry': string;
+        'Overall Confidence Score': number;
+        'Feature Code': string;
+        'Feature Name': string;
+        'Feature Confidence': string;
+        'Feature Reasoning': string;
+        'Priority Rank': number | string;
+        'Analysis Date': string;
+      }> = [];
 
       filteredCustomers.forEach(customer => {
         if (customer.recommendations.length === 0) {
