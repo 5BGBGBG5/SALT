@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Building2, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -12,18 +12,23 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [isReportsOpen, setIsReportsOpen] = useState(false);
+  const [isInectaOpsOpen, setIsInectaOpsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const inectaOpsDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleSignOut = async () => {
     await signOut();
     router.push('/');
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsReportsOpen(false);
+      }
+      if (inectaOpsDropdownRef.current && !inectaOpsDropdownRef.current.contains(event.target as Node)) {
+        setIsInectaOpsOpen(false);
       }
     };
 
@@ -41,6 +46,10 @@ export default function Header() {
     { href: '/reports/geo-similarities', label: 'GEO Similarities' },
     { href: '/reports/marketing-manager-weekly', label: 'Marketing Manager Weekly' },
     { href: '/chat', label: 'Documentation Assistant' },
+  ];
+
+  const inectaOpsLinks = [
+    { href: '/customer-intelligence', label: 'Customer Intelligence', icon: Users },
   ];
 
   return (
@@ -182,6 +191,69 @@ export default function Header() {
                           </Link>
                         </motion.div>
                       ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Inecta Ops Dropdown */}
+              <div className="relative" ref={inectaOpsDropdownRef}>
+                <motion.button
+                  onClick={() => setIsInectaOpsOpen(!isInectaOpsOpen)}
+                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 relative ${
+                    pathname === '/customer-intelligence'
+                      ? 'text-accent-primary bg-accent-primary/10' 
+                      : 'text-text-secondary hover:text-accent-primary hover:bg-accent-primary/5'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Building2 className="w-4 h-4 mr-2" />
+                  Inecta Ops
+                  <ChevronDown className={`ml-2 w-4 h-4 transition-transform duration-300 ${isInectaOpsOpen ? 'rotate-180' : ''}`} />
+                  
+                  {/* Animated underline */}
+                  {pathname === '/customer-intelligence' && (
+                    <motion.div
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent-primary to-accent-success"
+                      layoutId="activeTabInectaOps"
+                    />
+                  )}
+                </motion.button>
+                
+                <AnimatePresence>
+                  {isInectaOpsOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-72 glass-card py-2 z-50"
+                    >
+                      {inectaOpsLinks.map((link, index) => {
+                        const IconComponent = link.icon;
+                        return (
+                          <motion.div
+                            key={link.href}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                          >
+                            <Link
+                              href={link.href}
+                              className={`flex items-center gap-3 px-4 py-3 text-sm transition-all duration-300 rounded-lg mx-2 ${
+                                pathname === link.href
+                                  ? 'bg-accent-primary/20 text-accent-primary border-l-2 border-accent-primary'
+                                  : 'text-text-secondary hover:bg-accent-primary/10 hover:text-accent-primary'
+                              }`}
+                              onClick={() => setIsInectaOpsOpen(false)}
+                            >
+                              {IconComponent && <IconComponent className="w-4 h-4" />}
+                              {link.label}
+                            </Link>
+                          </motion.div>
+                        );
+                      })}
                     </motion.div>
                   )}
                 </AnimatePresence>
