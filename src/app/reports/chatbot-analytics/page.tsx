@@ -141,12 +141,12 @@ export default function ChatbotAnalyticsPage() {
     pendingAnalysis: 0
   });
 
-  // Supabase client - use AIEO Supabase (points to Inecta Intelligence database for Aimdoc data)
+  // Supabase client - use Inecta Intelligence database for Aimdoc data
   const supabase = useMemo(() => {
-    const url = process.env.NEXT_PUBLIC_AIEO_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_AIEO_SUPABASE_ANON_KEY;
+    const url = process.env.NEXT_PUBLIC_INTEL_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY;
     if (!url || !key) {
-      throw new Error('AIEO Supabase environment variables not configured');
+      throw new Error('Intel Supabase environment variables not configured. Set NEXT_PUBLIC_INTEL_SUPABASE_URL and NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY.');
     }
     return createClient(url, key);
   }, []);
