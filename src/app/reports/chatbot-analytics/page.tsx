@@ -831,13 +831,13 @@ export default function ChatbotAnalyticsPage() {
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={intentSummary}
+                    data={intentSummary as any}
                     dataKey="count"
                     nameKey="visitor_intent"
                     cx="50%"
                     cy="50%"
                     outerRadius={80}
-                    label={({ visitor_intent, count }) => `${visitor_intent.replace(/_/g, ' ')}: ${count}`}
+                    label={({ visitor_intent, count }: { visitor_intent: string; count: number }) => `${visitor_intent.replace(/_/g, ' ')}: ${count}`}
                   >
                     {intentSummary.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={getIntentColor(entry.visitor_intent)} />
