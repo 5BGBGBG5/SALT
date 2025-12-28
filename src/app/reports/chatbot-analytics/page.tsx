@@ -1,13 +1,12 @@
 'use client';
 
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { createClient } from '@supabase/supabase-js';
 import {
   ComposedChart,
   Line,
   Bar,
-  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -16,8 +15,7 @@ import {
   Legend,
   PieChart,
   Pie,
-  Cell,
-  BarChart
+  Cell
 } from 'recharts';
 import {
   MessageSquare,
@@ -34,8 +32,6 @@ import {
   Brain,
   FileText,
   Lightbulb,
-  MapPin,
-  BarChart3
 } from 'lucide-react';
 import MetricCard from '@/app/components/MetricCard';
 import * as XLSX from 'xlsx';
@@ -1206,7 +1202,7 @@ export default function ChatbotAnalyticsPage() {
               <h4 className="text-sm font-semibold text-white mb-2">Chatbot Training Priorities:</h4>
               <ul className="list-disc list-inside space-y-1 text-gray-300 text-sm">
                 {topQuestions.slice(0, 3).map((q, idx) => (
-                  <li key={idx}>Address: "{q.question}" (asked {q.frequency} times)</li>
+                  <li key={idx}>Address: &quot;{q.question}&quot; (asked {q.frequency} times)</li>
                 ))}
               </ul>
             </div>
