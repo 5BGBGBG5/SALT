@@ -141,12 +141,12 @@ export default function ChatbotAnalyticsPage() {
     pendingAnalysis: 0
   });
 
-  // Supabase client
+  // Supabase client - use Inecta Intelligence database for Aimdoc data
   const supabase = useMemo(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const url = process.env.NEXT_PUBLIC_INTEL_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_INTEL_SUPABASE_ANON_KEY;
     if (!url || !key) {
-      throw new Error('Supabase environment variables not configured');
+      throw new Error('Supabase Intelligence environment variables not configured');
     }
     return createClient(url, key);
   }, []);
