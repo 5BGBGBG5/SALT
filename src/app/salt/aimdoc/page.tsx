@@ -375,7 +375,7 @@ export default function AimdocChatbotAnalyticsPage() {
 
       if (statsError) throw statsError;
 
-      // Fetch actual leads from aimdoc_leads table
+      // Fetch ACTUAL leads from aimdoc_leads table
       const { data: leadsData, error: leadsError } = await supabase
         .from('aimdoc_leads')
         .select('lead_id');
