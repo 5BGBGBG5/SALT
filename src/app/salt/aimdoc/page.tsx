@@ -382,6 +382,13 @@ export default function AimdocChatbotAnalyticsPage() {
       
       if (leadsError) console.error('Leads fetch error:', leadsError);
 
+      console.log('=== DEBUG LEADS ===');
+      console.log('leadsData:', leadsData);
+      console.log('leadsData length:', leadsData?.length);
+      console.log('leadsError:', leadsError);
+      console.log('Setting leadsCaptured to:', leadsData?.length || 0);
+      console.log('===================');
+
       const total = data?.length || 0;
       const actualLeads = leadsData?.length || 0;
       const leadRate = total > 0 ? (actualLeads / total) * 100 : 0;
