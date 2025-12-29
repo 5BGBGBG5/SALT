@@ -41,3 +41,4 @@ WHERE industry_segment IS NOT NULL
 GROUP BY industry_segment
 ORDER BY count DESC;
 
+

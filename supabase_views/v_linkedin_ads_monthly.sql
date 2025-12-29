@@ -25,3 +25,4 @@ FROM linkedin_ads_daily
 GROUP BY date_trunc('month', date)
 ORDER BY month;
 
+

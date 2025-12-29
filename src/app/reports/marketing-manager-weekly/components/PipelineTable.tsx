@@ -84,3 +84,4 @@ export default function PipelineTable({ data }: PipelineTableProps) {
   );
 }
 
+
