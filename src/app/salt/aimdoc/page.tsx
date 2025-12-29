@@ -376,16 +376,21 @@ export default function AimdocChatbotAnalyticsPage() {
 
       if (convError) throw convError;
 
-      // Fetch actual leads from aimdoc_leads table
+      // Fetch ACTUAL leads from aimdoc_leads table
       const { data: leadsData, error: leadsError } = await supabase
         .from('aimdoc_leads')
-        .select('lead_id, raw_data');
+        .select('lead_id');
 
-      if (leadsError) throw leadsError;
+      if (leadsError) {
+        console.error('Error fetching leads:', leadsError);
+      }
 
-      // Calculate conversation metrics
       const total = convData?.length || 0;
-      const engaged = convData?.filter(c => c.lead_captured).length || 0;  // Renamed from 'leads'
+      
+      // FIXED: Use actual lead count from aimdoc_leads table
+      const actualLeadsCount = leadsData?.length || 0;
+      
+      const leadRate = total > 0 ? (actualLeadsCount / total) * 100 : 0;
       const avgEngagement = convData?.reduce((sum, c) => sum + (c.engagement_score || 0), 0) / (convData?.length || 1) || 0;
       const avgResolution = convData?.reduce((sum, c) => sum + (c.resolution_score || 0), 0) / (convData?.length || 1) || 0;
       const highPotential = convData?.filter(c => 
@@ -394,36 +399,18 @@ export default function AimdocChatbotAnalyticsPage() {
       const analyzed = convData?.filter(c => c.analysis_status === 'analyzed').length || 0;
       const pending = convData?.filter(c => c.analysis_status === 'pending').length || 0;
 
-      // Calculate ACTUAL lead metrics from aimdoc_leads
-      const actualLeads = leadsData?.length || 0;
-      const companies = new Set<string>();
-      let leadsWithEmail = 0;
-
-      leadsData?.forEach(lead => {
-        const rawData = lead.raw_data as Record<string, unknown>;
-        if (rawData?.company && typeof rawData.company === 'string') {
-          companies.add(rawData.company);
-        }
-        if (rawData?.email) leadsWithEmail++;
-      });
-
-      const uniqueCompanies = companies.size;
-
-      // Lead capture rate should be based on actual leads vs total conversations
-      const leadRate = total > 0 ? (actualLeads / total) * 100 : 0;
-
       setStats({
         totalConversations: total,
-        leadsCaptured: actualLeads,           // NOW using actual leads count
-        engagedConversations: engaged,        // Keep old metric renamed
+        leadsCaptured: actualLeadsCount,  // FIXED: Now uses aimdoc_leads count
+        engagedConversations: convData?.filter(c => c.lead_captured).length || 0,
         leadCaptureRate: leadRate,
         avgEngagementScore: avgEngagement,
         avgResolutionScore: avgResolution,
         highPotentialLeads: highPotential,
         conversationsAnalyzed: analyzed,
         pendingAnalysis: pending,
-        uniqueCompanies: uniqueCompanies,
-        leadsWithEmail: leadsWithEmail
+        uniqueCompanies: 0,  // Calculated in fetchLeadStats
+        leadsWithEmail: 0    // Calculated in fetchLeadStats
       });
     } catch (err) {
       console.error('Error fetching stats:', err);
@@ -993,7 +980,7 @@ export default function AimdocChatbotAnalyticsPage() {
           />
           <MetricCard
             title="Unique Companies"
-            value={stats.uniqueCompanies}
+            value={leadStats.uniqueCompanies}
             icon={<Building2 className="w-6 h-6" />}
           />
           <MetricCard
