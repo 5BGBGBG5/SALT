@@ -369,48 +369,42 @@ export default function AimdocChatbotAnalyticsPage() {
   // Fetch summary stats
   const fetchStats = useCallback(async () => {
     try {
-      // Fetch conversation stats
-      const { data: convData, error: convError } = await supabase
+      const { data, error: statsError } = await supabase
         .from('aimdoc_full_analysis')
         .select('*');
 
-      if (convError) throw convError;
+      if (statsError) throw statsError;
 
-      // Fetch ACTUAL leads from aimdoc_leads table
+      // Fetch actual leads from aimdoc_leads table
       const { data: leadsData, error: leadsError } = await supabase
         .from('aimdoc_leads')
         .select('lead_id');
-
-      if (leadsError) {
-        console.error('Error fetching leads:', leadsError);
-      }
-
-      const total = convData?.length || 0;
       
-      // FIXED: Use actual lead count from aimdoc_leads table
-      const actualLeadsCount = leadsData?.length || 0;
-      
-      const leadRate = total > 0 ? (actualLeadsCount / total) * 100 : 0;
-      const avgEngagement = convData?.reduce((sum, c) => sum + (c.engagement_score || 0), 0) / (convData?.length || 1) || 0;
-      const avgResolution = convData?.reduce((sum, c) => sum + (c.resolution_score || 0), 0) / (convData?.length || 1) || 0;
-      const highPotential = convData?.filter(c => 
+      if (leadsError) console.error('Leads fetch error:', leadsError);
+
+      const total = data?.length || 0;
+      const actualLeads = leadsData?.length || 0;
+      const leadRate = total > 0 ? (actualLeads / total) * 100 : 0;
+      const avgEngagement = data?.reduce((sum, c) => sum + (c.engagement_score || 0), 0) / (data?.length || 1) || 0;
+      const avgResolution = data?.reduce((sum, c) => sum + (c.resolution_score || 0), 0) / (data?.length || 1) || 0;
+      const highPotential = data?.filter(c => 
         c.lead_classification === 'high_potential' || c.lead_classification === 'high_value_lead'
       ).length || 0;
-      const analyzed = convData?.filter(c => c.analysis_status === 'analyzed').length || 0;
-      const pending = convData?.filter(c => c.analysis_status === 'pending').length || 0;
+      const analyzed = data?.filter(c => c.analysis_status === 'analyzed').length || 0;
+      const pending = data?.filter(c => c.analysis_status === 'pending').length || 0;
 
       setStats({
         totalConversations: total,
-        leadsCaptured: actualLeadsCount,  // FIXED: Now uses aimdoc_leads count
-        engagedConversations: convData?.filter(c => c.lead_captured).length || 0,
+        leadsCaptured: actualLeads,
+        engagedConversations: 0,
         leadCaptureRate: leadRate,
         avgEngagementScore: avgEngagement,
         avgResolutionScore: avgResolution,
         highPotentialLeads: highPotential,
         conversationsAnalyzed: analyzed,
         pendingAnalysis: pending,
-        uniqueCompanies: 0,  // Calculated in fetchLeadStats
-        leadsWithEmail: 0    // Calculated in fetchLeadStats
+        uniqueCompanies: 0,
+        leadsWithEmail: 0
       });
     } catch (err) {
       console.error('Error fetching stats:', err);
