@@ -15,7 +15,8 @@ import {
   Legend,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  BarChart
 } from 'recharts';
 import {
   MessageSquare,
@@ -32,6 +33,9 @@ import {
   Brain,
   FileText,
   Lightbulb,
+  Building2,
+  Mail,
+  Phone,
 } from 'lucide-react';
 import MetricCard from '@/app/components/MetricCard';
 import * as XLSX from 'xlsx';
@@ -64,6 +68,7 @@ interface Conversation {
   analyzed_at: string | null;
   analysis_status: 'pending' | 'analyzed';
   lead_classification: string | null;
+  raw_data?: Record<string, unknown>;
 }
 
 interface TimelineData {
@@ -106,6 +111,32 @@ interface Message {
   timestamp: string;
 }
 
+interface Lead {
+  lead_id: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  company: string | null;
+  phone: string | null;
+  job_title: string | null;
+  synced_at: string;
+  raw_data: Record<string, unknown>;
+}
+
+interface LeadStats {
+  totalLeads: number;
+  uniqueCompanies: number;
+  leadsWithEmail: number;
+  leadsWithPhone: number;
+  topCompanies: { company: string; count: number }[];
+}
+
+interface LinkedConversation {
+  conversation_id: string;
+  started_at: string;
+  raw_data: Record<string, unknown>;
+}
+
 // Main Component
 export default function ChatbotAnalyticsPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -122,6 +153,21 @@ export default function ChatbotAnalyticsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
+  // Leads state
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [filteredLeads, setFilteredLeads] = useState<Lead[]>([]);
+  const [leadStats, setLeadStats] = useState<LeadStats>({
+    totalLeads: 0,
+    uniqueCompanies: 0,
+    leadsWithEmail: 0,
+    leadsWithPhone: 0,
+    topCompanies: []
+  });
+  const [leadsSearchQuery, setLeadsSearchQuery] = useState('');
+  const [leadsCurrentPage, setLeadsCurrentPage] = useState(1);
+  const [expandedLeadRows, setExpandedLeadRows] = useState<Set<string>>(new Set());
+  const [linkedConversations, setLinkedConversations] = useState<Record<string, LinkedConversation | null>>({});
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [intentFilter, setIntentFilter] = useState<string>('all');
@@ -132,13 +178,16 @@ export default function ChatbotAnalyticsPage() {
   // Stats
   const [stats, setStats] = useState({
     totalConversations: 0,
-    leadsCaptured: 0,
+    leadsCaptured: 0,           // Actual leads from aimdoc_leads
+    engagedConversations: 0,   // Conversations with lead_captured = true
     leadCaptureRate: 0,
     avgEngagementScore: 0,
     avgResolutionScore: 0,
     highPotentialLeads: 0,
     conversationsAnalyzed: 0,
-    pendingAnalysis: 0
+    pendingAnalysis: 0,
+    uniqueCompanies: 0,        // From leads
+    leadsWithEmail: 0           // From leads
   });
 
   // Supabase client - use Inecta Intelligence database for Aimdoc data
@@ -151,6 +200,172 @@ export default function ChatbotAnalyticsPage() {
     return createClient(url, key);
   }, []);
 
+  // Fetch lead stats
+  const fetchLeadStats = useCallback(async () => {
+    try {
+      // Try to use the view first, fallback to table
+      const { data, error: viewError } = await supabase
+        .from('aimdoc_leads_view')
+        .select('lead_id, email, first_name, last_name, company, phone, job_title, synced_at, raw_data');
+
+      if (viewError) {
+        // Fallback to table if view doesn't exist
+        const { data: tableData, error: tableError } = await supabase
+          .from('aimdoc_leads')
+          .select('lead_id, raw_data');
+
+        if (tableError) throw tableError;
+
+        // Calculate stats from table data
+        const totalLeads = tableData?.length || 0;
+        const companies = new Set<string>();
+        let leadsWithEmail = 0;
+        let leadsWithPhone = 0;
+        const companyCounts = new Map<string, number>();
+
+        tableData?.forEach(lead => {
+          const rawData = lead.raw_data as Record<string, unknown>;
+          if (rawData?.company && typeof rawData.company === 'string') {
+            companies.add(rawData.company);
+            companyCounts.set(rawData.company, (companyCounts.get(rawData.company) || 0) + 1);
+          }
+          if (rawData?.email) leadsWithEmail++;
+          if (rawData?.phone) leadsWithPhone++;
+        });
+
+        const topCompanies = Array.from(companyCounts.entries())
+          .map(([company, count]) => ({ company, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
+
+        setLeadStats({
+          totalLeads,
+          uniqueCompanies: companies.size,
+          leadsWithEmail,
+          leadsWithPhone,
+          topCompanies
+        });
+      } else {
+        // Use view data
+        const totalLeads = data?.length || 0;
+        const companies = new Set<string>();
+        let leadsWithEmail = 0;
+        let leadsWithPhone = 0;
+        const companyCounts = new Map<string, number>();
+
+        data?.forEach(lead => {
+          if (lead.company) {
+            companies.add(lead.company);
+            companyCounts.set(lead.company, (companyCounts.get(lead.company) || 0) + 1);
+          }
+          if (lead.email) leadsWithEmail++;
+          if (lead.phone) leadsWithPhone++;
+        });
+
+        const topCompanies = Array.from(companyCounts.entries())
+          .map(([company, count]) => ({ company, count }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 5);
+
+        setLeadStats({
+          totalLeads,
+          uniqueCompanies: companies.size,
+          leadsWithEmail,
+          leadsWithPhone,
+          topCompanies
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching lead stats:', err);
+    }
+  }, [supabase]);
+
+  // Fetch leads
+  const fetchLeads = useCallback(async () => {
+    try {
+      // Try to use the view first, fallback to table
+      const { data, error: viewError } = await supabase
+        .from('aimdoc_leads_view')
+        .select('*')
+        .order('synced_at', { ascending: false });
+
+      if (viewError) {
+        // Fallback to table if view doesn't exist
+        const { data: tableData, error: tableError } = await supabase
+          .from('aimdoc_leads')
+          .select('*')
+          .order('synced_at', { ascending: false });
+
+        if (tableError) throw tableError;
+
+        // Map table data to Lead interface
+        const mappedLeads: Lead[] = (tableData || []).map(lead => {
+          const rawData = lead.raw_data as Record<string, unknown>;
+          return {
+            lead_id: lead.lead_id,
+            email: rawData?.email as string | null || null,
+            first_name: rawData?.first_name as string | null || null,
+            last_name: rawData?.last_name as string | null || null,
+            company: rawData?.company as string | null || null,
+            phone: rawData?.phone as string | null || null,
+            job_title: rawData?.job_title as string | null || null,
+            synced_at: lead.synced_at,
+            raw_data: rawData
+          };
+        });
+
+        setLeads(mappedLeads);
+        setFilteredLeads(mappedLeads);
+      } else {
+        // Use view data
+        const mappedLeads: Lead[] = (data || []).map(lead => ({
+          lead_id: lead.lead_id,
+          email: lead.email,
+          first_name: lead.first_name,
+          last_name: lead.last_name,
+          company: lead.company,
+          phone: lead.phone,
+          job_title: lead.job_title,
+          synced_at: lead.synced_at,
+          raw_data: lead.raw_data || {}
+        }));
+
+        setLeads(mappedLeads);
+        setFilteredLeads(mappedLeads);
+      }
+    } catch (err) {
+      console.error('Error fetching leads:', err);
+    }
+  }, [supabase]);
+
+  // Fetch linked conversation for a lead
+  const fetchLinkedConversation = useCallback(async (leadId: string) => {
+    if (linkedConversations[leadId] !== undefined) return;
+
+    try {
+      const { data, error: convError } = await supabase
+        .from('aimdoc_conversations')
+        .select('conversation_id, started_at, raw_data')
+        .eq('raw_data->>lead_id', leadId)
+        .maybeSingle();
+
+      if (convError && convError.code !== 'PGRST116') {
+        console.error('Error fetching linked conversation:', convError);
+      }
+
+      setLinkedConversations(prev => ({
+        ...prev,
+        [leadId]: data || null
+      }));
+    } catch (err) {
+      console.error('Error fetching linked conversation:', err);
+      setLinkedConversations(prev => ({
+        ...prev,
+        [leadId]: null
+      }));
+    }
+  }, [supabase, linkedConversations]);
+
   // Fetch summary stats
   const fetchStats = useCallback(async () => {
     try {
@@ -160,9 +375,23 @@ export default function ChatbotAnalyticsPage() {
 
       if (statsError) throw statsError;
 
+      // Fetch ACTUAL leads from aimdoc_leads table
+      const { data: leadsData, error: leadsError } = await supabase
+        .from('aimdoc_leads')
+        .select('lead_id');
+      
+      if (leadsError) console.error('Leads fetch error:', leadsError);
+
+      console.log('=== DEBUG LEADS ===');
+      console.log('leadsData:', leadsData);
+      console.log('leadsData length:', leadsData?.length);
+      console.log('leadsError:', leadsError);
+      console.log('Setting leadsCaptured to:', leadsData?.length || 0);
+      console.log('===================');
+
       const total = data?.length || 0;
-      const leads = data?.filter(c => c.lead_captured).length || 0;
-      const leadRate = total > 0 ? (leads / total) * 100 : 0;
+      const actualLeads = leadsData?.length || 0;
+      const leadRate = total > 0 ? (actualLeads / total) * 100 : 0;
       const avgEngagement = data?.reduce((sum, c) => sum + (c.engagement_score || 0), 0) / (data?.length || 1) || 0;
       const avgResolution = data?.reduce((sum, c) => sum + (c.resolution_score || 0), 0) / (data?.length || 1) || 0;
       const highPotential = data?.filter(c => 
@@ -173,13 +402,16 @@ export default function ChatbotAnalyticsPage() {
 
       setStats({
         totalConversations: total,
-        leadsCaptured: leads,
+        leadsCaptured: actualLeads,
+        engagedConversations: 0,
         leadCaptureRate: leadRate,
         avgEngagementScore: avgEngagement,
         avgResolutionScore: avgResolution,
         highPotentialLeads: highPotential,
         conversationsAnalyzed: analyzed,
-        pendingAnalysis: pending
+        pendingAnalysis: pending,
+        uniqueCompanies: 0,
+        leadsWithEmail: 0
       });
     } catch (err) {
       console.error('Error fetching stats:', err);
@@ -426,7 +658,7 @@ export default function ChatbotAnalyticsPage() {
     }
   }, [supabase, messages]);
 
-  // Apply filters
+  // Apply filters for conversations
   useEffect(() => {
     let filtered = [...conversations];
 
@@ -477,6 +709,27 @@ export default function ChatbotAnalyticsPage() {
     setCurrentPage(1);
   }, [conversations, searchQuery, intentFilter, industryFilter, buyerStageFilter, leadStatusFilter]);
 
+  // Apply filters for leads
+  useEffect(() => {
+    let filtered = [...leads];
+
+    // Search filter
+    if (leadsSearchQuery) {
+      const query = leadsSearchQuery.toLowerCase();
+      filtered = filtered.filter(lead =>
+        lead.first_name?.toLowerCase().includes(query) ||
+        lead.last_name?.toLowerCase().includes(query) ||
+        lead.email?.toLowerCase().includes(query) ||
+        lead.company?.toLowerCase().includes(query) ||
+        lead.phone?.toLowerCase().includes(query) ||
+        lead.job_title?.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredLeads(filtered);
+    setLeadsCurrentPage(1);
+  }, [leads, leadsSearchQuery]);
+
   // Load all data
   useEffect(() => {
     const loadData = async () => {
@@ -490,7 +743,9 @@ export default function ChatbotAnalyticsPage() {
           fetchIntentSummary(),
           fetchIndustrySummary(),
           fetchContentGaps(),
-          fetchTopQuestions()
+          fetchTopQuestions(),
+          fetchLeadStats(),
+          fetchLeads()
         ]);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -500,7 +755,7 @@ export default function ChatbotAnalyticsPage() {
     };
 
     loadData();
-  }, [fetchStats, fetchTimeline, fetchConversations, fetchIntentSummary, fetchIndustrySummary, fetchContentGaps, fetchTopQuestions]);
+  }, [fetchStats, fetchTimeline, fetchConversations, fetchIntentSummary, fetchIndustrySummary, fetchContentGaps, fetchTopQuestions, fetchLeadStats, fetchLeads]);
 
   // Toggle row expansion
   const toggleRow = (conversationId: string) => {
@@ -516,7 +771,21 @@ export default function ChatbotAnalyticsPage() {
     });
   };
 
-  // Export to CSV
+  // Toggle lead row expansion
+  const toggleLeadRow = (leadId: string) => {
+    setExpandedLeadRows(prev => {
+      const next = new Set(prev);
+      if (next.has(leadId)) {
+        next.delete(leadId);
+      } else {
+        next.add(leadId);
+        fetchLinkedConversation(leadId);
+      }
+      return next;
+    });
+  };
+
+  // Export conversations to CSV
   const handleExport = () => {
     const exportData = filteredConversations.map(c => ({
       'Date': new Date(c.started_at).toLocaleDateString(),
@@ -544,13 +813,38 @@ export default function ChatbotAnalyticsPage() {
     XLSX.writeFile(workbook, `chatbot-analytics-${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
+  // Export leads to CSV
+  const handleExportLeads = () => {
+    const exportData = filteredLeads.map(lead => ({
+      'Lead ID': lead.lead_id,
+      'First Name': lead.first_name || '',
+      'Last Name': lead.last_name || '',
+      'Email': lead.email || '',
+      'Company': lead.company || '',
+      'Phone': lead.phone || '',
+      'Job Title': lead.job_title || '',
+      'Synced At': new Date(lead.synced_at).toLocaleDateString()
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Leads');
+    XLSX.writeFile(workbook, `aimdoc-leads-${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
   // Pagination
   const paginatedConversations = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredConversations.slice(start, start + itemsPerPage);
   }, [filteredConversations, currentPage]);
 
+  const paginatedLeads = useMemo(() => {
+    const start = (leadsCurrentPage - 1) * itemsPerPage;
+    return filteredLeads.slice(start, start + itemsPerPage);
+  }, [filteredLeads, leadsCurrentPage]);
+
   const totalPages = Math.ceil(filteredConversations.length / itemsPerPage);
+  const totalLeadsPages = Math.ceil(filteredLeads.length / itemsPerPage);
 
   // Get unique filter values
   const uniqueIntents = useMemo(() => {
@@ -686,6 +980,11 @@ export default function ChatbotAnalyticsPage() {
             icon={<Target className="w-6 h-6" />}
           />
           <MetricCard
+            title="Unique Companies"
+            value={leadStats.uniqueCompanies}
+            icon={<Building2 className="w-6 h-6" />}
+          />
+          <MetricCard
             title="Avg Engagement Score"
             value={stats.avgEngagementScore.toFixed(1)}
             icon={<TrendingUp className="w-6 h-6" />}
@@ -709,6 +1008,25 @@ export default function ChatbotAnalyticsPage() {
             title="Pending Analysis"
             value={stats.pendingAnalysis}
             icon={<Clock className="w-6 h-6" />}
+          />
+          {/* New Leads KPI Cards */}
+          <MetricCard
+            title="Total Leads Synced"
+            value={leadStats.totalLeads}
+            icon={<Users className="w-6 h-6" />}
+            className="border-emerald-500/20"
+          />
+          <MetricCard
+            title="Leads with Email"
+            value={leadStats.leadsWithEmail}
+            icon={<Mail className="w-6 h-6" />}
+            className="border-emerald-500/20"
+          />
+          <MetricCard
+            title="Leads with Phone"
+            value={leadStats.leadsWithPhone}
+            icon={<Phone className="w-6 h-6" />}
+            className="border-emerald-500/20"
           />
         </div>
 
@@ -915,13 +1233,74 @@ export default function ChatbotAnalyticsPage() {
           </motion.div>
         </div>
 
+        {/* Leads Summary Panel */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="glass-card p-6 border border-emerald-500/20"
+        >
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-emerald-400" />
+            Leads Summary
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Top Companies Chart */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-300 mb-3">Top 5 Companies by Lead Count</h4>
+              {leadStats.topCompanies.length > 0 ? (
+                <ResponsiveContainer width="100%" height={200}>
+                  <BarChart data={leadStats.topCompanies}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis 
+                      dataKey="company" 
+                      stroke="#9CA3AF" 
+                      style={{ fontSize: '10px' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis stroke="#9CA3AF" style={{ fontSize: '12px' }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
+                    />
+                    <Bar dataKey="count" fill="#10B981" name="Leads" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-48 flex items-center justify-center text-gray-400">No company data available</div>
+              )}
+            </div>
+            {/* Lead Capture Trend */}
+            <div>
+              <h4 className="text-sm font-medium text-gray-300 mb-3">Lead Capture Trend</h4>
+              <div className="space-y-2">
+                {leadStats.topCompanies.length > 0 ? (
+                  <div className="space-y-2">
+                    {leadStats.topCompanies.map((company, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                        <span className="text-gray-300 text-sm flex-1 truncate">{company.company}</span>
+                        <span className="px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-medium">
+                          {company.count} leads
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="h-48 flex items-center justify-center text-gray-400">No lead data available</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Content Gaps & Questions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Top Content Gaps */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
+            transition={{ delay: 0.7 }}
             className="glass-card p-6"
           >
             <h3 className="text-lg font-semibold text-white mb-4">Top Content Gaps</h3>
@@ -945,7 +1324,7 @@ export default function ChatbotAnalyticsPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
+            transition={{ delay: 0.8 }}
             className="glass-card p-6"
           >
             <h3 className="text-lg font-semibold text-white mb-4">Top Questions Asked</h3>
@@ -966,11 +1345,156 @@ export default function ChatbotAnalyticsPage() {
           </motion.div>
         </div>
 
+        {/* Leads Directory */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9 }}
+          className="glass-card p-6 border border-emerald-500/20"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+              <Users className="w-5 h-5 text-emerald-400" />
+              Leads Directory ({filteredLeads.length})
+            </h3>
+            <button
+              onClick={handleExportLeads}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Export Leads
+            </button>
+          </div>
+          
+          {/* Search input */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={leadsSearchQuery}
+                onChange={(e) => setLeadsSearchQuery(e.target.value)}
+                placeholder="Search leads by name, email, company..."
+                className="w-full pl-10 pr-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+          </div>
+
+          {/* Leads Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-700">
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Name</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Email</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Company</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Phone</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Job Title</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Synced At</th>
+                  <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedLeads.map((lead) => {
+                  const isExpanded = expandedLeadRows.has(lead.lead_id);
+                  const fullName = `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || '—';
+                  return (
+                    <React.Fragment key={lead.lead_id}>
+                      <tr className="border-b border-gray-800/50 hover:bg-gray-800/20 transition-colors">
+                        <td className="py-3 px-4 text-gray-300 text-sm">{fullName}</td>
+                        <td className="py-3 px-4 text-gray-300 text-sm">{lead.email || '—'}</td>
+                        <td className="py-3 px-4 text-gray-300 text-sm">{lead.company || '—'}</td>
+                        <td className="py-3 px-4 text-gray-300 text-sm">{lead.phone || '—'}</td>
+                        <td className="py-3 px-4 text-gray-300 text-sm">{lead.job_title || '—'}</td>
+                        <td className="py-3 px-4 text-gray-300 text-sm">
+                          {new Date(lead.synced_at).toLocaleDateString()} {new Date(lead.synced_at).toLocaleTimeString()}
+                        </td>
+                        <td className="py-3 px-4">
+                          <button
+                            onClick={() => toggleLeadRow(lead.lead_id)}
+                            className="text-emerald-400 hover:text-emerald-300 transition-colors"
+                          >
+                            {isExpanded ? (
+                              <ChevronDown className="w-4 h-4" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4" />
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={7} className="p-6 bg-gray-800/30">
+                            <div className="space-y-4">
+                              <div>
+                                <h4 className="text-sm font-semibold text-white mb-2">Raw Data</h4>
+                                <pre className="text-xs text-gray-300 bg-gray-900/50 p-3 rounded overflow-auto max-h-48">
+                                  {JSON.stringify(lead.raw_data, null, 2)}
+                                </pre>
+                              </div>
+                              {linkedConversations[lead.lead_id] !== undefined && (
+                                <div>
+                                  <h4 className="text-sm font-semibold text-white mb-2">Linked Conversation</h4>
+                                  {linkedConversations[lead.lead_id] ? (
+                                    <div className="space-y-2">
+                                      <div className="text-sm text-gray-300">
+                                        <span className="font-medium">Conversation ID:</span> {linkedConversations[lead.lead_id]!.conversation_id}
+                                      </div>
+                                      <div className="text-sm text-gray-300">
+                                        <span className="font-medium">Started At:</span> {new Date(linkedConversations[lead.lead_id]!.started_at).toLocaleString()}
+                                      </div>
+                                      <details className="mt-2">
+                                        <summary className="text-sm text-emerald-400 cursor-pointer">View Conversation Raw Data</summary>
+                                        <pre className="text-xs text-gray-300 bg-gray-900/50 p-3 rounded overflow-auto max-h-48 mt-2">
+                                          {JSON.stringify(linkedConversations[lead.lead_id]!.raw_data, null, 2)}
+                                        </pre>
+                                      </details>
+                                    </div>
+                                  ) : (
+                                    <div className="text-sm text-gray-400">No linked conversation found</div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalLeadsPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <button
+                onClick={() => setLeadsCurrentPage(p => Math.max(1, p - 1))}
+                disabled={leadsCurrentPage === 1}
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-gray-400">
+                Page {leadsCurrentPage} of {totalLeadsPages}
+              </span>
+              <button
+                onClick={() => setLeadsCurrentPage(p => Math.min(totalLeadsPages, p + 1))}
+                disabled={leadsCurrentPage === totalLeadsPages}
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </motion.div>
+
         {/* Conversations Table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
+          transition={{ delay: 1.0 }}
           className="glass-card p-6"
         >
           <h3 className="text-lg font-semibold text-white mb-4">
@@ -1183,7 +1707,7 @@ export default function ChatbotAnalyticsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.9 }}
+          transition={{ delay: 1.1 }}
           className="glass-card p-6"
         >
           <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
