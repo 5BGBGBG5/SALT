@@ -178,13 +178,16 @@ export default function AimdocChatbotAnalyticsPage() {
   // Stats
   const [stats, setStats] = useState({
     totalConversations: 0,
-    leadsCaptured: 0,
+    leadsCaptured: 0,           // Actual leads from aimdoc_leads
+    engagedConversations: 0,   // Conversations with lead_captured = true
     leadCaptureRate: 0,
     avgEngagementScore: 0,
     avgResolutionScore: 0,
     highPotentialLeads: 0,
     conversationsAnalyzed: 0,
-    pendingAnalysis: 0
+    pendingAnalysis: 0,
+    uniqueCompanies: 0,        // From leads
+    leadsWithEmail: 0           // From leads
   });
 
   // Supabase client - use Inecta Intelligence database for Aimdoc data
@@ -366,32 +369,61 @@ export default function AimdocChatbotAnalyticsPage() {
   // Fetch summary stats
   const fetchStats = useCallback(async () => {
     try {
-      const { data, error: statsError } = await supabase
+      // Fetch conversation stats
+      const { data: convData, error: convError } = await supabase
         .from('aimdoc_full_analysis')
         .select('*');
 
-      if (statsError) throw statsError;
+      if (convError) throw convError;
 
-      const total = data?.length || 0;
-      const leads = data?.filter(c => c.lead_captured).length || 0;
-      const leadRate = total > 0 ? (leads / total) * 100 : 0;
-      const avgEngagement = data?.reduce((sum, c) => sum + (c.engagement_score || 0), 0) / (data?.length || 1) || 0;
-      const avgResolution = data?.reduce((sum, c) => sum + (c.resolution_score || 0), 0) / (data?.length || 1) || 0;
-      const highPotential = data?.filter(c => 
+      // Fetch actual leads from aimdoc_leads table
+      const { data: leadsData, error: leadsError } = await supabase
+        .from('aimdoc_leads')
+        .select('lead_id, raw_data');
+
+      if (leadsError) throw leadsError;
+
+      // Calculate conversation metrics
+      const total = convData?.length || 0;
+      const engaged = convData?.filter(c => c.lead_captured).length || 0;  // Renamed from 'leads'
+      const avgEngagement = convData?.reduce((sum, c) => sum + (c.engagement_score || 0), 0) / (convData?.length || 1) || 0;
+      const avgResolution = convData?.reduce((sum, c) => sum + (c.resolution_score || 0), 0) / (convData?.length || 1) || 0;
+      const highPotential = convData?.filter(c => 
         c.lead_classification === 'high_potential' || c.lead_classification === 'high_value_lead'
       ).length || 0;
-      const analyzed = data?.filter(c => c.analysis_status === 'analyzed').length || 0;
-      const pending = data?.filter(c => c.analysis_status === 'pending').length || 0;
+      const analyzed = convData?.filter(c => c.analysis_status === 'analyzed').length || 0;
+      const pending = convData?.filter(c => c.analysis_status === 'pending').length || 0;
+
+      // Calculate ACTUAL lead metrics from aimdoc_leads
+      const actualLeads = leadsData?.length || 0;
+      const companies = new Set<string>();
+      let leadsWithEmail = 0;
+
+      leadsData?.forEach(lead => {
+        const rawData = lead.raw_data as Record<string, unknown>;
+        if (rawData?.company && typeof rawData.company === 'string') {
+          companies.add(rawData.company);
+        }
+        if (rawData?.email) leadsWithEmail++;
+      });
+
+      const uniqueCompanies = companies.size;
+
+      // Lead capture rate should be based on actual leads vs total conversations
+      const leadRate = total > 0 ? (actualLeads / total) * 100 : 0;
 
       setStats({
         totalConversations: total,
-        leadsCaptured: leads,
+        leadsCaptured: actualLeads,           // NOW using actual leads count
+        engagedConversations: engaged,        // Keep old metric renamed
         leadCaptureRate: leadRate,
         avgEngagementScore: avgEngagement,
         avgResolutionScore: avgResolution,
         highPotentialLeads: highPotential,
         conversationsAnalyzed: analyzed,
-        pendingAnalysis: pending
+        pendingAnalysis: pending,
+        uniqueCompanies: uniqueCompanies,
+        leadsWithEmail: leadsWithEmail
       });
     } catch (err) {
       console.error('Error fetching stats:', err);
@@ -960,6 +992,11 @@ export default function AimdocChatbotAnalyticsPage() {
             icon={<Target className="w-6 h-6" />}
           />
           <MetricCard
+            title="Unique Companies"
+            value={stats.uniqueCompanies}
+            icon={<Building2 className="w-6 h-6" />}
+          />
+          <MetricCard
             title="Avg Engagement Score"
             value={stats.avgEngagementScore.toFixed(1)}
             icon={<TrendingUp className="w-6 h-6" />}
@@ -989,12 +1026,6 @@ export default function AimdocChatbotAnalyticsPage() {
             title="Total Leads Synced"
             value={leadStats.totalLeads}
             icon={<Users className="w-6 h-6" />}
-            className="border-emerald-500/20"
-          />
-          <MetricCard
-            title="Unique Companies"
-            value={leadStats.uniqueCompanies}
-            icon={<Building2 className="w-6 h-6" />}
             className="border-emerald-500/20"
           />
           <MetricCard
